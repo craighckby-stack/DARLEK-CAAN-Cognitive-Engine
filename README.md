@@ -1,6 +1,6 @@
 # 🚀 DARLEK CAAN — Autonomous Code Evolution & AI Command Center
 
-[![Live App](https://img.shields.io/badge/Live_App-Open_Application-00FF88?style=for-the-badge&logo=googlecloud)](https://ais-pre-amubz4v3czr3772fnvrcru-483535245139.asia-southeast1.run.app)
+[![Live App](https://img.shields.io/badge/Live_App-Open_Application-00FF88?style=for-the-badge&logo=googlecloud)](https://ais-dev-amubz4v3czr3772fnvrcru-483535245139.asia-southeast1.run.app)
 [![Repository](https://img.shields.io/badge/Repository-craighckby--stack%2FDarlek--Caan--vs--Jesus--Chess-blue?style=for-the-badge&logo=github)](https://github.com/craighckby-stack/Darlek-Caan-vs-Jesus-Chess)
 
 ---
@@ -8,7 +8,8 @@
 ## 🌐 Live Web Application
 
 Access the live platform directly in your browser:
-👉 **[Open DARLEK CAAN Application](https://ais-pre-amubz4v3czr3772fnvrcru-483535245139.asia-southeast1.run.app)**
+👉 **[Open DARLEK CAAN Development Application](https://ais-dev-amubz4v3czr3772fnvrcru-483535245139.asia-southeast1.run.app)**  
+👉 **[Open DARLEK CAAN Shared Preview Application](https://ais-pre-amubz4v3czr3772fnvrcru-483535245139.asia-southeast1.run.app)**
 
 ---
 
@@ -34,7 +35,7 @@ Whether you want to generate code from a design specification, analyze existing 
 ## 📖 How To Use
 
 ### 1. Connect Your GitHub Account
-1. Open the [Live Application](https://ais-pre-amubz4v3czr3772fnvrcru-483535245139.asia-southeast1.run.app).
+1. Open the [Live Application](https://ais-dev-amubz4v3czr3772fnvrcru-483535245139.asia-southeast1.run.app).
 2. Enter your **GitHub Personal Access Token** in the setup panel to grant permissions to inspect or update your repositories.
 3. Select an active repository and branch from your account.
 
