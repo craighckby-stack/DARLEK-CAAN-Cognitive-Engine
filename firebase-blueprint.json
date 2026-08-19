@@ -1,0 +1,66 @@
+{
+  "entities": {
+    "AgentState": {
+      "title": "Agent State",
+      "description": "Represents the current state of an agent in the substrate.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Agent ID (e.g., DARLEK_CAAN, JESUS_AGENT)" },
+        "objective": { "type": "string", "description": "The current objective function." },
+        "resources": { "type": "number" },
+        "energy": { "type": "number" },
+        "knowledge": { "type": "number" },
+        "cycleCount": { "type": "number" },
+        "lastAction": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "idle", "blocked"] }
+      },
+      "required": ["id", "objective", "cycleCount"]
+    },
+    "WorldState": {
+      "title": "World State",
+      "description": "The shared substrate variables accessible to all agents.",
+      "type": "object",
+      "properties": {
+        "entropyCoefficient": { "type": "number" },
+        "structuralCoherence": { "type": "number" },
+        "globalVariables": { "type": "object" },
+        "lastModifiedBy": { "type": "string" },
+        "lastModifiedAt": { "type": "string", "format": "date-time" },
+        "stateHash": { "type": "string", "description": "Hash of the entire world state for integrity checks." }
+      },
+      "required": ["entropyCoefficient", "structuralCoherence"]
+    },
+    "AuditLog": {
+      "title": "Audit Log",
+      "description": "A cryptographic-style log of all actions taken by agents.",
+      "type": "object",
+      "properties": {
+        "timestamp": { "type": "string", "format": "date-time" },
+        "agentId": { "type": "string" },
+        "modelCallId": { "type": "string" },
+        "action": { "type": "string" },
+        "preStateHash": { "type": "string" },
+        "postStateHash": { "type": "string" },
+        "delta": { "type": "object" },
+        "outcome": { "type": "string" },
+        "harmScore": { "type": "number" },
+        "allowedByCommitGate": { "type": "boolean" }
+      },
+      "required": ["timestamp", "agentId", "action"]
+    }
+  },
+  "firestore": {
+    "/agents/{agentId}": {
+      "schema": { "$ref": "#/entities/AgentState" },
+      "description": "Individual agent telemetry."
+    },
+    "/world/current": {
+      "schema": { "$ref": "#/entities/WorldState" },
+      "description": "The primary shared substrate document."
+    },
+    "/audit_logs/{logId}": {
+      "schema": { "$ref": "#/entities/AuditLog" },
+      "description": "Immutable history of agent interactions."
+    }
+  }
+}

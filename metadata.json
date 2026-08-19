@@ -1,0 +1,1 @@
+{"name": "Git Secret & PII Sanitizer", "description": "Deep PII and Secret Scanner for GitHub repositories.", "requestFramePermissions": [], "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]}

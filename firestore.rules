@@ -1,0 +1,55 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Default-deny catch-all safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+    function incoming() {
+      return request.resource.data;
+    }
+    function existing() {
+      return resource.data;
+    }
+
+    // Agent Telemetry
+    match /agents/{agentId} {
+      allow get: if isValidId(agentId);
+      allow list: if true;
+      allow create, update: if isSignedIn() && isValidId(agentId);
+      allow delete: if isAdmin();
+    }
+
+    // Shared Substrate World State
+    match /world/{docId} {
+      allow get: if isValidId(docId);
+      allow list: if true;
+      allow create, update: if isSignedIn() && isValidId(docId);
+      allow delete: if isAdmin();
+    }
+
+    // Cryptographic Audit Logs
+    match /audit_logs/{logId} {
+      allow get: if isValidId(logId);
+      allow list: if true;
+      allow create: if isSignedIn() && isValidId(logId);
+      allow update, delete: if false; // Immutable log
+    }
+
+    // Test connection doc
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+  }
+}

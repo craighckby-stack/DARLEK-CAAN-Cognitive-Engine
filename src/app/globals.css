@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+:root {
+  --font-orbitron: 'Orbitron', 'Share Tech Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-share-tech-mono: 'Share Tech Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+body {
+  background-color: #000000;
+  color: #e0e0e0;
+  min-height: 100vh;
+}
+
+
+
+
+

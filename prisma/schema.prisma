@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  title     String
+  content   String?
+  published Boolean  @default(false)
+  authorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// BRAIN — DARLEK CANN AGI Persistence Layer
+
+model Session {
+  id            String    @id @default(cuid())
+  branch        String    @default("ALPHA")
+  status        String    @default("active") // active, completed, terminated
+  overallHealth String    @default("healthy")
+  evolutionCycle Int      @default(0)
+  mutationsApplied Int    @default(0)
+  mutationsRejected Int    @default(0)
+  startedAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  mutations     MutationHistory[]
+  rejections    RejectionRecord[]
+  healthChecks  HealthSnapshot[]
+}
+
+model MutationHistory {
+  id            String   @id @default(cuid())
+  sessionId     String
+  filePath      String
+  fileSha       String   @default("")
+  originalCode  String   // truncated
+  proposedCode  String   // truncated
+  analysis      String
+  riskScore     Int
+  affectedFiles String   @default("[]") // JSON array
+  status        String   @default("pending") // pending, approved, rejected, applied, failed
+  commitSha     String   @default("")
+  provider      String   @default("") // which LLM proposed it
+  debateResult  String   @default("") // JSON
+  impactResult  String   @default("") // JSON
+  errorMessage  String   @default("")
+  createdAt     DateTime @default(now())
+  session       Session  @relation(fields: [sessionId], references: [id])
+}
+
+model RejectionRecord {
+  id            String   @id @default(cuid())
+  sessionId     String
+  filePath      String
+  reason        String
+  analysis      String
+  riskScore     Int
+  patternTags   String   @default("[]") // JSON array of pattern tags
+  createdAt     DateTime @default(now())
+  session       Session  @relation(fields: [sessionId], references: [id])
+}
+
+model HealthSnapshot {
+  id                 String   @id @default(cuid())
+  sessionId          String
+  structuralChange   Float    @default(0)
+  semanticSaturation Float    @default(0)
+  velocity           Float    @default(0)
+  identityPreservation Float  @default(1)
+  capabilityAlignment  Float  @default(0)
+  crossFileImpact    Float    @default(0)
+  overallHealth      String   @default("healthy")
+  createdAt          DateTime @default(now())
+  session            Session  @relation(fields: [sessionId], references: [id])
+}
