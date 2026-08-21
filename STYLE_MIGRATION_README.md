@@ -1,53 +1,17 @@
-# Style Migration Protocol
+# 💠 STYLE MIGRATION PROTOCOL :: GLASS-EMERGENT
 
-## Overview
-This module manages the transition of UI tokens from legacy 'Zinc' palettes to the 'Glass-Emergent' design system, as defined in the `darlek-cann-v3` architecture.
+## ▮ OVERVIEW
+This module executes the mandatory transition of UI primitives from legacy **'Zinc'** palettes to the high-fidelity **'Glass-Emergent'** design system, as mandated by the `darlek-cann-v3` architecture. All legacy tokens are deprecated; stylistic purity is paramount.
 
-## Workflow
-1. **Load**: Reads `src/App.tsx`.
-2. **Map**: Applies deterministic regex replacements defined in `STYLE_MAPPINGS`.
-3. **Commit**: Atomic write to disk.
+## ▮ EXECUTION PIPELINE
+The migration follows a deterministic tri-phase sequence:
 
-## Integration
-This script is designed to be run as a pre-build hook in the CI/CD pipeline to ensure consistency across the `sovereign-kernel` ecosystem.
+1. **STATE INGESTION**: Reads `src/App.tsx` into volatile memory for processing.
+2. **TOKEN MAPPING**: Executes optimized regex replacement logic derived from the `STYLE_MAPPINGS` dictionary.
+3. **ATOMIC COMMIT**: Performs a high-integrity write to disk, ensuring file system consistency.
 
+## ▮ SYSTEM INTEGRATION
+This protocol is deployed as a **pre-build hook** within the automated CI/CD pipeline. It serves as the primary enforcement mechanism for design consistency across the `sovereign-kernel` ecosystem. 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+> [!IMPORTANT]
+> Non-compliant styles are automatically refactored during build-time to maintain architectural integrity.
