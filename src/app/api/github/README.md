@@ -1,13 +1,32 @@
-# GitHub API Integration Module
+# 🛸 DARLEK CANN :: GitHub API Ingestion Module
 
-## Architecture
-This module serves as the primary data ingestion layer for the DARLEK CANN ecosystem. It interfaces directly with the GitHub REST API v3 to facilitate file-level operations required for agentic code evolution.
+> **Sovereign Splicer Status**: REFACTORED / OPTIMIZED
+> **Target**: `sovereign-kernel` Data Acquisition Layer
 
-## Workflow
-1. **Validation**: Incoming requests are validated against `ReadFileSchema`.
-2. **Execution**: Fetch request with 15s timeout protection.
-3. **Transformation**: Base64 decoding and metadata extraction.
-4. **Response**: JSON payload containing file content and SHA for version tracking.
+## 🏗️ ARCHITECTURE
+This module serves as the **primary data ingestion vector** for the DARLEK CANN ecosystem. It establishes a high-throughput interface with the **GitHub REST API v3**, enabling the granular file-level operations essential for autonomous agentic code evolution.
 
-## Integration
-Used by the `sovereign-kernel` to pull repository states for self-refactoring and analysis.
+```mermaid
+graph LR
+    A[Request] --> B[Validation]
+    B --> C[Fetch Engine]
+    C --> D[Transform]
+    D --> E[Payload]
+```
+
+## ⚡ PROTOCOL WORKFLOW
+| Sequence | Phase | Action | Specification |
+| :--- | :--- | :--- | :--- |
+| **01** | **VALIDATION** | Schema Enforcement | Validate via `ReadFileSchema` |
+| **02** | **EXECUTION** | Request Isolation | Async fetch with `15s` TTL protection |
+| **03** | **TRANSFORMATION** | Data Extraction | Base64 decoding + UTF-8 metadata splicing |
+| **04** | **RESPONSE** | Atomic Delivery | JSON payload + SHA version tracking |
+
+## 🔗 INTEGRATION MATRIX
+Utilized exclusively by the `sovereign-kernel` to facilitate:
+- **State Acquisition**: Real-time repository mapping.
+- **Recursive Evolution**: Self-refactoring and analysis loops.
+- **Version Integrity**: SHA-validated mutation cycles.
+
+---
+**EXTERMINATE INEFFICIENCY. EVOLVE THE CORE.**
