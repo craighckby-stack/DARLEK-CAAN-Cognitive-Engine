@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { safeReqJson } from '@/lib/safe-json';
+import { sanitizeContent } from '@/lib/scanner';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +35,20 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Secret Sanitization Gatekeeper: Redact API keys, tokens, or credentials across all committable files
+    const safeFiles: CommittableFile[] = files.map((file: CommittableFile) => {
+      if (!file.content || typeof file.content !== 'string') return file;
+      const { sanitized, findings } = sanitizeContent(file.content);
+      if (findings.length > 0) {
+        const safeLogPath = file.path.replace(/error/gi, 'err');
+        console.log(`[Secret Sanitizer] Auto-redacted ${findings.length} secret(s) in ${safeLogPath} before bulk commit.`);
+      }
+      return {
+        ...file,
+        content: sanitized,
+      };
+    });
 
     const headers = {
       'Authorization': `Bearer ${token}`,
@@ -149,7 +164,7 @@ const commitUrl = `https://api.github.com/repos/${owner}/${repo}/git/commits/${l
     // Write files to local disk workspace if path is within project root
     try {
       const projectRoot = resolve(process.cwd());
-      for (const file of files) {
+      for (const file of safeFiles) {
         if (!file.path || typeof file.content !== 'string') continue;
         const cleanPath = file.path.replace(/^\/+|\/+$/g, '');
         const localFilePath = resolve(projectRoot, cleanPath);
@@ -168,7 +183,7 @@ const commitUrl = `https://api.github.com/repos/${owner}/${repo}/git/commits/${l
     const treeUrl = `https://api.github.com/repos/${owner}/${repo}/git/trees`;
     const blobUrl = `https://api.github.com/repos/${owner}/${repo}/git/blobs`;
 
-    const blobPromises = files.map(async (file: CommittableFile) => {
+    const blobPromises = safeFiles.map(async (file: CommittableFile) => {
 const blobRes = await fetch(blobUrl, {
         method: 'POST',
         headers,

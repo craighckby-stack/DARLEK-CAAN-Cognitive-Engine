@@ -1,5 +1,11 @@
 export const logEvolutionEvent = (event: string, data: any) => {
-  console.log(`[EVOLUTION_EVENT][${new Date().toISOString()}] ${event}:`, JSON.stringify(data));
+  let serialized = '';
+  try {
+    serialized = JSON.stringify(data);
+  } catch {
+    serialized = '[Unserializable Data]';
+  }
+  console.log(`[EVOLUTION_EVENT][${new Date().toISOString()}] ${event}:`, serialized);
 };
 
 export const calculateSaturationScore = (metrics: any) => {

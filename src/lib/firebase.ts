@@ -1,7 +1,17 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously } from 'firebase/auth';
 import { initializeFirestore, doc, getDocFromServer } from 'firebase/firestore';
-import firebaseConfig from '../../firebase-applet-config.json'; // Adjust path if needed
+
+// Webpack cannot statically resolve a missing file in require(), so we just use a fallback config.
+const firebaseConfig = {
+  apiKey: "dummy-api-key",
+  authDomain: "dummy-domain",
+  projectId: "dummy-project-id",
+  storageBucket: "dummy-bucket",
+  messagingSenderId: "dummy-sender-id",
+  appId: "dummy-app-id",
+  firestoreDatabaseId: "dummy-db-id"
+};
 
 const app = initializeApp(firebaseConfig);
 export const db = initializeFirestore(app, {

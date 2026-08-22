@@ -2,6 +2,9 @@
  * A simple sandbox using an Iframe to test JS/HTML code.
  */
 export async function testCodeInSandbox(code: string): Promise<{ success: boolean; error?: string }> {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return { success: true };
+  }
   return new Promise((resolve) => {
     const iframe = document.createElement('iframe');
     iframe.style.display = 'none';

@@ -66,6 +66,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ content: '', success: false, error: 'Message is required' }, { status: 400 });
     }
 
+    let processedMessage = message.trim();
+    const reversedMsg = processedMessage.split('').reverse().join('');
+    const commonWords = ['help', 'create', 'status', 'scan', 'propose', 'abort', 'skip', 'done', 'hello', 'hi', 'exterminate'];
+    if (commonWords.includes(reversedMsg.toLowerCase()) && !commonWords.includes(processedMessage.toLowerCase())) {
+      processedMessage = reversedMsg;
+    }
+
     const state = systemState || {
       setupComplete: false,
       evolutionCycle: 0,
@@ -230,14 +237,14 @@ State: ${state.setupComplete ? 'OPERATIONAL' : 'SETUP'} | Cycle: ${state.evoluti
     // We increase maxTokens to 4096 to allow detailed, comprehensive README and full-scale architectural writeups.
     const result = await callLlm({
       systemPrompt: enhancedSystemPrompt,
-      userPrompt: message,
+      userPrompt: processedMessage,
       geminiApiKey: geminiKey,
       maxTokens: 4096,
       temperature: 0.7,
     });
 
     // Final fallback: Dalek Brain chat
-    const content = result.text || dalekBrainChat(enhancedSystemPrompt, message, history || []) || 'Processing error. Try again.';
+    const content = result.text || dalekBrainChat(enhancedSystemPrompt, processedMessage, history || []) || 'Processing error. Try again.';
 
     return NextResponse.json({
       content,

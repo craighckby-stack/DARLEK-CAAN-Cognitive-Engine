@@ -1911,10 +1911,14 @@ export class AGICore {
     return errEntry;
   }
 
-  public clearSystemHalt() {
+  public clearSystemHalt(clearLogs: boolean = false) {
     this.systemHalted = false;
     this.haltReason = null;
-    audit.info('agi_core', 'system_halt_cleared_resumed', { cycle: this.cycleCount });
+    if (clearLogs) {
+      this.zeroOutputErrorCount = 0;
+      this.zeroOutputLog = [];
+    }
+    audit.info('agi_core', 'system_halt_cleared_resumed', { cycle: this.cycleCount, clearLogs });
   }
 
   public async initializeSemantic(corpus: string[]) {

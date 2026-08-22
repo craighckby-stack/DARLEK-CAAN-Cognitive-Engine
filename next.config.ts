@@ -1,11 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig = {
-  
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
-  reactStrictMode: false,
   serverExternalPackages: ["@prisma/client", "pdf-parse", "z-ai-web-dev-sdk", "mammoth"],
 } as any;
 

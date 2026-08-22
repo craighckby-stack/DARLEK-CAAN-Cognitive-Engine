@@ -144,6 +144,24 @@ export function NeuralSimulator({ systemCycle = 0 }: NeuralSimulatorProps) {
   // Tessera Enterprise Modules State (AI_Agent_OS Spec)
   const [tesseraDiagnostics, setTesseraDiagnostics] = useState(() => agi.tesseraSuite.runAllDiagnostics());
 
+  // Output Stream & Circuit Breaker Reactive States
+  const [systemHalted, setSystemHalted] = useState(() => agi.systemHalted);
+  const [haltReason, setHaltReason] = useState<string | null>(() => agi.haltReason);
+  const [zeroOutputErrorCount, setZeroOutputErrorCount] = useState(() => agi.zeroOutputErrorCount);
+  const [zeroOutputLog, setZeroOutputLog] = useState<any[]>(() => [...agi.zeroOutputLog]);
+  const [totalOutputBytes, setTotalOutputBytes] = useState(() => agi.totalOutputBytes || 1062276);
+  const [totalOutputTokens, setTotalOutputTokens] = useState(() => agi.totalOutputTokens || 265544);
+  const [circuitResetToast, setCircuitResetToast] = useState<string | null>(null);
+
+  const syncAgiState = useCallback(() => {
+    setSystemHalted(agi.systemHalted);
+    setHaltReason(agi.haltReason);
+    setZeroOutputErrorCount(agi.zeroOutputErrorCount);
+    setZeroOutputLog([...agi.zeroOutputLog]);
+    setTotalOutputBytes(agi.totalOutputBytes);
+    setTotalOutputTokens(agi.totalOutputTokens);
+  }, [agi]);
+
   // Zero Output Error & Circuit Breaker Handlers with automatic Repository File Commit
   const [repoWriteStatus, setRepoWriteStatus] = useState<'idle' | 'writing' | 'success' | 'error'>('idle');
   const [repoWriteDetails, setRepoWriteDetails] = useState<{
@@ -255,11 +273,30 @@ export function NeuralSimulator({ systemCycle = 0 }: NeuralSimulatorProps) {
   const handleTriggerZeroOutputError = () => {
     const err = agi.triggerZeroOutputSimulatedError('Manual_Dashboard_Circuit_Breaker_Test');
     setRunning(false);
+    syncAgiState();
+    setCircuitResetToast('EMERGENCY SYSTEM STOP: 0-BYTE OUTPUT DETECTED — CIRCUIT BREAKER TRIPPED');
     handleCommitErrorToRepo(err);
   };
 
-  const handleClearCircuitBreaker = () => {
-    agi.clearSystemHalt();
+  const handleClearCircuitBreaker = (clearLogs = false, resume = false) => {
+    agi.clearSystemHalt(clearLogs);
+    syncAgiState();
+    setCircuitResetToast('CIRCUIT BREAKER CLEARED — SYSTEM RESTORED TO HEALTHY RUNNING STATE');
+    setTimeout(() => {
+      setCircuitResetToast(null);
+    }, 4500);
+    if (resume) {
+      setRunning(true);
+    }
+  };
+
+  const handleClearZeroOutputLogs = () => {
+    agi.clearSystemHalt(true);
+    syncAgiState();
+    setCircuitResetToast('CIRCUIT BREAKER & ZERO-OUTPUT ERROR HISTORY CLEARED');
+    setTimeout(() => {
+      setCircuitResetToast(null);
+    }, 4500);
   };
 
   // Handlers for AI Agent OS Sub-Engines
@@ -326,7 +363,8 @@ export function NeuralSimulator({ systemCycle = 0 }: NeuralSimulatorProps) {
     setZeroLeak(metrics.zeroLeakStats);
     setBlueprint(metrics.blueprint);
     setTaxonomy(metrics.taxonomy);
-  }, [agi]);
+    syncAgiState();
+  }, [agi, syncAgiState]);
 
   // ResizeObserver for canvas container
   useEffect(() => {
@@ -475,6 +513,7 @@ export function NeuralSimulator({ systemCycle = 0 }: NeuralSimulatorProps) {
   const runCycle = useCallback(async () => {
     const outcome = await agi.runCycle();
     const metrics = agi.getMetrics();
+    syncAgiState();
 
     setCycle(outcome.cycle);
     if ('resources' in outcome.state) {
@@ -643,6 +682,7 @@ export function NeuralSimulator({ systemCycle = 0 }: NeuralSimulatorProps) {
           <button
             onClick={() => {
               agi.reset();
+              syncAgiState();
               setCycle(0);
               setHistory([]);
               setActiveAnomalies([]);
@@ -664,7 +704,7 @@ export function NeuralSimulator({ systemCycle = 0 }: NeuralSimulatorProps) {
       </div>
 
       {/* Emergency System Halt Banner */}
-      {agi.systemHalted && (
+      {systemHalted && (
         <div className="mb-4 bg-red-950/80 border-2 border-red-500 p-3 rounded-md text-red-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 animate-pulse">
           <div className="flex items-center gap-2.5">
             <StopCircle size={22} className="text-red-400 shrink-0" />
@@ -674,12 +714,12 @@ export function NeuralSimulator({ systemCycle = 0 }: NeuralSimulatorProps) {
                 <span className="bg-red-900/90 text-white px-1.5 py-0.2 rounded text-[8px]">ZERO_OUTPUT_COMMITTED_ERROR</span>
               </div>
               <p className="text-[8.5px] font-mono text-red-200 mt-0.5">
-                {agi.haltReason || 'A 0-byte output commit was detected. System execution suspended to prevent empty loop commits.'}
+                {haltReason || 'A 0-byte output commit was detected. System execution suspended to prevent empty loop commits.'}
               </p>
             </div>
           </div>
           <button
-            onClick={handleClearCircuitBreaker}
+            onClick={() => handleClearCircuitBreaker(false, true)}
             className="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded text-[8.5px] font-mono font-bold tracking-wider shrink-0 cursor-pointer shadow-lg transition-all"
           >
             CLEAR CIRCUIT BREAKER & RESUME
@@ -825,7 +865,7 @@ export function NeuralSimulator({ systemCycle = 0 }: NeuralSimulatorProps) {
           <button
             onClick={() => setActiveExtraTab('output_guard')}
             className={`flex-1 text-left px-2 py-1.5 rounded text-[8.5px] font-mono tracking-wider transition-all duration-200 flex items-center gap-1.5 cursor-pointer ${
-              activeExtraTab === 'output_guard' || agi.systemHalted ? 'bg-red-500/10 text-red-400 border border-red-500/40 animate-pulse font-bold' : 'text-gray-500 hover:text-gray-300'
+              activeExtraTab === 'output_guard' || systemHalted ? 'bg-red-500/10 text-red-400 border border-red-500/40 animate-pulse font-bold' : 'text-gray-500 hover:text-gray-300'
             }`}
           >
             <StopCircle size={11} />
@@ -946,24 +986,56 @@ export function NeuralSimulator({ systemCycle = 0 }: NeuralSimulatorProps) {
           {activeExtraTab === 'output_guard' && (
             <div className="flex-1 flex flex-col justify-between gap-2.5">
               <div>
+                {/* Circuit Toast Alert */}
+                {circuitResetToast && (
+                  <div className="mb-2 p-1.5 bg-emerald-950/90 border border-emerald-500 rounded text-emerald-200 text-[8px] font-mono font-bold flex items-center justify-between animate-fadeIn">
+                    <div className="flex items-center gap-1.5">
+                      <CheckCircle2 size={12} className="text-emerald-400 shrink-0" />
+                      <span>{circuitResetToast}</span>
+                    </div>
+                    <button
+                      onClick={() => setCircuitResetToast(null)}
+                      className="text-emerald-400 hover:text-white px-1 cursor-pointer text-[9px]"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between mb-1">
                   <div className="text-[9.5px] font-sans font-bold text-red-400 tracking-widest uppercase flex items-center gap-1.5">
                     <StopCircle size={12} className="text-red-500 animate-pulse" />
                     ENHANCED OUTPUT STREAM & 0-OUTPUT STOP GUARD
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex items-center gap-1">
                     <button
                       onClick={handleTriggerZeroOutputError}
                       className="px-2 py-0.5 bg-red-950/60 text-red-400 border border-red-800/60 rounded text-[7.5px] font-mono font-bold hover:bg-red-900/60 cursor-pointer"
                     >
                       TRIGGER 0-OUTPUT ERROR TEST
                     </button>
-                    {agi.systemHalted && (
+                    {systemHalted ? (
                       <button
-                        onClick={handleClearCircuitBreaker}
-                        className="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 border border-emerald-800/60 rounded text-[7.5px] font-mono font-bold hover:bg-emerald-900/60 cursor-pointer"
+                        onClick={() => handleClearCircuitBreaker(false, false)}
+                        className="px-2.5 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400 rounded text-[7.5px] font-mono font-bold cursor-pointer shadow-md animate-pulse"
                       >
                         CLEAR CIRCUIT BREAKER
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleClearCircuitBreaker(false, false)}
+                        className="px-2 py-0.5 bg-emerald-950/40 text-emerald-400/80 border border-emerald-800/40 rounded text-[7.5px] font-mono font-bold hover:bg-emerald-900/60 cursor-pointer"
+                      >
+                        RESET CIRCUIT STATUS
+                      </button>
+                    )}
+                    {zeroOutputLog.length > 0 && (
+                      <button
+                        onClick={handleClearZeroOutputLogs}
+                        className="px-2 py-0.5 bg-gray-900 hover:bg-gray-800 text-gray-300 border border-gray-700 rounded text-[7.5px] font-mono font-bold cursor-pointer"
+                        title="Purge local error history"
+                      >
+                        PURGE LOGS
                       </button>
                     )}
                   </div>
@@ -976,21 +1048,21 @@ export function NeuralSimulator({ systemCycle = 0 }: NeuralSimulatorProps) {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2.5 bg-black/80 p-2 rounded border border-red-900/20 font-mono text-[8px]">
                   <div>
                     <span className="text-gray-500 block">TOTAL OUTPUT STREAM</span>
-                    <span className="text-[#00ffcc] font-bold text-[10px]">{(agi.totalOutputBytes || 0).toLocaleString()} B</span>
+                    <span className="text-[#00ffcc] font-bold text-[10px]">{(totalOutputBytes || 0).toLocaleString()} B</span>
                   </div>
                   <div>
                     <span className="text-gray-500 block">TOTAL OUTPUT TOKENS</span>
-                    <span className="text-[#ffaa00] font-bold text-[10px]">{(agi.totalOutputTokens || 0).toLocaleString()} tok</span>
+                    <span className="text-[#ffaa00] font-bold text-[10px]">{(totalOutputTokens || 0).toLocaleString()} tok</span>
                   </div>
                   <div>
                     <span className="text-gray-500 block">SYSTEM STATUS</span>
-                    <span className={agi.systemHalted ? 'text-red-500 font-bold text-[10px]' : 'text-emerald-400 font-bold text-[10px]'}>
-                      {agi.systemHalted ? 'HALTED (0 OUTPUT)' : 'RUNNING (HEALTHY)'}
+                    <span className={systemHalted ? 'text-red-500 font-bold text-[10px]' : 'text-emerald-400 font-bold text-[10px]'}>
+                      {systemHalted ? 'HALTED (0 OUTPUT)' : 'RUNNING (HEALTHY)'}
                     </span>
                   </div>
                   <div>
                     <span className="text-gray-500 block">0-OUTPUT ERRORS</span>
-                    <span className="text-red-400 font-bold text-[10px]">{agi.zeroOutputErrorCount} COMMITTED</span>
+                    <span className="text-red-400 font-bold text-[10px]">{zeroOutputErrorCount} COMMITTED</span>
                   </div>
                 </div>
 
@@ -1060,12 +1132,12 @@ export function NeuralSimulator({ systemCycle = 0 }: NeuralSimulatorProps) {
                     <span>ZERO-OUTPUT COMMITTED ERROR LOG</span>
                     <span className="text-gray-500">AUTO-CIRCUIT BREAKER</span>
                   </div>
-                  {agi.zeroOutputLog.length === 0 ? (
+                  {zeroOutputLog.length === 0 ? (
                     <div className="p-2 bg-black/60 border border-white/5 rounded text-[7.5px] font-mono text-emerald-400/80">
                       ✓ Zero output guard active. No 0-byte payload anomalies committed yet.
                     </div>
                   ) : (
-                    agi.zeroOutputLog.map((err, idx) => (
+                    zeroOutputLog.map((err, idx) => (
                       <div key={idx} className="p-1.5 bg-red-950/30 border border-red-900/40 rounded flex justify-between items-center text-[7.5px] font-mono">
                         <div className="flex items-center gap-1.5">
                           <span className="px-1 py-0.2 bg-red-900 text-white text-[6.5px] rounded font-bold">{err.status}</span>

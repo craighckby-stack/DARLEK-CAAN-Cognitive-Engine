@@ -35,6 +35,7 @@ export default function ChatPanel({
   const [attachedFile, setAttachedFile] = useState<{ name: string; content: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -649,13 +650,23 @@ export default function ChatPanel({
               {isExtracting ? <Loader2 size={16} className="animate-spin" /> : <Paperclip size={16} />}
             </button>
             <textarea
+              ref={textareaRef}
+              dir="ltr"
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => {
+                setInput(e.target.value);
+              }}
               onKeyDown={handleKeyDown}
               placeholder={attachedFile ? "Description of specification system... Type 'create' with this to compile!" : "Type a command..."}
               rows={1}
               className="dalek-input flex-1 px-4 py-3 text-sm resize-none"
-              style={{ minHeight: '42px', maxHeight: '120px' }}
+              style={{ 
+                minHeight: '42px', 
+                maxHeight: '120px',
+                direction: 'ltr',
+                textAlign: 'left',
+                unicodeBidi: 'normal'
+              }}
             />
             <button
               onClick={handleSend}

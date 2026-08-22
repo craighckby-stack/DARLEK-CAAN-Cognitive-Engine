@@ -47,3 +47,45 @@ export async function safeResponseJson<T = any>(res: Response, fallback: any = {
     return fallback;
   }
 }
+
+/**
+ * Safely fetch and parse JSON from an API endpoint, guarding against HTML error pages and network anomalies.
+ */
+export async function safeFetchJson<T = any>(url: string, options?: RequestInit): Promise<{ success: boolean; data: T | null; status: number; error?: string }> {
+  try {
+    const res = await fetch(url, options);
+    const text = await res.text();
+    if (!text || !text.trim()) {
+      return {
+        success: res.ok,
+        data: null,
+        status: res.status,
+        error: res.ok ? undefined : `HTTP ${res.status} Empty Response`,
+      };
+    }
+    try {
+      const json = JSON.parse(text);
+      return {
+        success: res.ok && (json.success !== false && json.error === undefined),
+        data: json as T,
+        status: res.status,
+        error: json.error || (res.ok ? undefined : `HTTP ${res.status}`),
+      };
+    } catch {
+      // HTML error page or non-JSON response
+      return {
+        success: false,
+        data: null,
+        status: res.status,
+        error: `Server error (${res.status}): Non-JSON response received (possible route crash or payload limit).`,
+      };
+    }
+  } catch (err: any) {
+    return {
+      success: false,
+      data: null,
+      status: 500,
+      error: err?.message || 'Network request failed',
+    };
+  }
+}

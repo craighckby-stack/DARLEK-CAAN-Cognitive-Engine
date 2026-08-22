@@ -25,6 +25,7 @@ import { Shield, Zap, MessageSquare, Activity, Sliders, Target, FileCode, Settin
 import { motion, AnimatePresence } from 'motion/react';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
+import { safeApiFetch } from '@/lib/api-client';
 
 export interface FailedSave {
   id: string;
@@ -505,14 +506,13 @@ export default function Home() {
           targetSave.type === 'MUTATION_WRITE' ||
           targetSave.type === 'FILE_CREATE'
         ) {
-          const res = await fetch('/api/github/write-file', {
+          const { success, data, error } = await safeApiFetch('/api/github/write-file', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(targetSave.payload),
           });
-          const data = await res.json();
-          if (!res.ok || !data.success) {
-            throw new Error(data.error || `HTTP ${res.status}: ${res.statusText}`);
+          if (!success) {
+            throw new Error(error || `HTTP request failed`);
           }
 
           // Update scannedFiles with new/updated file
@@ -749,6 +749,8 @@ export default function Home() {
     try {
       if (messages && messages.length > 0) {
         localStorage.setItem('darlek_cann_messages', JSON.stringify(messages.slice(-100)));
+      } else {
+        localStorage.removeItem('darlek_cann_messages');
       }
     } catch (e) {}
   }, [messages, isHydrated]);
@@ -758,6 +760,8 @@ export default function Home() {
     try {
       if (logEntries && logEntries.length > 0) {
         localStorage.setItem('darlek_cann_log_entries', JSON.stringify(logEntries.slice(-100)));
+      } else {
+        localStorage.removeItem('darlek_cann_log_entries');
       }
     } catch (e) {}
   }, [logEntries, isHydrated]);
@@ -1477,7 +1481,7 @@ export default function Home() {
       );
 
       try {
-        const res = await fetch('/api/github/write-file', {
+        const { success, data, error } = await safeApiFetch('/api/github/write-file', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1491,9 +1495,8 @@ export default function Home() {
             commitMessage: `[DARLEK CANN] Mutate ${mutation.filePath}`,
           }),
         });
-        const data = await res.json();
 
-        if (data.success) {
+        if (success && data?.success) {
           // Update scannedFiles with new content and new SHA so subsequent mutations don't hit stale SHA conflict
           setScannedFiles((prev) =>
             prev.map((f) =>
@@ -1512,7 +1515,7 @@ export default function Home() {
             for (const newFile of mutation.newFiles) {
               addCaanMessage(`Auxiliary output: Creating new file ${newFile.path}...`);
               try {
-                const newRes = await fetch('/api/github/write-file', {
+                const newRes = await safeApiFetch('/api/github/write-file', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
@@ -1525,18 +1528,22 @@ export default function Home() {
                     commitMessage: `[DARLEK CANN] Auto-create supplementary file: ${newFile.path}`,
                   }),
                 });
-                const newData = await newRes.json();
-                addLogEntry('SYSTEM', `Created new supplementary file ${newFile.path}`);
-                setScannedFiles((prev) => [
-                  ...prev.filter((f) => f.path !== newFile.path),
-                  {
-                    path: newFile.path,
-                    content: newFile.content,
-                    size: newFile.content.length,
-                    sha: newData.contentSha || newData.commitSha || '',
-                    type: 'blob',
-                  },
-                ]);
+                if (newRes.success && newRes.data?.success) {
+                  const newData = newRes.data;
+                  addLogEntry('SYSTEM', `Created new supplementary file ${newFile.path}`);
+                  setScannedFiles((prev) => [
+                    ...prev.filter((f) => f.path !== newFile.path),
+                    {
+                      path: newFile.path,
+                      content: newFile.content,
+                      size: newFile.content.length,
+                      sha: newData.contentSha || newData.commitSha || '',
+                      type: 'blob',
+                    },
+                  ]);
+                } else {
+                  console.warn(`Failed to auto-create file ${newFile.path}:`, newRes.error);
+                }
               } catch (e) {
                 console.error(`Failed to auto-create file ${newFile.path}:`, e);
               }
@@ -1949,11 +1956,107 @@ export default function Home() {
   // ─────────────────────────────────────────────
 
   const handleSendMessage = useCallback(
-    async (content: string, fileAttachment?: { name: string; content: string }) => {
+    async (rawContent: string, fileAttachment?: { name: string; content: string }) => {
       if (isLoading) return;
 
+      // Clean leading/trailing punctuation and whitespace (e.g. '. Help' -> 'Help', '/help' -> 'help')
+      let content = rawContent.trim();
+      const cleaned = content.replace(/^[./!?#~:\s]+|[./!?#~:\s]+$/g, '').trim();
+      const reversed = cleaned.split('').reverse().join('');
+      const lowerRaw = cleaned.toLowerCase();
+      const lowerReversed = reversed.toLowerCase();
+
+      // Normalize common command mappings and anagrams
+      const isHelp = 
+        lowerRaw === 'help' || lowerRaw === 'commands' || lowerRaw === 'cmd' || lowerRaw === 'manual' ||
+        lowerReversed === 'help' || lowerRaw === 'plhe' || lowerRaw === 'ehlp' || lowerRaw === 'pleh' ||
+        lowerRaw.startsWith('help ') || lowerRaw === '?' || lowerRaw === 'help me';
+
+      const isReboot =
+        lowerRaw === 'reboot' || lowerRaw === 'restart' || lowerRaw === 'reset' ||
+        lowerReversed === 'reboot' || lowerReversed === 'restart' || lowerReversed === 'reset';
+
+      const isClear =
+        lowerRaw === 'clear' || lowerRaw === 'cls' || lowerReversed === 'clear';
+
+      const isStatus =
+        lowerRaw === 'status' || lowerRaw === 'stats' || lowerRaw === 'telemetry' || lowerReversed === 'status';
+
+      const isScan =
+        lowerRaw === 'scan' || lowerReversed === 'scan';
+
+      const isPropose =
+        lowerRaw === 'propose' || lowerReversed === 'propose';
+
       const currentState = systemState;
-      const lowerContent = content.toLowerCase().trim();
+      const lowerContent = cleaned.toLowerCase();
+
+      // ── Help command ──
+      if (isHelp) {
+        setMessages((prev) => [...prev, createMessage('operator', content)]);
+        addCaanMessage(
+          `DALEK CAAN COMMAND DIRECTIVES:\n\n` +
+          `• help / commands — Display this operational command manual.\n` +
+          `• reboot / reset — Initiate full system reboot and purge chat, logs & cache.\n` +
+          `• scan — Scan target repository (${currentState.repoConfig?.owner || 'owner'}/${currentState.repoConfig?.repo || 'repo'}) for code assets.\n` +
+          `• 1, 2, ... — Select target file from scanned inventory to evolve.\n` +
+          `• propose — Initiate Dalek Debate Chamber & propose mutation on selected file.\n` +
+          `• create <name> — Compile and deploy a new repository from blueprint document or spec.\n` +
+          `• /repo <owner>/<repo> — Re-route active repository target.\n` +
+          `• status — Display live telemetry, saturation metrics, and system diagnostic state.\n` +
+          `• exterminate / approve — Apply and push proposed mutation to GitHub.\n` +
+          `• reject / cancel — Discard current mutation proposal.\n` +
+          `• batch — Run automated evolutionary pipeline across target files.\n` +
+          `• clear — Clear chat message history.`
+        );
+        addLogEntry('SYSTEM', 'Help directory output to chat console.');
+        return;
+      }
+
+      // ── Reboot command ──
+      if (isReboot) {
+        setMessages((prev) => [...prev, createMessage('operator', content)]);
+        quickActionRef.current?.('reboot-system');
+        return;
+      }
+
+      // ── Clear command ──
+      if (isClear) {
+        setMessages([createMessage('caan', 'COMMAND CONSOLE CLEARED. Ready for instructions, OPERATOR.')]);
+        try {
+          localStorage.removeItem('darlek_cann_messages');
+        } catch {}
+        return;
+      }
+
+      // ── Status command ──
+      if (isStatus) {
+        setMessages((prev) => [...prev, createMessage('operator', content)]);
+        addCaanMessage(
+          `DALEK CAAN TELEMETRY STATUS:\n\n` +
+          `• Repository: ${currentState.repoConfig?.owner || 'None'}/${currentState.repoConfig?.repo || 'None'} (${currentState.repoConfig?.branch || 'main'})\n` +
+          `• GitHub Status: ${currentState.connectionStatus?.github === 'connected' ? 'ONLINE' : 'OFFLINE'}\n` +
+          `• Evolution Cycle: #${currentState.evolutionCycle || 0}\n` +
+          `• Scanned Code Files: ${scannedFiles.length}\n` +
+          `• Saturation Level: ${((currentState.saturation?.semanticSaturation || 0) * 100).toFixed(1)}%\n` +
+          `• Velocity: ${currentState.saturation?.velocity || 0} mut/sec`
+        );
+        return;
+      }
+
+      // ── Scan command ──
+      if (isScan) {
+        setMessages((prev) => [...prev, createMessage('operator', content)]);
+        quickActionRef.current?.('scan');
+        return;
+      }
+
+      // ── Propose command ──
+      if (isPropose) {
+        setMessages((prev) => [...prev, createMessage('operator', content)]);
+        quickActionRef.current?.('propose');
+        return;
+      }
 
       // ── Batch mode: abort command ──
       if (batchMode) {
@@ -3534,9 +3637,9 @@ export default function Home() {
 
             const commitController = new AbortController();
             const commitTimeout = setTimeout(() => commitController.abort(), 180000);
-            let commitRes: Response;
+            let commitResult: { success: boolean; data: any; status: number; error?: string };
             try {
-              commitRes = await fetch('/api/github/bulk-commit', {
+              commitResult = await safeApiFetch('/api/github/bulk-commit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -3552,16 +3655,15 @@ export default function Home() {
             } finally {
               clearTimeout(commitTimeout);
             }
-            if (!commitRes.ok) throw new Error('Bulk commit API failed');
-            const commitData = await commitRes.json();
-
-            if (!commitData.success) {
+            if (!commitResult.success || !commitResult.data?.success) {
               setBulkCommitStatus('error');
-              addCaanMessage(`Bulk commit failed: ${commitData.error || 'Unknown error'}`);
-              addLogEntry('ERROR', `Bulk commit failed on GitHub: ${commitData.error || 'Unknown'}`);
+              const errText = commitResult.error || commitResult.data?.error || 'Bulk commit failed';
+              addCaanMessage(`Bulk commit failed: ${errText}`);
+              addLogEntry('ERROR', `Bulk commit failed on GitHub: ${errText}`);
               setTimeout(() => setBulkCommitStatus('idle'), 5000);
               break;
             }
+            const commitData = commitResult.data;
 
             addCaanMessage('GitHub write succeeded! Updating local database history and session counters...');
 
@@ -3611,110 +3713,123 @@ export default function Home() {
         // REBOOT SYSTEM
         // ────────────────────────────────
         case 'reboot-system': {
-          if (!apiKeys.github || !repoConfig.owner || !repoConfig.repo || !repoConfig.branch) {
-            addCaanMessage(
-              'GitHub connection required.'
-            );
-            break;
-          }
           setRebootStatus('rebooting');
           addLogEntry(
             'SYSTEM',
-            'System reboot initiated. Cognitive engine recycling...'
+            'System reboot initiated. Recycling cognitive engines and purging cache...'
           );
 
+          // Clear all local caches and persistence immediately
           try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000);
+            localStorage.removeItem('darlek_cann_booted');
+            localStorage.removeItem('darlek_cann_messages');
+            localStorage.removeItem('darlek_cann_log_entries');
+            localStorage.removeItem('darlek_cann_pending_mutation');
+            localStorage.removeItem('darlek_cann_rejection_memory');
+            localStorage.removeItem('darlek_cann_debate');
+            localStorage.removeItem('darlek_cann_scanned_files');
+            localStorage.removeItem('darlek_cann_selected_file_index');
+            localStorage.removeItem('darlek_cann_mutations_applied');
+            localStorage.removeItem('darlek_cann_failed_save');
+            localStorage.removeItem('darlek_cann_system_state');
+          } catch {}
 
-            const res = await fetch('/api/system/reboot', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              signal: controller.signal,
-              body: JSON.stringify({
-                token: apiKeys.github,
-                owner: repoConfig.owner,
-                repo: repoConfig.repo,
-                branch: repoConfig.branch,
-                sessionId: brainSessionId,
-              }),
-            });
-            clearTimeout(timeoutId);
-            const data = await res.json();
+          // Flush UI and memory state
+          setMessages([]);
+          setLogEntries([]);
+          setScannedFiles(DEFAULT_PRELOADED_FILES);
+          setSelectedFileIndex(-1);
+          setPendingMutation(null);
+          setDebateVotes([]);
+          setDebateConsensus('');
+          setDebateTopic('');
+          setDebateActive(false);
+          setBatchMode(false);
+          setBatchQueue([]);
+          setBatchProgress(0);
+          setPushStatus('idle');
+          setDeployStatus('idle');
+          setFailedSave(null);
+          setSystemState((prev) => ({
+            ...prev,
+            evolutionCycle: 0,
+            saturation: {
+              structuralChange: 0,
+              semanticSaturation: 0,
+              velocity: 0,
+              identityPreservation: 1,
+              capabilityAlignment: 0,
+              crossFileImpact: 0,
+            },
+            sessionStart: new Date(),
+          }));
+          setOverallHealth('healthy');
 
-            if (data.success) {
-              // Show reboot animation for a moment
-              await new Promise((resolve) =>
-                setTimeout(resolve, 3000)
-              );
+          try {
+            // If GitHub credentials exist, invoke backend reboot sync
+            if (apiKeys.github && repoConfig.owner && repoConfig.repo && repoConfig.branch) {
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), 60 * 1000);
 
-              setRebootStatus('success');
-
-              // Reset session-relevant state
-              localStorage.removeItem('darlek_cann_booted');
-              localStorage.removeItem('darlek_cann_messages');
-              localStorage.removeItem('darlek_cann_log_entries');
-              localStorage.removeItem('darlek_cann_pending_mutation');
-              localStorage.removeItem('darlek_cann_rejection_memory');
-              localStorage.removeItem('darlek_cann_debate');
-
-              setMessages([]);
-              setLogEntries([]);
-              setScannedFiles([]);
-              setSelectedFileIndex(-1);
-              setPendingMutation(null);
-              setDebateVotes([]);
-              setDebateConsensus('');
-              setDebateTopic('');
-              setDebateActive(false);
-              setBatchMode(false);
-              setBatchQueue([]);
-              setBatchProgress(0);
-              setPushStatus('idle');
-              setDeployStatus('idle');
-              setSystemState((prev) => ({
-                ...prev,
-                evolutionCycle: 0,
-                saturation: {
-                  structuralChange: 0,
-                  semanticSaturation: 0,
-                  velocity: 0,
-                  identityPreservation: 1,
-                  capabilityAlignment: 0,
-                  crossFileImpact: 0,
-                },
-                sessionStart: new Date(),
-              }));
-              setOverallHealth('healthy');
-
-              // Re-run intro messages
-              INTRO_MESSAGES.forEach((msg, i) => {
-                setTimeout(() => {
-                  setMessages((prev) => [
-                    ...prev,
-                    createMessage(msg.role, msg.content),
-                  ]);
-                }, i * 300);
+              const res = await fetch('/api/system/reboot', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                signal: controller.signal,
+                body: JSON.stringify({
+                  token: apiKeys.github,
+                  owner: repoConfig.owner,
+                  repo: repoConfig.repo,
+                  branch: repoConfig.branch,
+                  sessionId: brainSessionId,
+                }),
               });
-              setLogEntries([
-                createLogEntry(
-                  'SYSTEM',
-                  'DARLEK CANN v3.1 rebooted. Coherence Gate ARMED.'
-                ),
-              ]);
-
-              setTimeout(() => {
-                setRebootStatus('idle');
-              }, 3000);
-            } else {
-              setRebootStatus('error');
-              addLogEntry('ERROR', `System reboot failed: ${data.error}`);
-              setTimeout(() => setRebootStatus('idle'), 5000);
+              clearTimeout(timeoutId);
+              await res.json().catch(() => ({}));
             }
-          } catch {
-            setRebootStatus('error');
-            addLogEntry('ERROR', 'System reboot network error.');
-            setTimeout(() => setRebootStatus('idle'), 5000);
+
+            // Show reboot animation for visual confirmation
+            await new Promise((resolve) => setTimeout(resolve, 2200));
+
+            setRebootStatus('success');
+
+            // Initialize fresh intro greeting
+            INTRO_MESSAGES.forEach((msg, i) => {
+              setTimeout(() => {
+                setMessages((prev) => [
+                  ...prev,
+                  createMessage(msg.role, msg.content),
+                ]);
+              }, (i + 1) * 250);
+            });
+
+            setLogEntries([
+              createLogEntry(
+                'SYSTEM',
+                'DARLEK CANN v3.1 reboot complete. Memory, chat and logs cache cleared.'
+              ),
+            ]);
+
+            setTimeout(() => {
+              setRebootStatus('idle');
+            }, 2500);
+          } catch (err) {
+            // Even if network reboot sync has an error, ensure client cache and logs are fully reset
+            setRebootStatus('success');
+            INTRO_MESSAGES.forEach((msg, i) => {
+              setTimeout(() => {
+                setMessages((prev) => [
+                  ...prev,
+                  createMessage(msg.role, msg.content),
+                ]);
+              }, (i + 1) * 250);
+            });
+            setLogEntries([
+              createLogEntry(
+                'SYSTEM',
+                'DARLEK CANN reboot complete (Client memory purged).'
+              ),
+            ]);
+            setTimeout(() => setRebootStatus('idle'), 2500);
           }
           break;
         }

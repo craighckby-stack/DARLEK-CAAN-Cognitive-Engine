@@ -31,9 +31,14 @@ export function isSkippableFile(filePath: string): boolean {
   ];
   if (excludedExtensions.some(ext => p.endsWith(ext))) return true;
 
-  const excludedFiles = ['package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', '.ds_store'];
+  const excludedFiles = [
+    'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', '.ds_store',
+    'firebase-applet-config.json', 'firebase-blueprint.json',
+    'changed_files.json', 'missing_files.json', 'remote_blobs.json'
+  ];
   const fileName = p.split('/').pop() || '';
   if (excludedFiles.includes(fileName)) return true;
+  if (fileName === '.env' || fileName.startsWith('.env.')) return true;
 
   return false;
 }
@@ -42,7 +47,7 @@ export const SENSITIVE_PATTERNS = [
   // AI Providers
   { name: 'OpenAI API Key', regex: /(?:sk-[a-zA-Z0-9]{20,48}|sk-proj-[a-zA-Z0-9]{20,48})/g, confidence: 'high' },
   { name: 'Anthropic API Key', regex: /sk-ant-api03-[a-zA-Z0-9\-_]{93}AA/g, confidence: 'high' },
-  { name: 'Google Gemini API Key', regex: /AIza[0-9A-Za-z\-_]{35}/g, confidence: 'high' },
+  { name: 'Google Gemini API Key', regex: /AIza[0-9A-Za-z\-_]{35,45}/g, confidence: 'high' },
   { name: 'Cohere API Key', regex: /cohere\s*[:=]\s*['"][a-zA-Z0-9]{40}['"]/gi, confidence: 'medium' },
   { name: 'Mistral API Key', regex: /mistral\s*[:=]\s*['"][a-zA-Z0-9]{32}['"]/gi, confidence: 'medium' },
   
@@ -170,7 +175,7 @@ export function sanitizeContent(content: string): { sanitized: string; findings:
     }
     
     // High Entropy detector for variable assignments
-    const varRegex = /(?:key|token|secret|password|credential|auth)\s*[:=]\s*(['"])([^'"]+)\1/gi;
+    const varRegex = /[a-zA-Z0-9_\-]*(?:key|token|secret|password|credential|auth|hash|sha|md5)[a-zA-Z0-9_\-]*\s*[:=]\s*(['"])([^'"]+)\1/gi;
     let varMatch: RegExpExecArray | null;
     while ((varMatch = varRegex.exec(scanLine)) !== null) {
       const val = varMatch[2];

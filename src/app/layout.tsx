@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
-import HmrErrorHandler from "@/components/HmrErrorHandler";
 
 export const metadata: Metadata = {
   title: "Git Secret & PII Sanitizer",
@@ -17,10 +16,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" dir="ltr" className="dark" suppressHydrationWarning>
       <body
+        dir="ltr"
         className="antialiased"
         style={{
+          direction: 'ltr',
+          textAlign: 'left',
           background: '#000000',
           color: '#e0e0e0',
           fontFamily: 'var(--font-share-tech-mono), monospace',
@@ -29,7 +31,7 @@ export default function RootLayout({
           overflowX: 'hidden',
         }}
       >
-        <HmrErrorHandler />
+        
         {children}
         <Toaster />
       </body>

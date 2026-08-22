@@ -3,6 +3,7 @@ import { callGemini } from '@/lib/gemini';
 import { getDefaultGeminiKey } from '@/lib/llm-provider';
 import ZAI from 'z-ai-web-dev-sdk';
 import { safeReqJson } from '@/lib/safe-json';
+import { sanitizeContent } from '@/lib/scanner';
 
 export const maxDuration = 300;
 
@@ -294,7 +295,8 @@ compilation = generateDeterministicFallbackStructure(repoName, description, blue
 
     for (const file of compilation.files) {
       try {
-        const base64Content = Buffer.from(file.content, 'utf-8').toString('base64');
+        const { sanitized: safeContent } = sanitizeContent(file.content || '');
+        const base64Content = Buffer.from(safeContent, 'utf-8').toString('base64');
         const encodedPath = file.path.split('/').map(encodeURIComponent).join('/');
         
         // Check if file exists to fetch its SHA

@@ -50,6 +50,7 @@ const ENHANCEMENT_FILES = [
 ];
 
 import { safeReqJson } from '@/lib/safe-json';
+import { sanitizeContent } from '@/lib/scanner';
 
 export const dynamic = 'force-dynamic';
 
@@ -148,6 +149,9 @@ export async function POST(req: NextRequest) {
         if (!customFile.path || typeof customFile.content !== 'string') continue;
         const cleanPath = customFile.path.replace(/^\/+|\/+$/g, '');
         
+        // Sanitize secret tokens/keys before write
+        const { sanitized: safeContent } = sanitizeContent(customFile.content);
+
         // Write to local disk if path is inside project root
         try {
           const localPath = resolve(projectRoot, cleanPath);
@@ -156,7 +160,7 @@ export async function POST(req: NextRequest) {
             if (!existsSync(parentDir)) {
               mkdirSync(parentDir, { recursive: true });
             }
-            writeFileSync(localPath, customFile.content, 'utf-8');
+            writeFileSync(localPath, safeContent, 'utf-8');
           }
         } catch (e) {
           console.warn(`[Push Enhancements] Local disk write warn for ${cleanPath}:`, e);
@@ -166,7 +170,7 @@ export async function POST(req: NextRequest) {
           path: cleanPath,
           mode: '100644',
           type: 'blob',
-          content: customFile.content,
+          content: safeContent,
         });
         pushDetails.push({ file: cleanPath, success: true });
       }
@@ -184,11 +188,13 @@ export async function POST(req: NextRequest) {
 
       try {
         const content = readFileSync(localPath, 'utf-8');
+        const { sanitized: safeContent } = sanitizeContent(content);
+
         treeItemsMap.set(filePath, {
           path: filePath,
           mode: '100644',
           type: 'blob',
-          content,
+          content: safeContent,
         });
         pushDetails.push({ file: filePath, success: true });
       } catch (err: any) {
