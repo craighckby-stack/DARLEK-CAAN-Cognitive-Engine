@@ -1264,9 +1264,9 @@ export default function Home() {
         setSetupError(data.message || "GITHUB VERIFICATION DENIED. Check your Personal Access Token.");
         addLogEntry('ERROR', 'GitHub verification denied.');
       }
-    } catch (err) {
-      setSetupError("NETWORK EXCEPTION. Access key portal unresponsive.");
-      addLogEntry('ERROR', 'Access key verification timed out.');
+    } catch (err: any) {
+      setSetupError(err?.message || "NETWORK EXCEPTION. Access key portal unresponsive.");
+      addLogEntry('ERROR', `Access key verification error: ${err?.message || 'Host unreachable'}`);
     } finally {
       setSetupTesting(false);
       setIsLoading(false);

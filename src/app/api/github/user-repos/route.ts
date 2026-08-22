@@ -21,12 +21,14 @@ export async function POST(req: NextRequest) {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'DARLEK-CAAN-Security-Applet',
         },
       }),
       fetch('https://api.github.com/search/repositories?q=user:microsoft+user:google+user:ibm+user:firebase+user:deepmind+user:vercel+user:facebook&sort=stars&order=desc&per_page=50', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'DARLEK-CAAN-Security-Applet',
         },
       })
     ]);

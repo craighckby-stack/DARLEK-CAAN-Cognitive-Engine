@@ -19,6 +19,7 @@ export async function POST(req: NextRequest) {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'DARLEK-CAAN-Security-Applet',
       },
     });
 

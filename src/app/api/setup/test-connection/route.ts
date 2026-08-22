@@ -61,21 +61,33 @@ export async function POST(req: NextRequest) {
       }
 
       case 'github': {
-        const res = await fetch('https://api.github.com/user', {
-          headers: {
-            'Authorization': `Bearer ${effectiveKey}`,
-            'Accept': 'application/vnd.github.v3+json',
-          },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          return NextResponse.json({
-            success: true,
-            message: `GitHub connected as @${data.login}.`,
+        try {
+          const res = await fetch('https://api.github.com/user', {
+            headers: {
+              'Authorization': `Bearer ${effectiveKey}`,
+              'Accept': 'application/vnd.github.v3+json',
+              'User-Agent': 'DARLEK-CAAN-Security-Applet',
+            },
           });
+          if (res.ok) {
+            const data = await res.json();
+            return NextResponse.json({
+              success: true,
+              message: `GitHub connected as @${data.login}.`,
+            });
+          }
+          let errMsg = `HTTP ${res.status}`;
+          try {
+            const errData = await res.json();
+            errMsg = errData.message || errMsg;
+          } catch {
+            const errText = await res.text();
+            errMsg = errText.slice(0, 200) || errMsg;
+          }
+          return NextResponse.json({ success: false, message: `GitHub authentication failed: ${errMsg}` });
+        } catch (fetchErr: any) {
+          return NextResponse.json({ success: false, message: `GitHub network error: ${fetchErr?.message || 'Host unreachable'}` });
         }
-        const err = await res.text();
-        return NextResponse.json({ success: false, message: `GitHub error: ${err.slice(0, 200)}` });
       }
 
       default:
