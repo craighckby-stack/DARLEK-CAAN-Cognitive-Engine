@@ -1,3 +1,26 @@
+reposatory enhancer. 
+
+version 5 billion.
+
+see screen shots .
+
+nothing fancy passes to llm a chunk to process via debate system.  all editable. 
+
+security Auditor sanitiser work in progress.
+
+few other sims.
+
+work in progress if not working just being edited.
+
+
+also type prompt at bottom.   type help. features auto create repo from one document " describe what you want it does it.  work in progress currently just sets up tree for enhancment 
+
+
+below Gemini generated discription "over the top" 
+
+
+
+
 # 🛡️ Git Secret & PII Sanitizer & Autonomous Code Evolution Platform
 
 [![Live App](https://img.shields.io/badge/Live_App-Open_Application-00FF88?style=for-the-badge&logo=googlecloud)](https://ais-dev-amubz4v3czr3772fnvrcru-483535245139.asia-southeast1.run.app)
