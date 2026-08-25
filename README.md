@@ -16,7 +16,10 @@ work in progress if not working just being edited.
 also type prompt at bottom.   type help. features auto create repo from one document " describe what you want it does it.  work in progress currently just sets up tree for enhancment 
 
 
-below Gemini generated discription "over the top" 
+below Gemini generated discription "over the top " 
+
+stable currently .  
+
 
 
 
