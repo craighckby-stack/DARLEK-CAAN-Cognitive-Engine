@@ -1,13 +1,11 @@
 {
   "name": "nextjs_tailwind_shadcn_ts",
   "version": "0.2.0",
-  "private": true,
-  "description": "Git Secret & PII Sanitizer - Full Stack Security Scanner & Auto-Fix Tool",
   "scripts": {
-    "dev": "next dev -H 0.0.0.0 -p 3000",
-    "build": "npx prisma generate && NODE_ENV=production next build",
-    "start": "node server.ts",
-    "lint": "eslint ."
+    "build": "prisma generate \u0026\u0026 next build",
+    "dev": "next dev -p 3000",
+    "lint": "eslint .",
+    "start": "node server.js"
   },
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.5",
@@ -49,7 +47,6 @@
     "embla-carousel-react": "^8.5.2",
     "firebase": "^11.2.0",
     "input-otp": "^1.4.2",
-    "jszip": "^3.10.1",
     "lucide-react": "^0.474.0",
     "mammoth": "^1.12.0",
     "motion": "^12.0.5",
