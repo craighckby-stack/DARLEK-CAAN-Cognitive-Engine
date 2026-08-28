@@ -16,7 +16,7 @@ const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/craighckby-stack/epis
 const USER_AGENT = 'EMG-Neural-Code-Optimizer-v49';
 
 /**
- * Fetches remote content from a given URL using a secure HTTPS request.
+ * Fetches remote content from a given URL using a secure HTTPS request with optimized memory handling.
  * @param {string} url - The target URL to fetch.
  * @returns {Promise<string>} The response body as a string.
  */
@@ -28,13 +28,16 @@ function fetchRemoteContent(url) {
         return reject(new Error(`Failed to fetch ${url}, status code: ${res.statusCode}`));
       }
       
-      // Use array chunks to optimize memory efficiency for large payloads
       const chunks = [];
       res.on('data', (chunk) => {
         chunks.push(chunk);
       });
       res.on('end', () => {
-        resolve(Buffer.concat(chunks).toString('utf8'));
+        try {
+          resolve(Buffer.concat(chunks).toString('utf8'));
+        } catch (err) {
+          reject(err);
+        }
       });
     });
 
@@ -45,7 +48,7 @@ function fetchRemoteContent(url) {
 }
 
 /**
- * Main execution routine for identifying and updating changed files.
+ * Main execution routine for identifying and updating changed files with enhanced error resilience.
  * @returns {Promise<void>}
  */
 async function main() {
