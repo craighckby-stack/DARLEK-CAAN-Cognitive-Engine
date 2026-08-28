@@ -58,6 +58,10 @@ function executeFetchEngine(targetUrl) {
       return reject(new TypeError(`Invalid Target URL provided: ${/** @type {Error} */ (urlError).message}`));
     }
 
+    if (parsedUrl.protocol !== 'https:') {
+      return reject(new TypeError('Target URL must use the secure https: protocol.'));
+    }
+
     const options = {
       headers: DEFAULT_HEADERS
     };
@@ -124,7 +128,7 @@ function executeFetchEngine(targetUrl) {
         try {
           const fullData = chunks.join('');
           const output = fullData.substring(0, OUTPUT_LIMIT);
-          console.log(output);
+          process.stdout.write(output + (fullData.length > OUTPUT_LIMIT ? '\n' : ''));
           succeed();
         } catch (err) {
           fail(/** @type {Error} */ (err));
