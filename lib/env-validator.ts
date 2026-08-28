@@ -6,27 +6,27 @@
  */
 
 export interface SystemEnvironmentConfig {
-  NODE_ENV: 'development' | 'production' | 'test';
-  DATABASE_URL: string;
-  GEMINI_API_KEY: string;
-  OPENAI_API_KEY?: string;
-  ANTHROPIC_API_KEY?: string;
-  DEEPSEEK_API_KEY?: string;
-  OLLAMA_BASE_URL: string;
-  MEMORY_DIR: string;
-  CONSENSUS_WEIGHT_THRESHOLD: number;
-  SANDBOX_ISOLATION_LEVEL: 'strict' | 'permissive' | 'zero-leak';
-  DIAGNOSTICS_ENABLED: boolean;
-  LOG_LEVEL: 'debug' | 'info' | 'warn' | 'error';
-  PORT: number;
+  readonly NODE_ENV: 'development' | 'production' | 'test';
+  readonly DATABASE_URL: string;
+  readonly GEMINI_API_KEY: string;
+  readonly OPENAI_API_KEY?: string;
+  readonly ANTHROPIC_API_KEY?: string;
+  readonly DEEPSEEK_API_KEY?: string;
+  readonly OLLAMA_BASE_URL: string;
+  readonly MEMORY_DIR: string;
+  readonly CONSENSUS_WEIGHT_THRESHOLD: number;
+  readonly SANDBOX_ISOLATION_LEVEL: 'strict' | 'permissive' | 'zero-leak';
+  readonly DIAGNOSTICS_ENABLED: boolean;
+  readonly LOG_LEVEL: 'debug' | 'info' | 'warn' | 'error';
+  readonly PORT: number;
 }
 
 export class EnvironmentValidator {
   private static instance: EnvironmentValidator;
-  private config: SystemEnvironmentConfig;
+  private readonly config: SystemEnvironmentConfig;
 
   private constructor() {
-    this.config = this.validate();
+    this.config = Object.freeze(this.validate());
   }
 
   public static getInstance(): EnvironmentValidator {
@@ -41,23 +41,42 @@ export class EnvironmentValidator {
   }
 
   public getAll(): Readonly<SystemEnvironmentConfig> {
-    return Object.freeze({ ...this.config });
+    return this.config;
   }
 
   private validate(): SystemEnvironmentConfig {
-    const nodeEnv = (process.env.NODE_ENV || 'development') as 'development' | 'production' | 'test';
-    const databaseUrl = process.env.DATABASE_URL || 'file:./dev.db';
-    const geminiApiKey = process.env.GEMINI_API_KEY || '';
+    const nodeEnv = (process.env.NODE_ENV ?? 'development') as SystemEnvironmentConfig['NODE_ENV'];
+    if (!['development', 'production', 'test'].includes(nodeEnv)) {
+      throw new Error(`Invalid NODE_ENV configuration: "${nodeEnv}". Allowed values: development, production, test.`);
+    }
+
+    const databaseUrl = process.env.DATABASE_URL ?? 'file:./dev.db';
+    const geminiApiKey = process.env.GEMINI_API_KEY ?? '';
     const openaiApiKey = process.env.OPENAI_API_KEY;
     const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
     const deepseekApiKey = process.env.DEEPSEEK_API_KEY;
-    const ollamaBaseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
-    const memoryDir = process.env.MEMORY_DIR || './memory';
-    const consensusWeight = parseFloat(process.env.CONSENSUS_WEIGHT_THRESHOLD || '0.75');
-    const sandboxIsolation = (process.env.SANDBOX_ISOLATION_LEVEL || 'zero-leak') as 'strict' | 'permissive' | 'zero-leak';
+    const ollamaBaseUrl = process.env.OLLAMA_BASE_URL ?? 'http://localhost:11434';
+    const memoryDir = process.env.MEMORY_DIR ?? './memory';
+
+    const rawConsensus = process.env.CONSENSUS_WEIGHT_THRESHOLD;
+    const consensusWeight = rawConsensus !== undefined ? parseFloat(rawConsensus) : 0.75;
+    const validConsensus = Number.isNaN(consensusWeight) ? 0.75 : consensusWeight;
+
+    const sandboxIsolation = (process.env.SANDBOX_ISOLATION_LEVEL ?? 'zero-leak') as SystemEnvironmentConfig['SANDBOX_ISOLATION_LEVEL'];
+    if (!['strict', 'permissive', 'zero-leak'].includes(sandboxIsolation)) {
+      throw new Error(`Invalid SANDBOX_ISOLATION_LEVEL configuration: "${sandboxIsolation}". Allowed values: strict, permissive, zero-leak.`);
+    }
+
     const diagnosticsEnabled = process.env.DIAGNOSTICS_ENABLED !== 'false';
-    const logLevel = (process.env.LOG_LEVEL || 'info') as 'debug' | 'info' | 'warn' | 'error';
-    const port = parseInt(process.env.PORT || '3000', 10);
+
+    const logLevel = (process.env.LOG_LEVEL ?? 'info') as SystemEnvironmentConfig['LOG_LEVEL'];
+    if (!['debug', 'info', 'warn', 'error'].includes(logLevel)) {
+      throw new Error(`Invalid LOG_LEVEL configuration: "${logLevel}". Allowed values: debug, info, warn, error.`);
+    }
+
+    const rawPort = process.env.PORT;
+    const port = rawPort !== undefined ? parseInt(rawPort, 10) : 3000;
+    const validPort = Number.isNaN(port) ? 3000 : port;
 
     return {
       NODE_ENV: nodeEnv,
@@ -68,11 +87,11 @@ export class EnvironmentValidator {
       DEEPSEEK_API_KEY: deepseekApiKey,
       OLLAMA_BASE_URL: ollamaBaseUrl,
       MEMORY_DIR: memoryDir,
-      CONSENSUS_WEIGHT_THRESHOLD: Number.isNaN(consensusWeight) ? 0.75 : consensusWeight,
+      CONSENSUS_WEIGHT_THRESHOLD: validConsensus,
       SANDBOX_ISOLATION_LEVEL: sandboxIsolation,
       DIAGNOSTICS_ENABLED: diagnosticsEnabled,
       LOG_LEVEL: logLevel,
-      PORT: Number.isNaN(port) ? 3000 : port,
+      PORT: validPort,
     };
   }
 }
