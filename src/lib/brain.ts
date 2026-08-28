@@ -30,16 +30,28 @@ export interface PersistenceStrategy {
 }
 
 export interface BrainConfig {
-  strategy?: PersistenceStrategy;
-  shield?: any;
+  strategy?: PersistenceStrategy | null;
+  shield?: unknown;
   mutationTimeout?: number;
+}
+
+export interface StateChangeEventDetail {
+  from: BrainState;
+  to: BrainState;
+  timestamp: number;
+}
+
+export interface MutationEventDetail {
+  type: 'INGEST' | 'COMMIT';
+  version: number;
+  txId?: string;
 }
 
 /**
  * BrainTransaction: Ensures atomicity of DNA mutations.
  */
 export class BrainTransaction {
-  private mutations: Map<string, string | null> = new Map();
+  private readonly mutations: Map<string, string | null> = new Map();
   private committed: boolean = false;
   public readonly id: string = Math.random().toString(36).substring(2, 15);
 
@@ -80,20 +92,20 @@ export class BrainTransaction {
  */
 export class Brain extends EventTarget {
   private _state: BrainState = BrainState.OFFLINE;
-  private _substrate: Map<string, BrainChunk> = new Map();
+  private readonly _substrate: Map<string, BrainChunk> = new Map();
   private _binarySubstrate: Uint8Array | null = null;
   private _version: number = 0;
-  private _strategy: PersistenceStrategy | null = null;
-  private _shield: any = null;
+  private readonly _strategy: PersistenceStrategy | null;
+  private readonly _shield: unknown;
   private _lock: boolean = false;
-  private _mutationTimeout: number;
-  private _timeoutId: NodeJS.Timeout | null = null;
+  private readonly _mutationTimeout: number;
+  private _timeoutId: ReturnType<typeof setTimeout> | null = null;
 
   constructor(config: BrainConfig = {}) {
     super();
-    this._strategy = config.strategy || null;
-    this._shield = config.shield || null;
-    this._mutationTimeout = config.mutationTimeout || 30000; // Default 30 seconds
+    this._strategy = config.strategy ?? null;
+    this._shield = config.shield ?? null;
+    this._mutationTimeout = config.mutationTimeout ?? 30000; // Default 30 seconds
     this.transition(BrainState.BOOTING);
   }
 
@@ -109,7 +121,7 @@ export class Brain extends EventTarget {
     const oldState = this._state;
     this._state = newState;
     this.dispatchEvent(
-      new CustomEvent('state_change', {
+      new CustomEvent<StateChangeEventDetail>('state_change', {
         detail: { from: oldState, to: newState, timestamp: Date.now() },
       })
     );
@@ -155,7 +167,7 @@ export class Brain extends EventTarget {
       const now = Date.now();
       
       for (const chunk of decoded) {
-        if (!chunk.path || typeof chunk.content !== 'string') {
+        if (!chunk || typeof chunk.path !== 'string' || typeof chunk.content !== 'string') {
           throw new Error('Invalid chunk structure');
         }
         this._substrate.set(chunk.path, {
@@ -169,7 +181,7 @@ export class Brain extends EventTarget {
       this._binarySubstrate = this.base64ToBuffer(payload);
       this._version++;
       this.dispatchEvent(
-        new CustomEvent('mutation', { detail: { type: 'INGEST', version: this._version } })
+        new CustomEvent<MutationEventDetail>('mutation', { detail: { type: 'INGEST', version: this._version } })
       );
     } catch (error) {
       console.error('Substrate Ingestion Failure:', error);
@@ -224,7 +236,7 @@ export class Brain extends EventTarget {
       }
 
       this.dispatchEvent(
-        new CustomEvent('mutation', {
+        new CustomEvent<MutationEventDetail>('mutation', {
           detail: { type: 'COMMIT', txId: tx.id, version: this._version },
         })
       );
