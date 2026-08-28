@@ -2,17 +2,17 @@
 
 ## Overview
 
-The **DARLEK CANN v3.0** module serves as the high-performance interface for the Quantum Dialogue Engine. It seamlessly integrates real-time debate logic with advanced temporal prophecy tracking to deliver fluid, responsive state management across distributed nodes.
+The **DARLEK CANN v3.0** module functions as the high-performance interfacing layer for the Quantum Dialogue Engine. It seamlessly integrates real-time debate logic with advanced temporal prophecy tracking to deliver fluid, responsive state management across distributed cluster nodes.
 
 ---
 
 ## Core Workflow
 
-The execution pipeline operates across three primary stages:
+The execution pipeline operates sequentially across three primary stages:
 
 1. **State Detection**: Continuously monitors reactive flags (`isDebating`, `loadingDialogue`) to determine the active operational context.
 2. **Node Synthesis**: Dynamically switches execution threads between **Quantum Node Caan** and **Neural Node Jesus** based on real-time heuristic evaluations.
-3. **Temporal Feedback**: Updates the global `prophecyLevel` state via a gradient-accelerated progress bar rendering engine.
+3. **Temporal Feedback**: Updates the global `prophecyLevel` state utilizing a gradient-accelerated progress bar rendering engine.
 
 ---
 
@@ -37,6 +37,10 @@ import { useState, useEffect } from 'react';
 
 /**
  * Interface representing the operational state of the CANN engine.
+ * 
+ * @property {boolean} isDebating - Flag indicating active debate routines.
+ * @property {boolean} loadingDialogue - Flag indicating asynchronous dialogue loading status.
+ * @property {number} prophecyLevel - Current metric tracking temporal prophecy progression (0-100).
  */
 interface CannState {
   isDebating: boolean;
