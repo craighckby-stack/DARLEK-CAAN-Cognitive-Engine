@@ -1,263 +1,322 @@
-export interface Message {
-  id: string;
-  role: 'caan' | 'operator' | 'system';
-  content: string;
-  timestamp: Date;
-}
+/**
+ * @file src/lib/types.ts
+ * @module EMG Core v49 Neural Code and Documentation Optimizer Engine
+ * @description Comprehensive, type-safe, and memory-efficient type definitions 
+ * for CAAN System State, Evolution, Mutation Orchestration, and Multi-Agent Collaboration.
+ */
 
-export interface ApiKeys {
-  [key: string]: string | undefined;
-  github: string;
-  gemini?: string;
+// ─────────────────────────────────────────────
+// Core Communication & Identity Types
+// ─────────────────────────────────────────────
+
+export type MessageRole = 'caan' | 'operator' | 'system';
+
+export interface Message {
+  readonly id: string;
+  readonly role: MessageRole;
+  readonly content: string;
+  readonly timestamp: Date;
 }
 
 export type ConnectionStatusValue = 'idle' | 'testing' | 'connected' | 'error';
 
+export interface ApiKeys extends Record<string, string | undefined> {
+  readonly github: string;
+  readonly gemini?: string;
+}
+
 export interface ConnectionStatus {
-  github: ConnectionStatusValue;
-  gemini?: ConnectionStatusValue;
+  readonly github: ConnectionStatusValue;
+  readonly gemini?: ConnectionStatusValue;
 }
 
 export interface RepoConfig {
-  owner: string;
-  repo: string;
-  branch: string;
+  readonly owner: string;
+  readonly repo: string;
+  readonly branch: string;
+}
+
+// ─────────────────────────────────────────────
+// Metrics & System State
+// ─────────────────────────────────────────────
+
+export interface SaturationMetrics {
+  readonly structuralChange: number;
+  readonly semanticSaturation: number;
+  readonly velocity: number;
+  readonly identityPreservation: number;
+  readonly capabilityAlignment: number;
+  readonly crossFileImpact: number;
 }
 
 export interface SystemState {
-  setupComplete: boolean;
-  currentStep: number;
-  connectionStatus: ConnectionStatus;
-  apiKeys: ApiKeys;
-  repoConfig: RepoConfig;
-  evolutionCycle: number;
-  saturation: SaturationMetrics;
-  sessionStart: Date;
-  geminiGeoblocked?: boolean;
+  readonly setupComplete: boolean;
+  readonly currentStep: number;
+  readonly connectionStatus: ConnectionStatus;
+  readonly apiKeys: ApiKeys;
+  readonly repoConfig: RepoConfig;
+  readonly evolutionCycle: number;
+  readonly saturation: SaturationMetrics;
+  readonly sessionStart: Date;
+  readonly geminiGeoblocked?: boolean;
 }
 
-export interface SaturationMetrics {
-  structuralChange: number;
-  semanticSaturation: number;
-  velocity: number;
-  identityPreservation: number;
-  capabilityAlignment: number;
-  crossFileImpact: number;
-}
+export type EvolutionLogType = 
+  | 'SCAN' 
+  | 'MUTATE' 
+  | 'APPROVE' 
+  | 'REJECT' 
+  | 'ERROR' 
+  | 'WARNING' 
+  | 'HEALTH' 
+  | 'SYSTEM' 
+  | 'CONNECT' 
+  | 'BACKUP' 
+  | 'INFO';
 
 export interface EvolutionLogEntry {
-  id: string;
-  type: 'SCAN' | 'MUTATE' | 'APPROVE' | 'REJECT' | 'ERROR' | 'WARNING' | 'HEALTH' | 'SYSTEM' | 'CONNECT' | 'BACKUP' | 'INFO';
-  description: string;
-  timestamp: Date;
-  details?: string;
+  readonly id: string;
+  readonly type: EvolutionLogType;
+  readonly description: string;
+  readonly timestamp: Date;
+  readonly details?: string;
 }
+
+// ─────────────────────────────────────────────
+// GitHub & Repository Interaction Types
+// ─────────────────────────────────────────────
 
 export interface GitHubFile {
-  path: string;
-  size: number;
-  type: string;
-  sha?: string;
-  content?: string;
-}
-
-export interface MutationProposal {
-  analysis: string;
-  proposedCode: string;
-  riskScore: number;
-  affectedFiles: string[];
-}
-
-export interface HealthCheckResult {
-  metrics: SaturationMetrics;
-  overallHealth: 'healthy' | 'warning' | 'critical';
-}
-
-export interface ChatRequestBody {
-  message: string;
-  history: Message[];
-  systemState: SystemState;
-}
-
-export interface TestConnectionBody {
-  provider: 'github' | 'gemini';
-  key: string;
-}
-
-export interface ScanRepoBody {
-  token: string;
-  owner: string;
-  repo: string;
-  branch: string;
-}
-
-export interface ReadFileBody {
-  token: string;
-  owner: string;
-  repo: string;
-  branch: string;
-  path: string;
-}
-
-export interface ProposeBody {
-  fileContent: string;
-  filePath: string;
-  apiKeys?: ApiKeys;
-  rejectionMemory?: Array<{ filePath: string; reason: string; analysis: string; riskScore: number }>;
-}
-
-export interface DebateAgent {
-  id: string;
-  name: string;
-  status: 'active' | 'idle';
-  color: string;
-  icon: string;
-}
-
-export interface WriteFileBody {
-  token: string;
-  owner: string;
-  repo: string;
-  branch: string;
-  path: string;
-  content: string;
-  sha: string;
-  commitMessage?: string;
-}
-
-export interface PendingMutation {
-  id: string;
-  filePath: string;
-  fileSha?: string;
-  originalContent: string;
-  proposedCode: string;
-  analysis: string;
-  riskScore: number;
-  affectedFiles: string[];
-  newFiles?: Array<{ path: string; content: string }>;
-  status: 'pending' | 'approved' | 'rejected' | 'applied';
-  timestamp: Date;
-  targetBranch?: string;
-}
-
-export interface CoherenceGateResult {
-  passed: boolean;
-  reason: string;
-  riskScore: number;
-  saturationWarning: boolean;
-}
-
-export interface DebateState {
-  agents: DebateAgent[];
-  currentTopic: string;
-  isActive: boolean;
-}
-
-export interface AgentVote {
-  agentId: string;
-  agentName: string;
-  vote: 'approve' | 'reject' | 'abstain';
-  confidence: number;
-  reasoning: string;
-  provider: string;
-}
-
-export interface DebateResult {
-  success: boolean;
-  votes: AgentVote[];
-  consensus: 'APPROVE' | 'REJECT' | 'TIED';
-  approvals: number;
-  rejections: number;
-  abstains: number;
-  summary: string;
-}
-
-export interface RejectionMemory {
-  id: string;
-  filePath: string;
-  reason: string;
-  analysis: string;
-  riskScore: number;
-  timestamp: Date;
+  readonly path: string;
+  readonly size: number;
+  readonly type: string;
+  readonly sha?: string;
+  readonly content?: string;
 }
 
 export interface BranchInfo {
-  name: string;
-  default: boolean;
+  readonly name: string;
+  readonly default: boolean;
+}
+
+// ─────────────────────────────────────────────
+// Mutation & Coherence Types
+// ─────────────────────────────────────────────
+
+export interface RejectionMemoryItem {
+  readonly filePath: string;
+  readonly reason: string;
+  readonly analysis: string;
+  readonly riskScore: number;
+}
+
+export interface MutationProposal {
+  readonly analysis: string;
+  readonly proposedCode: string;
+  readonly riskScore: number;
+  readonly affectedFiles: readonly string[];
+}
+
+export type MutationStatus = 'pending' | 'approved' | 'rejected' | 'applied';
+
+export interface PendingMutation {
+  readonly id: string;
+  readonly filePath: string;
+  readonly fileSha?: string;
+  readonly originalContent: string;
+  readonly proposedCode: string;
+  readonly analysis: string;
+  readonly riskScore: number;
+  readonly affectedFiles: readonly string[];
+  readonly newFiles?: ReadonlyArray<{ readonly path: string; readonly content: string }>;
+  readonly status: MutationStatus;
+  readonly timestamp: Date;
+  readonly targetBranch?: string;
+}
+
+export interface CoherenceGateResult {
+  readonly passed: boolean;
+  readonly reason: string;
+  readonly riskScore: number;
+  readonly saturationWarning: boolean;
+}
+
+export type HealthStatus = 'healthy' | 'warning' | 'critical';
+
+export interface HealthCheckResult {
+  readonly metrics: SaturationMetrics;
+  readonly overallHealth: HealthStatus;
+}
+
+export interface RejectionMemory {
+  readonly id: string;
+  readonly filePath: string;
+  readonly reason: string;
+  readonly analysis: string;
+  readonly riskScore: number;
+  readonly timestamp: Date;
+}
+
+// ─────────────────────────────────────────────
+// Request Body Payloads
+// ─────────────────────────────────────────────
+
+export interface ChatRequestBody {
+  readonly message: string;
+  readonly history: readonly Message[];
+  readonly systemState: SystemState;
+}
+
+export interface TestConnectionBody {
+  readonly provider: 'github' | 'gemini';
+  readonly key: string;
+}
+
+export interface ScanRepoBody {
+  readonly token: string;
+  readonly owner: string;
+  readonly repo: string;
+  readonly branch: string;
+}
+
+export interface ReadFileBody {
+  readonly token: string;
+  readonly owner: string;
+  readonly repo: string;
+  readonly branch: string;
+  readonly path: string;
+}
+
+export interface ProposeBody {
+  readonly fileContent: string;
+  readonly filePath: string;
+  readonly apiKeys?: ApiKeys;
+  readonly rejectionMemory?: readonly RejectionMemoryItem[];
+}
+
+export interface WriteFileBody {
+  readonly token: string;
+  readonly owner: string;
+  readonly repo: string;
+  readonly branch: string;
+  readonly path: string;
+  readonly content: string;
+  readonly sha: string;
+  readonly commitMessage?: string;
+}
+
+// ─────────────────────────────────────────────
+// Debate & Multi-Agent Types
+// ─────────────────────────────────────────────
+
+export interface DebateAgent {
+  readonly id: string;
+  readonly name: string;
+  readonly status: 'active' | 'idle';
+  readonly color: string;
+  readonly icon: string;
+}
+
+export interface DebateState {
+  readonly agents: readonly DebateAgent[];
+  readonly currentTopic: string;
+  readonly isActive: boolean;
+}
+
+export type VoteType = 'approve' | 'reject' | 'abstain';
+
+export interface AgentVote {
+  readonly agentId: string;
+  readonly agentName: string;
+  readonly vote: VoteType;
+  readonly confidence: number;
+  readonly reasoning: string;
+  readonly provider: string;
+}
+
+export type ConsensusType = 'APPROVE' | 'REJECT' | 'TIED';
+
+export interface DebateResult {
+  readonly success: boolean;
+  readonly votes: readonly AgentVote[];
+  readonly consensus: ConsensusType;
+  readonly approvals: number;
+  readonly rejections: number;
+  readonly abstains: number;
+  readonly summary: string;
+}
+
+export interface StaticIssue {
+  readonly type: string;
+  readonly severity: string;
+  readonly message: string;
 }
 
 export interface ImpactAnalysis {
-  staticIssues: Array<{ type: string; severity: string; message: string }>;
-  llmAnalysis: string;
-  llmProvider: string;
-  totalIssues: number;
-  highSeverity: number;
-  mediumSeverity: number;
-  lowSeverity: number;
-  overallRisk: string;
-  summary: string;
+  readonly staticIssues: readonly StaticIssue[];
+  readonly llmAnalysis: string;
+  readonly llmProvider: string;
+  readonly totalIssues: number;
+  readonly highSeverity: number;
+  readonly mediumSeverity: number;
+  readonly lowSeverity: number;
+  readonly overallRisk: string;
+  readonly summary: string;
 }
 
 // ─────────────────────────────────────────────
 // Agent Orchestra Types
-// ────────────���────────────────────────────────
+// ─────────────────────────────────────────────
 
 export type OrchestraMode = 'parallel' | 'debate';
 
 export type OrchestraAgentStatus = 'idle' | 'thinking' | 'responded' | 'error';
 
 export interface OrchestraAgentConfig {
-  id: string;
-  name: string;
-  color: string;
-  icon: string;
-  systemInstruction: string;
+  readonly id: string;
+  readonly name: string;
+  readonly color: string;
+  readonly icon: string;
+  readonly systemInstruction: string;
 }
 
 export interface OrchestraAgentResult {
-  agentId: string;
-  agentName: string;
-  status: OrchestraAgentStatus;
-  response: string;
-  provider: string;
-  timestamp: string;
-  latencyMs: number;
+  readonly agentId: string;
+  readonly agentName: string;
+  readonly status: OrchestraAgentStatus;
+  readonly response: string;
+  readonly provider: string;
+  readonly timestamp: string;
+  readonly latencyMs: number;
 }
 
 export interface OrchestraDebateTurn {
-  round: number;
-  responses: OrchestraAgentResult[];
+  readonly round: number;
+  readonly responses: readonly OrchestraAgentResult[];
 }
 
+export type DiagnosticLogType = 'call' | 'response' | 'error' | 'info';
+
 export interface OrchestraDiagnosticLog {
-  id: string;
-  timestamp: string;
-  type: 'call' | 'response' | 'error' | 'info';
-  agent?: string;
-  provider?: string;
-  message: string;
-  latencyMs?: number;
+  readonly id: string;
+  readonly timestamp: string;
+  readonly type: DiagnosticLogType;
+  readonly agent?: string;
+  readonly provider?: string;
+  readonly message: string;
+  readonly latencyMs?: number;
 }
 
 export interface OrchestraState {
-  isActive: boolean;
-  mode: OrchestraMode;
-  topic: string;
-  rounds: number;
-  isRunning: boolean;
-  agentConfigs: OrchestraAgentConfig[];
-  agents: Array<{
-    id: string;
-    name: string;
-    color: string;
-    icon: string;
-    status: OrchestraAgentStatus;
-    response: string;
-    provider: string;
-    latencyMs: number;
-  }>;
-  debateTurns: OrchestraDebateTurn[];
-  diagnosticLogs: OrchestraDiagnosticLog[];
-  showConfigModal: boolean;
-  showDiagnostic: boolean;
+  readonly isActive: boolean;
+  readonly mode: OrchestraMode;
+  readonly topic: string;
+  readonly rounds: number;
+  readonly isRunning: boolean;
+  readonly agentConfigs: readonly OrchestraAgentConfig[];
+  readonly agents: readonly OrchestraAgentResult[];
+  readonly debateTurns: readonly OrchestraDebateTurn[];
+  readonly diagnosticLogs: readonly OrchestraDiagnosticLog[];
+  readonly showConfigModal: boolean;
+  readonly showDiagnostic: boolean;
 }
