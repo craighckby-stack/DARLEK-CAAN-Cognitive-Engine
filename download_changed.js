@@ -23,7 +23,7 @@ const USER_AGENT = 'EMG-Core-v49-Neural-Code-Optimizer';
 const HTTP_TIMEOUT_MS = 15000;
 
 /**
- * Safely loads and parses the remote blobs inventory.
+ * Safely loads and parses the remote blobs inventory with robust validation.
  * @returns {RemoteBlob[]} Array of validated RemoteBlob objects.
  */
 function loadRemoteBlobs() {
@@ -34,6 +34,10 @@ function loadRemoteBlobs() {
       return [];
     }
     return parsed.filter(
+      /**
+       * @param {any} item
+       * @returns {item is RemoteBlob}
+       */
       (item) => item !== null && typeof item === 'object' && typeof item.path === 'string'
     );
   } catch (error) {
@@ -90,6 +94,13 @@ async function processBlobsSequentially() {
 
   for (const fileObj of remoteBlobs) {
     if (!fileObj || typeof fileObj.path !== 'string') {
+      continue;
+    }
+
+    // Secure path traversal protection
+    const normalizedPath = path.normalize(fileObj.path);
+    if (normalizedPath.startsWith('..') || path.isAbsolute(normalizedPath)) {
+      console.warn(`Warning: Skipped unsafe file path detected: "${fileObj.path}"`);
       continue;
     }
 
