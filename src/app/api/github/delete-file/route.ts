@@ -1,19 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { safeReqJson } from '@/lib/safe-json';
 
-// Helper to fetch the actual file SHA from GitHub if not provided or to ensure it is accurate
-async function getFileSha(token: string, owner: string, repo: string, branch: string, filePath: string): Promise<string | null> {
+export const dynamic = 'force-dynamic';
+
+interface DeleteFileRequestBody {
+  token?: string;
+  owner?: string;
+  repo?: string;
+  branch?: string;
+  path?: string;
+  sha?: string;
+  commitMessage?: string;
+}
+
+interface GitHubContentResponse {
+  sha?: string;
+}
+
+interface GitHubDeleteResponse {
+  commit?: {
+    sha?: string;
+    html_url?: string;
+  };
+}
+
+/**
+ * Fetches the actual file SHA from GitHub if not provided or to ensure accuracy.
+ */
+async function getFileSha(
+  token: string,
+  owner: string,
+  repo: string,
+  branch: string,
+  filePath: string
+): Promise<string | null> {
   try {
     const cleanPath = filePath.replace(/^\/+|\/+$/g, '');
     const encodedPath = cleanPath.split('/').map(encodeURIComponent).join('/');
     const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodedPath}?ref=${encodeURIComponent(branch)}`;
+    
     const res = await fetch(url, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/vnd.github.v3+json',
       },
     });
+
     if (res.ok) {
-      const data = await res.json();
+      const data = (await res.json()) as GitHubContentResponse;
       return data.sha || null;
     }
     return null;
@@ -22,17 +56,13 @@ async function getFileSha(token: string, owner: string, repo: string, branch: st
   }
 }
 
-import { safeReqJson } from '@/lib/safe-json';
-
-export const dynamic = 'force-dynamic';
-
-export async function GET() {
+export async function GET(): Promise<NextResponse> {
   return NextResponse.json({ status: 'online', service: 'GITHUB_DELETE_FILE_API' });
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
-    const body = await safeReqJson(req, {});
+    const body = (await safeReqJson(req, {})) as DeleteFileRequestBody;
     const { token, owner, repo, branch, path: filePath, sha, commitMessage } = body;
 
     if (!token || !owner || !repo || !branch || !filePath) {
@@ -42,7 +72,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Resolve accurate SHA from GitHub if missing or falsy
     let finalSha = sha || null;
     if (!finalSha) {
       const fetchedSha = await getFileSha(token, owner, repo, branch, filePath);
@@ -52,7 +81,6 @@ export async function POST(req: NextRequest) {
     }
 
     if (!finalSha) {
-      // If file doesn't exist, we don't need to delete it. Return success!
       return NextResponse.json({
         success: true,
         message: 'File did not exist, no deletion necessary.',
@@ -63,7 +91,7 @@ export async function POST(req: NextRequest) {
     const encodedPath = cleanPath.split('/').map(encodeURIComponent).join('/');
     const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodedPath}`;
 
-    const bodyPayload: Record<string, unknown> = {
+    const bodyPayload = {
       message: commitMessage || `[DARLEK CANN] Delete ${filePath}`,
       sha: finalSha,
       branch,
@@ -87,14 +115,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const data = await res.json();
+    const data = (await res.json()) as GitHubDeleteResponse;
 
     return NextResponse.json({
       success: true,
       commitSha: data.commit?.sha,
       commitUrl: data.commit?.html_url,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Delete file error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
