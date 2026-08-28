@@ -1,7 +1,7 @@
 # Engine Architecture: DARLEK-CANN-CHESS
 
 ## Overview
-This module implements a high-performance Minimax-based AI engine utilizing Alpha-Beta pruning. It is explicitly optimized for the **CAAN** (Chaotic/Aggressive) and **JESUS** (Serene/Community) dynamic personality matrices.
+This module implements a high-performance Minimax-based chess AI engine utilizing Alpha-Beta pruning. It is explicitly optimized for the **CAAN** (Chaotic/Aggressive) and **JESUS** (Serene/Community) dynamic personality matrices.
 
 ## Technical Workflow
 1. **Input Acquisition**: Parses the incoming FEN (Forsyth-Edwards Notation) string and sets the corresponding difficulty level.
@@ -14,13 +14,20 @@ This module implements a high-performance Minimax-based AI engine utilizing Alph
 - **UI Responsiveness**: Utilizes a constrained depth-limited search (depths 1–3) to prevent UI thread blocking and ensure seamless user interaction.
 
 ```typescript
-// Example integration of the Brain Interface
+/**
+ * Configuration interface for the DARLEK-CANN-CHESS engine.
+ */
 interface EngineConfig {
   brainType: BrainType;
   depth: number;
   personality: 'CAAN' | 'JESUS';
 }
 
+/**
+ * Initializes and bootstraps the chess engine with the specified configuration.
+ * 
+ * @param config - The runtime configuration parameters for the engine.
+ */
 function initializeEngine(config: EngineConfig): void {
   // Engine bootstrap implementation
 }
