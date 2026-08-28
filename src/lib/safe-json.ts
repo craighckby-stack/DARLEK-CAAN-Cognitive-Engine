@@ -1,14 +1,30 @@
-import { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+/**
+ * Interface for standard fetch JSON return structure
+ */
+export interface SafeFetchResult<T> {
+  success: boolean;
+  data: T | null;
+  status: number;
+  error?: string;
+}
 
 /**
  * Safely parse a JSON string with a fallback.
  */
-export function safeParseJson<T = any>(str: string | null | undefined, fallback: any = {}): T {
-  if (!str || typeof str !== 'string' || !str.trim()) {
+export function safeParseJson<T = unknown>(str: string | null | undefined, fallback: T = {} as T): T {
+  if (!str || typeof str !== 'string') {
     return fallback;
   }
+  
+  const trimmed = str.trim();
+  if (!trimmed) {
+    return fallback;
+  }
+
   try {
-    return JSON.parse(str) as T;
+    return JSON.parse(trimmed) as T;
   } catch {
     return fallback;
   }
@@ -17,13 +33,19 @@ export function safeParseJson<T = any>(str: string | null | undefined, fallback:
 /**
  * Safely parse a Request body (e.g. NextRequest) without throwing SyntaxError on empty body.
  */
-export async function safeReqJson<T = any>(req: Request | NextRequest, fallback: any = {}): Promise<T> {
+export async function safeReqJson<T = unknown>(req: Request | NextRequest, fallback: T = {} as T): Promise<T> {
   try {
     const text = await req.text();
-    if (!text || !text.trim()) {
+    if (!text) {
       return fallback;
     }
-    return JSON.parse(text) as T;
+    
+    const trimmed = text.trim();
+    if (!trimmed) {
+      return fallback;
+    }
+
+    return JSON.parse(trimmed) as T;
   } catch {
     return fallback;
   }
@@ -32,16 +54,30 @@ export async function safeReqJson<T = any>(req: Request | NextRequest, fallback:
 /**
  * Safely parse a fetch Response body without throwing SyntaxError on non-JSON or empty response.
  */
-export async function safeResponseJson<T = any>(res: Response, fallback: any = {}): Promise<T> {
+export async function safeResponseJson<T = unknown>(res: Response, fallback: T = {} as T): Promise<T> {
   try {
     const text = await res.text();
-    if (!text || !text.trim()) {
+    if (!text) {
       return fallback;
     }
+    
+    const trimmed = text.trim();
+    if (!trimmed) {
+      return fallback;
+    }
+
     try {
-      return JSON.parse(text) as T;
+      return JSON.parse(trimmed) as T;
     } catch {
-      return { ...fallback, error: text.slice(0, 200), rawText: text } as any;
+      // In case of non-JSON response, augment fallback with raw diagnostics safely
+      if (typeof fallback === 'object' && fallback !== null) {
+        return { 
+          ...fallback, 
+          error: trimmed.slice(0, 200), 
+          rawText: trimmed 
+        } as unknown as T;
+      }
+      return fallback;
     }
   } catch {
     return fallback;
@@ -51,10 +87,14 @@ export async function safeResponseJson<T = any>(res: Response, fallback: any = {
 /**
  * Safely fetch and parse JSON from an API endpoint, guarding against HTML error pages and network anomalies.
  */
-export async function safeFetchJson<T = any>(url: string, options?: RequestInit): Promise<{ success: boolean; data: T | null; status: number; error?: string }> {
+export async function safeFetchJson<T = unknown>(
+  url: string, 
+  options?: RequestInit
+): Promise<SafeFetchResult<T>> {
   try {
     const res = await fetch(url, options);
     const text = await res.text();
+    
     if (!text || !text.trim()) {
       return {
         success: res.ok,
@@ -63,16 +103,21 @@ export async function safeFetchJson<T = any>(url: string, options?: RequestInit)
         error: res.ok ? undefined : `HTTP ${res.status} Empty Response`,
       };
     }
+
+    const trimmed = text.trim();
+
     try {
-      const json = JSON.parse(text);
+      const json = JSON.parse(trimmed);
+      const isSuccess = res.ok && (json?.success !== false && json?.error === undefined);
+      
       return {
-        success: res.ok && (json.success !== false && json.error === undefined),
+        success: isSuccess,
         data: json as T,
         status: res.status,
-        error: json.error || (res.ok ? undefined : `HTTP ${res.status}`),
+        error: json?.error || (res.ok ? undefined : `HTTP ${res.status}`),
       };
     } catch {
-      // HTML error page or non-JSON response
+      // HTML error page or non-JSON response captured securely
       return {
         success: false,
         data: null,
@@ -80,12 +125,13 @@ export async function safeFetchJson<T = any>(url: string, options?: RequestInit)
         error: `Server error (${res.status}): Non-JSON response received (possible route crash or payload limit).`,
       };
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : 'Network request failed';
     return {
       success: false,
       data: null,
       status: 500,
-      error: err?.message || 'Network request failed',
+      error: errorMessage,
     };
   }
 }
