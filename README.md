@@ -1,3 +1,7 @@
+emg fixed it woot.
+
+https://ai.studio/apps/28b5e1aa-99d6-4c55-90cc-34608023c592
+
 # 🚀 DARLEK CAAN — Autonomous Code Evolution & AI Command Center
 
 [![Live App](https://img.shields.io/badge/Live_App-Open_Application-00FF88?style=for-the-badge&logo=googlecloud)](https://ais-dev-amubz4v3czr3772fnvrcru-483535245139.asia-southeast1.run.app)
