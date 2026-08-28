@@ -1,54 +1,64 @@
 # DARLEK CANN v3.0 | API Ingress Layer
 
-## 🗲 OMEGA-EMERGENT ARCHITECTURE
+## 🗲 Omega-Emergent Architecture
 High-performance ingestion module optimized for real-time system diagnostics and agentic swarm orchestration. This layer serves as the primary bridge between the `sovereign-kernel` and the `unitary-core` repositories for autonomous code evolution.
 
-## ⚙ CORE PROTOCOLS
-- **VALIDATION**: Mandatory execution against `ReadFileSchema` to ensure strict payload compliance.
-- **LATENCY PROTECTION**: Strict 15s execution TTL enforced for all asynchronous fetch operations.
-- **TRANSFORMATION**: Optimized Base64 decoding paired with automated metadata extraction pipelines.
-- **VERSIONING**: SHA-based tracking implemented for immutable state integrity and auditability.
+## ⚙ Core Protocols
+- **Validation**: Mandatory execution against `ReadFileSchema` to ensure strict payload compliance.
+- **Latency Protection**: Strict 15-second execution TTL enforced for all asynchronous fetch operations.
+- **Transformation**: Optimized Base64 decoding paired with automated metadata extraction pipelines.
+- **Versioning**: SHA-based tracking implemented for immutable state integrity and auditability.
 
-## ⬢ ENDPOINTS
+## ⬢ Endpoints
 
-### [GET] `/api`
-- **FUNCTION**: Telemetry Ingestion.
-- **OUTPUT**: Real-time system health metrics, node performance indicators, and active swarm status.
+### `GET /api`
+- **Function**: Telemetry Ingestion.
+- **Output**: Real-time system health metrics, node performance indicators, and active swarm status.
 
 ```typescript
-// Example GET Request
+// Example GET Request with diagnostic context headers
 fetch('/api', {
   method: 'GET',
   headers: {
     'X-Agent-Context': 'diagnostic-node-01'
   }
 })
-.then(res => res.json())
-.then(data => console.log(data));
+  .then((res) => res.json())
+  .then((data) => console.log('Telemetry Data:', data))
+  .catch((error) => console.error('Telemetry Error:', error));
 ```
 
-### [POST] `/api`
-- **FUNCTION**: Swarm Synchronization.
-- **INPUT**: Agent-orchestration payloads formulated for collective code refactoring and mutation.
+### `POST /api`
+- **Function**: Swarm Synchronization.
+- **Input**: Agent-orchestration payloads formulated for collective code refactoring and mutation.
 
 ```typescript
-// Example POST Request Payload
-const payload = {
+// Example POST Request Payload for swarm mutation
+interface SwarmPayload {
+  action: 'REFRACTOR_MUTATE';
+  target: string;
+  schemaVersion: string;
+}
+
+const payload: SwarmPayload = {
   action: 'REFRACTOR_MUTATE',
   target: 'sovereign-kernel',
-  schemaVersion: 'v3.0'
+  schemaVersion: 'v3.0',
 };
 
 fetch('/api', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'X-Agent-Context': 'swarm-leader-alpha'
+    'X-Agent-Context': 'swarm-leader-alpha',
   },
-  body: JSON.stringify(payload)
-});
+  body: JSON.stringify(payload),
+})
+  .then((res) => res.json())
+  .then((data) => console.log('Synchronization Success:', data))
+  .catch((error) => console.error('Synchronization Error:', error));
 ```
 
-## ⚔ INTEGRATION REQUIREMENTS
-- **HEADERS**: The `X-Agent-Context` header is **MANDATORY** for all incoming requests. Failure to provide valid context results in immediate request termination.
-- **INTERFACE**: Direct GitHub REST API v3 integration utilized for granular, file-level mutation and comprehensive state analysis.
+## ⚔ Integration Requirements
+- **Headers**: The `X-Agent-Context` header is **MANDATORY** for all incoming requests. Failure to provide valid context results in immediate request termination.
+- **Interface**: Direct GitHub REST API v3 integration utilized for granular, file-level mutation and comprehensive state analysis.
