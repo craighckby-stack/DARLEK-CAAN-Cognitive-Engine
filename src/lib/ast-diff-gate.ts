@@ -33,7 +33,7 @@ export interface AstDiffResult {
 }
 
 // Banned self-referential terms that LLMs inadvertently inject into target repos
-const SYSTEM_PERSONA_BRANDING_TERMS = [
+const SYSTEM_PERSONA_BRANDING_TERMS: readonly string[] = [
   'dalek caan',
   'dalek_caan',
   'dalekcaan',
@@ -47,67 +47,77 @@ const SYSTEM_PERSONA_BRANDING_TERMS = [
   'dalek caan jarvis',
 ];
 
+// Pre-compiled regex cache and keyword sets for high-performance AST parsing and tokenization
+const KEYWORDS: ReadonlySet<string> = new Set([
+  'if', 'else', 'for', 'while', 'switch', 'catch', 'constructor',
+  'return', 'type', 'interface', 'import', 'export', 'class', 'from', 'as', 'new'
+]);
+
+const PYTHON_CLASS_REGEX = /class\s+([a-zA-Z_]\w*)/g;
+const PYTHON_DEF_REGEX = /def\s+([a-zA-Z_]\w*)/g;
+const TS_CLASS_REGEX = /(?:export\s+)?class\s+([a-zA-Z_]\w*)/g;
+const TS_INTERFACE_REGEX = /(?:export\s+)?(?:interface|type)\s+([a-zA-Z_]\w*)/g;
+const TS_FN_REGEXES: readonly RegExp[] = [
+  /(?:export\s+)?(?:async\s+)?function\s+([a-zA-Z_]\w*)/g,
+  /(?:export\s+)?(?:const|let|var)\s+([a-zA-Z_]\w*)\s*=\s*(?:async\s*)?(?:<[^>]*>)?\s*(?:\([^)]*\)|[a-zA-Z_]\w*)\s*(?::\s*[^=]+)?\s*=>/g,
+  /(?:public|private|protected|static|async|\s)+\s+([a-zA-Z_]\w*)\s*(?:<[^>]*>)?\s*\(/g,
+];
+
 /**
- * Extracts top-level AST symbols (functions, classes, interfaces, types)
+ * Extracts top-level AST symbols (functions, classes, interfaces, types) with maximized efficiency.
  */
 export function parseAstSymbols(code: string, isPython: boolean): AstSymbol[] {
+  if (typeof code !== 'string') return [];
+  
   const symbols: AstSymbol[] = [];
   const seen = new Set<string>();
 
   if (isPython) {
-    // Classes
-    const classRegex = /class\s+([a-zA-Z_]\w*)/g;
-    let match;
-    while ((match = classRegex.exec(code)) !== null) {
-      if (!seen.has(match[1])) {
-        seen.add(match[1]);
-        symbols.push({ name: match[1], type: 'class' });
+    let match: RegExpExecArray | null;
+    
+    PYTHON_CLASS_REGEX.lastIndex = 0;
+    while ((match = PYTHON_CLASS_REGEX.exec(code)) !== null) {
+      const name = match[1];
+      if (name && !seen.has(name)) {
+        seen.add(name);
+        symbols.push({ name, type: 'class' });
       }
     }
 
-    // Defs
-    const defRegex = /def\s+([a-zA-Z_]\w*)/g;
-    while ((match = defRegex.exec(code)) !== null) {
-      if (!seen.has(match[1])) {
-        seen.add(match[1]);
-        symbols.push({ name: match[1], type: 'function' });
+    PYTHON_DEF_REGEX.lastIndex = 0;
+    while ((match = PYTHON_DEF_REGEX.exec(code)) !== null) {
+      const name = match[1];
+      if (name && !seen.has(name)) {
+        seen.add(name);
+        symbols.push({ name, type: 'function' });
       }
     }
   } else {
-    // TS/JS Classes
-    const classRegex = /(?:export\s+)?class\s+([a-zA-Z_]\w*)/g;
-    let match;
-    while ((match = classRegex.exec(code)) !== null) {
-      if (!seen.has(match[1])) {
-        seen.add(match[1]);
-        symbols.push({ name: match[1], type: 'class' });
+    let match: RegExpExecArray | null;
+
+    TS_CLASS_REGEX.lastIndex = 0;
+    while ((match = TS_CLASS_REGEX.exec(code)) !== null) {
+      const name = match[1];
+      if (name && !seen.has(name)) {
+        seen.add(name);
+        symbols.push({ name, type: 'class' });
       }
     }
 
-    // TS Interfaces & Types
-    const interfaceRegex = /(?:export\s+)?(?:interface|type)\s+([a-zA-Z_]\w*)/g;
-    while ((match = interfaceRegex.exec(code)) !== null) {
-      if (!seen.has(match[1])) {
-        seen.add(match[1]);
-        symbols.push({ name: match[1], type: 'interface' });
+    TS_INTERFACE_REGEX.lastIndex = 0;
+    while ((match = TS_INTERFACE_REGEX.exec(code)) !== null) {
+      const name = match[1];
+      if (name && !seen.has(name)) {
+        seen.add(name);
+        symbols.push({ name, type: 'interface' });
       }
     }
 
-    // Functions
-    const fnRegexes = [
-      /(?:export\s+)?(?:async\s+)?function\s+([a-zA-Z_]\w*)/g,
-      /(?:export\s+)?(?:const|let|var)\s+([a-zA-Z_]\w*)\s*=\s*(?:async\s*)?(?:<[^>]*>)?\s*(?:\([^)]*\)|[a-zA-Z_]\w*)\s*(?::\s*[^=]+)?\s*=>/g,
-      /(?:public|private|protected|static|async|\s)+\s+([a-zA-Z_]\w*)\s*(?:<[^>]*>)?\s*\(/g,
-    ];
-
-    for (const regex of fnRegexes) {
+    for (const regex of TS_FN_REGEXES) {
+      regex.lastIndex = 0;
       while ((match = regex.exec(code)) !== null) {
         const name = match[1];
-        const keywords = new Set([
-          'if', 'else', 'for', 'while', 'switch', 'catch', 'constructor',
-          'return', 'type', 'interface', 'import', 'export', 'class', 'from', 'as', 'new'
-        ]);
-        if (name && !keywords.has(name) && !seen.has(name) && name.length > 1) {
+        if (name && !KEYWORDS.has(name) && !seen.has(name) && name.length > 1) {
           seen.add(name);
           symbols.push({ name, type: 'function' });
         }
@@ -119,10 +129,12 @@ export function parseAstSymbols(code: string, isPython: boolean): AstSymbol[] {
 }
 
 /**
- * Calculates token/syntax AST structural drift ratio using normalized token n-grams
+ * Calculates token/syntax AST structural drift ratio using normalized token n-grams and memory-efficient transforms.
  */
 export function calculateAstDriftRatio(originalCode: string, proposedCode: string): number {
-  const tokenize = (src: string) =>
+  if (typeof originalCode !== 'string' || typeof proposedCode !== 'string') return 0;
+
+  const tokenize = (src: string): string[] =>
     src
       .replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, '') // remove comments
       .replace(/#.*/g, '')
@@ -139,8 +151,8 @@ export function calculateAstDriftRatio(originalCode: string, proposedCode: strin
   const origSet = new Set(origTokens);
   let matched = 0;
 
-  for (const token of propTokens) {
-    if (origSet.has(token)) {
+  for (let i = 0, len = propTokens.length; i < len; i++) {
+    if (origSet.has(propTokens[i])) {
       matched++;
     }
   }
@@ -150,15 +162,18 @@ export function calculateAstDriftRatio(originalCode: string, proposedCode: strin
 }
 
 /**
- * Checks if system persona/branding terms were injected into code where they didn't exist in original
+ * Checks if system persona/branding terms were injected into code where they didn't exist in original.
  */
 export function detectBrandingInjection(originalCode: string, proposedCode: string): string[] {
+  if (typeof originalCode !== 'string' || typeof proposedCode !== 'string') return [];
+
   const origLower = originalCode.toLowerCase();
   const propLower = proposedCode.toLowerCase();
 
   const injected: string[] = [];
 
-  for (const term of SYSTEM_PERSONA_BRANDING_TERMS) {
+  for (let i = 0, len = SYSTEM_PERSONA_BRANDING_TERMS.length; i < len; i++) {
+    const term = SYSTEM_PERSONA_BRANDING_TERMS[i];
     if (!origLower.includes(term) && propLower.includes(term)) {
       injected.push(term);
     }
@@ -168,20 +183,24 @@ export function detectBrandingInjection(originalCode: string, proposedCode: stri
 }
 
 /**
- * Main AST Diff Gate Verification Procedure
+ * Main AST Diff Gate Verification Procedure with robust defensive error handling and high type-safety.
  */
 export function runAstDiffGate(
   originalCode: string,
   proposedCode: string,
   filePath: string
 ): AstDiffResult {
-  const isPython = filePath.endsWith('.py');
+  const safeOriginal = typeof originalCode === 'string' ? originalCode : '';
+  const safeProposed = typeof proposedCode === 'string' ? proposedCode : '';
+  const safeFilePath = typeof filePath === 'string' ? filePath : '';
+
+  const isPython = safeFilePath.endsWith('.py');
   const violations: AstDiffResult['violations'] = [];
   let astScore = 100;
 
   // 1. Symbol Map Extraction & Comparison
-  const origSymbols = parseAstSymbols(originalCode, isPython);
-  const propSymbols = parseAstSymbols(proposedCode, isPython);
+  const origSymbols = parseAstSymbols(safeOriginal, isPython);
+  const propSymbols = parseAstSymbols(safeProposed, isPython);
 
   const propSymbolNames = new Set(propSymbols.map((s) => s.name));
   const missingSymbols = origSymbols.filter((s) => !propSymbolNames.has(s.name));
@@ -208,7 +227,7 @@ export function runAstDiffGate(
   }
 
   // 2. Branding & Self-Referential Injection Check
-  const brandingInjections = detectBrandingInjection(originalCode, proposedCode);
+  const brandingInjections = detectBrandingInjection(safeOriginal, safeProposed);
   if (brandingInjections.length > 0) {
     astScore -= 10;
     violations.push({
@@ -219,15 +238,15 @@ export function runAstDiffGate(
   }
 
   // 3. AST Structural Drift Ratio Check
-  const driftRatio = calculateAstDriftRatio(originalCode, proposedCode);
-  if (originalCode.length > 300 && driftRatio > 0.92 && missingSymbols.length >= 3 && origSymbols.length >= 4) {
+  const driftRatio = calculateAstDriftRatio(safeOriginal, safeProposed);
+  if (safeOriginal.length > 300 && driftRatio > 0.92 && missingSymbols.length >= 3 && origSymbols.length >= 4) {
     astScore -= 35;
     violations.push({
       code: 'AST_STRUCTURAL_DRIFT',
       message: `AST DRIFT GATE: Structural drift ratio is ${(driftRatio * 100).toFixed(1)}%, indicating a total logic rewrite or stubbing attempt.`,
       severity: 'high',
     });
-  } else if (originalCode.length > 300 && driftRatio > 0.75) {
+  } else if (safeOriginal.length > 300 && driftRatio > 0.75) {
     astScore -= 15;
     violations.push({
       code: 'AST_STRUCTURAL_DRIFT',
