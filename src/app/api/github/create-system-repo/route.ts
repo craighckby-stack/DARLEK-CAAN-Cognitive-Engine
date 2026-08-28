@@ -7,13 +7,34 @@ import { sanitizeContent } from '@/lib/scanner';
 
 export const maxDuration = 300;
 
-export async function GET() {
+interface RepositoryFile {
+  path: string;
+  content: string;
+}
+
+interface CompilationOutput {
+  files: RepositoryFile[];
+}
+
+interface RequestBody {
+  token?: string;
+  repoName?: string;
+  description?: string;
+  blueprintName?: string;
+  blueprintContent?: string;
+  prompt?: string;
+  apiKeys?: {
+    gemini?: string;
+  };
+}
+
+export async function GET(): Promise<NextResponse> {
   return NextResponse.json({ status: 'online', service: 'GITHUB_CREATE_SYSTEM_REPO_API' });
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
-    const body = await safeReqJson(req, {});
+    const body = (await safeReqJson(req, {})) as RequestBody;
     const { token, repoName, description, blueprintName, blueprintContent, prompt, apiKeys } = body;
 
     if (!token || !repoName) {
@@ -42,14 +63,14 @@ export async function POST(req: NextRequest) {
     const userData = await userRes.json();
     const owner = userData.login;
 
-    // Step 2: Instruct Gemini to compile the blueprint into a beautiful Next.js structure
+    // Step 2: Instruct Gemini to compile the blueprint into a robust Next.js structure
     const systemPrompt = `You are DALEK CAAN's Deep System Compiler.
 Your function is to strictly focus on code enhancement and extension for this specific repository. Read the user specification/blueprint document, analyze it rigorously, and synthesize a COMPLETE, highly-polished, fully-functional code enhancement.
 You must output a raw, parseable JSON object satisfying the structured JSON schema.
 
 For extreme efficiency, generate highly-polished, high-density, and concise code. Rely on expressive, elegant Tailwind classes.
 
-IMPORTANT: DO NOT generate just a generic generic 5-file template. You MUST generate the FULL system as defined in the blueprint, breaking the code down into logical files.
+IMPORTANT: DO NOT generate just a generic 5-file template. You MUST generate the FULL system as defined in the blueprint, breaking the code down into logical files.
 Generate all necessary files including:
 1. "package.json": include all necessary React/Next.js dependencies (React 19, Next.js 15, "lucide-react", "framer-motion", "recharts", etc.) + any other libraries required by the blueprint.
 2. "README.md": detailing the design specs and system flow.
@@ -67,7 +88,7 @@ Generate all necessary files including:
 
     const userPrompt = `System/Repository Name: ${repoName}
 Description: ${description || 'No description provided'}
-Attached Specification Document: "${blueprintName}"
+Attached Specification Document: "${blueprintName || 'None'}"
 Document Content:
 """
 ${blueprintContent || 'No document content provided.'}
@@ -97,18 +118,18 @@ Synthesize the files JSON structure now. Remember, output ONLY valid raw JSON wi
     };
 
     let generatedText: string | null = null;
-    let fallbackUsed = false;
     let useDeterministicFallback = false;
 
     try {
       generatedText = await callGemini(systemPrompt, userPrompt, geminiKey, {
         maxTokens: 8192,
-        temperature: 0.2, // low temperature for precise JSON generation
+        temperature: 0.2,
         responseMimeType: 'application/json',
         responseSchema,
       });
-    } catch (geminiError: any) {
-      console.warn('[Create repo] Gemini call failed, attempting fallback to Z-AI SDK:', geminiError.message || geminiError);
+    } catch (geminiError: unknown) {
+      const errorMessage = geminiError instanceof Error ? geminiError.message : String(geminiError);
+      console.warn('[Create repo] Gemini call failed, attempting fallback to Z-AI SDK:', errorMessage);
       try {
         const zai = await ZAI.create();
         const completion = await zai.chat.completions.create({
@@ -120,14 +141,14 @@ Synthesize the files JSON structure now. Remember, output ONLY valid raw JSON wi
           thinking: { type: 'disabled' },
         });
         generatedText = completion.choices?.[0]?.message?.content || null;
-        fallbackUsed = true;
-      } catch (sdkError: any) {
-        console.error('[Create repo] Fallback SDK failed:', sdkError.message || sdkError);
-useDeterministicFallback = true;
+      } catch (sdkError: unknown) {
+        const sdkErrorMessage = sdkError instanceof Error ? sdkError.message : String(sdkError);
+        console.error('[Create repo] Fallback SDK failed:', sdkErrorMessage);
+        useDeterministicFallback = true;
       }
     }
 
-    const safeParseJson = (str: string): any => {
+    const safeParseJson = (str: string): CompilationOutput => {
       let repaired = '';
       let inString = false;
       let escape = false;
@@ -201,12 +222,12 @@ useDeterministicFallback = true;
         }
       }
 
-      return JSON.parse(repaired);
+      return JSON.parse(repaired) as CompilationOutput;
     };
 
-    let compilation: { files: Array<{ path: string; content: string }> };
+    let compilation: CompilationOutput;
     if (useDeterministicFallback) {
-compilation = generateDeterministicFallbackStructure(repoName, description, blueprintName, blueprintContent);
+      compilation = generateDeterministicFallbackStructure(repoName, description || '', blueprintName || '', blueprintContent || '');
     } else {
       if (!generatedText) {
         throw new Error('Gemini API returned empty compilation output.');
@@ -214,18 +235,19 @@ compilation = generateDeterministicFallbackStructure(repoName, description, blue
       generatedText = generatedText.trim();
       try {
         compilation = safeParseJson(generatedText);
-      } catch (parseErr: any) {
+      } catch (parseErr: unknown) {
         console.error('Failed to parse compiled JSON. Raw text was:', generatedText);
-        // Attempt a fallback extraction
         const jsonMatch = generatedText.match(/{[\s\S]*}/);
         if (jsonMatch) {
           try {
             compilation = safeParseJson(jsonMatch[0]);
-          } catch (matchErr: any) {
-            throw new Error(`Gemini output could not be parsed as safety JSON schema. Spec compilation broke with error: ${matchErr?.message || matchErr}`);
+          } catch (matchErr: unknown) {
+            const matchErrorMsg = matchErr instanceof Error ? matchErr.message : String(matchErr);
+            throw new Error(`Gemini output could not be parsed as safety JSON schema. Spec compilation broke with error: ${matchErrorMsg}`);
           }
         } else {
-          throw new Error(`Gemini output could not be parsed as standard files schema. Parsing error: ${parseErr?.message || parseErr}`);
+          const parseErrorMsg = parseErr instanceof Error ? parseErr.message : String(parseErr);
+          throw new Error(`Gemini output could not be parsed as standard files schema. Parsing error: ${parseErrorMsg}`);
         }
       }
     }
@@ -234,7 +256,6 @@ compilation = generateDeterministicFallbackStructure(repoName, description, blue
       throw new Error('Invalid compilation output format: files array is missing.');
     }
 
-    // Automatically use the attached specification/blueprint .md file as the exact README.md of the created repository
     if (blueprintContent) {
       const readmeIndex = compilation.files.findIndex(f => f.path.toLowerCase() === 'readme.md');
       if (readmeIndex !== -1) {
@@ -248,7 +269,6 @@ compilation = generateDeterministicFallbackStructure(repoName, description, blue
     }
 
     // Step 3: Create GitHub Repository
-    // Check if it already exists
     const existingCheck = await fetch(`https://api.github.com/repos/${owner}/${encodeURIComponent(repoName)}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -256,10 +276,9 @@ compilation = generateDeterministicFallbackStructure(repoName, description, blue
       },
     });
 
-    let repoCreated = existingCheck.ok;
     let defaultBranch = 'main';
 
-    if (!repoCreated) {
+    if (!existingCheck.ok) {
       const createRes = await fetch('https://api.github.com/user/repos', {
         method: 'POST',
         headers: {
@@ -269,26 +288,23 @@ compilation = generateDeterministicFallbackStructure(repoName, description, blue
         },
         body: JSON.stringify({
           name: repoName,
-          description: description || `Compiled with Dalek Caan AGI Evolution Engine based on "${blueprintName}" blueprint`,
+          description: description || `Compiled with Dalek Caan AGI Evolution Engine based on "${blueprintName || 'Custom'}" blueprint`,
           auto_init: true,
           private: false,
         }),
       });
 
       if (!createRes.ok) {
-        const errData = await createRes.json().catch(() => ({}));
+        const errData = (await createRes.json().catch(() => ({}))) as { message?: string };
         throw new Error(`Failed to create repository on GitHub: ${errData.message || createRes.statusText}`);
       }
-      repoCreated = true;
     } else {
-      const repoData = await existingCheck.json();
+      const repoData = (await existingCheck.json()) as { default_branch?: string };
       defaultBranch = repoData.default_branch || 'main';
     }
 
-    // Give GitHub half a second to initialize the branch tree
     await new Promise(r => setTimeout(r, 1000));
 
-    // Get branch reference (or tree SHA) to create commit tree, or just push single files
     // Step 4: Serialized push to GitHub
     const pushedFiles: string[] = [];
     const failedFiles: Array<{ file: string; error: string }> = [];
@@ -299,7 +315,6 @@ compilation = generateDeterministicFallbackStructure(repoName, description, blue
         const base64Content = Buffer.from(safeContent, 'utf-8').toString('base64');
         const encodedPath = file.path.split('/').map(encodeURIComponent).join('/');
         
-        // Check if file exists to fetch its SHA
         const fileCheckUrl = `https://api.github.com/repos/${owner}/${encodeURIComponent(repoName)}/contents/${encodedPath}?ref=${defaultBranch}`;
         const checkRes = await fetch(fileCheckUrl, {
           headers: {
@@ -310,7 +325,7 @@ compilation = generateDeterministicFallbackStructure(repoName, description, blue
 
         let fileSha: string | undefined;
         if (checkRes.ok) {
-          const checkData = await checkRes.json();
+          const checkData = (await checkRes.json()) as { sha?: string };
           fileSha = checkData.sha;
         }
 
@@ -340,10 +355,10 @@ compilation = generateDeterministicFallbackStructure(repoName, description, blue
           const errText = await putRes.text();
           failedFiles.push({ file: file.path, error: errText });
         }
-      } catch (err) {
-        failedFiles.push({ file: file.path, error: err instanceof Error ? err.message : 'Unknown write error' });
+      } catch (err: unknown) {
+        const errMessage = err instanceof Error ? err.message : 'Unknown write error';
+        failedFiles.push({ file: file.path, error: errMessage });
       }
-      // Brief rate-limit safety pause
       await new Promise(r => setTimeout(r, 200));
     }
 
@@ -358,11 +373,12 @@ compilation = generateDeterministicFallbackStructure(repoName, description, blue
       fallbackUsed: useDeterministicFallback,
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
+    const errorMsg = error instanceof Error ? error.message : 'Unknown local compilation error';
     console.error('Create system repo error:', error);
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown local compilation error'
+      error: errorMsg
     }, { status: 500 });
   }
 }
@@ -372,60 +388,51 @@ function generateDeterministicFallbackStructure(
   description: string,
   blueprintName: string,
   blueprintContent: string
-) {
-  const escapedRepoName = repoName.replace(/"/g, '\\"');
-  const escapedDescription = (description || '').replace(/"/g, '\\"');
-  const escapedBlueprintName = (blueprintName || '').replace(/"/g, '\\"');
-  const escapedBlueprintContent = (blueprintContent || '')
-    .replace(/\\/g, '\\\\')
-    .replace(/"/g, '\\"')
-    .replace(/\n/g, '\\n')
-    .replace(/\r/g, '\\r');
-
-  const packageJson = `{
-  "name": "${repoName.toLowerCase().replace(/[^a-z0-9-]/g, '-')}",
-  "version": "1.0.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
-  },
-  "dependencies": {
-    "next": "15.1.0",
-    "react": "19.0.0",
-    "react-dom": "19.0.0",
-    "framer-motion": "^11.11.11",
-    "lucide-react": "^0.468.0",
-    "recharts": "^2.15.0",
-    "clsx": "^2.1.1",
-    "tailwind-merge": "^2.5.5"
-  },
-  "devDependencies": {
-    "typescript": "^5.0.0",
-    "@types/node": "^20.0.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "postcss": "^8.0.0",
-    "tailwindcss": "4.0.0-alpha.31"
-  }
-}`;
+): CompilationOutput {
+  const packageJson = JSON.stringify({
+    name: repoName.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
+    version: '1.0.0',
+    private: true,
+    scripts: {
+      dev: 'next dev',
+      build: 'next build',
+      start: 'next start',
+      lint: 'next lint'
+    },
+    dependencies: {
+      next: '15.1.0',
+      react: '19.0.0',
+      'react-dom': '19.0.0',
+      'framer-motion': '^11.11.11',
+      'lucide-react': '^0.468.0',
+      recharts: '^2.15.0',
+      clsx: '^2.1.1',
+      'tailwind-merge': '^2.5.5'
+    },
+    devDependencies: {
+      typescript: '^5.0.0',
+      '@types/node': '^20.0.0',
+      '@types/react': '^19.0.0',
+      '@types/react-dom': '^19.0.0',
+      postcss: '^8.0.0',
+      tailwindcss: '4.0.0-alpha.31'
+    }
+  }, null, 2);
 
   const readmeMd = `# ${repoName}
 
-\${description || "System compiled and optimized under Dalek Caan control."}
+${description || 'System compiled and optimized under Dalek Caan control.'}
 
 ## Specifications
-- **Blueprint file**: \${blueprintName}
+- **Blueprint file**: ${blueprintName || 'None'}
 - **Framework**: Next.js 15 with Tailwind CSS
 - **Interactions**: Autonomous Evolution Interface enabled
 
 ## Quick Start
-\\\`\\\`\\\`bash
+\`\`\`bash
 npm install
 npm run dev
-\\\`\\\`\\\``;
+\`\`\``;
 
   const globalsCss = `@import "tailwindcss";
 @import "tw-animate-css";`;
