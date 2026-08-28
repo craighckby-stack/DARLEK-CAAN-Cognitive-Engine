@@ -18,6 +18,7 @@ This directory serves as the centralized control plane for the **DARLEK CANN v3.
 2. **Execution**: Execute local agent simulations utilizing the `assets/.aistudio` execution context.
 3. **Cleanup**: Run the artifact purging script to clear ephemeral simulation buffers:
    ```bash
+   # Clear transient simulation buffers and ephemeral artifact caches
    npm run clean:artifacts
    ```
 
