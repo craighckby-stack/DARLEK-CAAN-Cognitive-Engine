@@ -9,7 +9,9 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
+/** @type {string} */
 const TARGET_FILE = path.normalize('src/app/api/evolution/propose/route.ts');
+/** @type {BufferEncoding} */
 const BUFFER_ENCODING = 'utf8';
 
 const REGEX_TARGET = /\/\/ 1\. Try direct clean JSON parse[\s\S]*?analysis = rawText\.slice\(0, 300\) \|\| 'Analyzed file structure\.';\n      \}\n    \}/;
@@ -75,6 +77,10 @@ const NEW_PARSER_BLOCK = `    // 1. Robust Extraction Engine (EMG Optimized)
       proposedCode = typeof fileContent === 'string' ? fileContent : '';
     }`;
 
+/**
+ * Executes the sovereign overhaul to inject the optimized parser block into the target evolution route.
+ * @returns {void}
+ */
 function executeSovereignOverhaul() {
   try {
     if (!fs.existsSync(TARGET_FILE)) {
