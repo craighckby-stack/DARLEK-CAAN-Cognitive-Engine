@@ -8,17 +8,17 @@ This repository serves as the central nexus for the **DARLEK CANN** evolution en
 
 ## Integration Schema
 
-The system architecture is built upon a high-performance, modern technology stack:
+The system architecture is built upon a high-performance, modern technology stack designed for extreme scalability and fault tolerance:
 
 *   **Core Framework**: Next.js 14+ / TypeScript / Tailwind CSS
 *   **Agent Orchestra**: Multi-tier Large Language Model (LLM) fallback architecture (GPT-4o / Claude 3.5 / Local-LLM)
-*   **State Management**: Atomic state synchronization protocols operating across distributed agent nodes.
+*   **State Management**: Atomic state synchronization protocols operating across distributed agent nodes
 
 ---
 
 ## Security Protocols
 
-To maintain rigorous security standards across all environments, adhere to the following guidelines:
+To maintain rigorous security standards across all deployment environments, strictly adhere to the following guidelines:
 
 *   **Environment Variables**: All runtime configuration files are strictly ignored via `.gitignore`. Always use `.env.example` as a template for secure local distribution.
 *   **Memory Isolation**: Sensitive agent memory dumps and runtime states are strictly excluded from Version Control Systems (VCS) to prevent PII and secret leakage.
@@ -27,15 +27,15 @@ To maintain rigorous security standards across all environments, adhere to the f
 
 ## Development Workflow
 
-Execute the standard pipeline to analyze, mutate, and verify system modules:
+Execute the standard deployment pipeline to analyze, mutate, and verify system modules:
 
 ```bash
 # 1. Analyze target modules for optimization vectors
 cann-analyze --target ./modules
 
-# 2. Apply autonomous evolutionary mutations
+# 2. Apply autonomous evolutionary mutations using the Omega strategy
 cann-evolve --strategy omega
 
-# 3. Verify structural and logical integrity
+# 3. Verify structural and logical integrity with coverage reports
 npm run test:coverage
 ```
