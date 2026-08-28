@@ -1,25 +1,25 @@
 # EvolutionLog Component Documentation
 
 ## Overview
-The `EvolutionLog` component serves as the primary telemetry interface for the DARLEK CANN v3.0 architecture. It visualizes chronological system mutations, agent state transitions, and error logs.
+The `EvolutionLog` component functions as the primary telemetry interface for the DARLEK CANN v3.0 architecture. It is engineered to visualize chronological system mutations, agent state transitions, and critical error logs in real-time.
 
 ## Architectural Integration
-- **Data Source**: Consumes `EvolutionLogEntry[]` from the central state management store.
-- **Performance**: Utilizes `useMemo` for sorting and `useRef` for auto-scrolling to maintain 60fps during high-frequency log ingestion.
-- **Styling**: Leverages Tailwind CSS with custom CSS variables defined in the global theme.
+- **Data Source**: Consumes streams of `EvolutionLogEntry[]` objects sourced directly from the central state management store.
+- **Performance Optimization**: Employs React's `useMemo` for efficient log sorting and `useRef` combined with programmatic scrolling to maintain a consistent 60fps rendering performance during high-frequency log ingestion phases.
+- **Styling Architecture**: Leverages Tailwind CSS utilities seamlessly integrated with custom CSS variables defined in the global design system theme.
 
 ## Interface Declaration
-typescript
+```typescript
 interface EvolutionLogEntry {
   id: string;
   type: 'INFO' | 'CRITICAL' | 'EVOLUTION' | 'SECURITY';
   timestamp: number;
   description: string;
 }
+```
 
-
-## Workflow
-1. Log event triggered by Agent Orchestra.
-2. State update propagates to `EvolutionLog`.
-3. Component sorts by timestamp.
-4. Auto-scroll triggers to keep latest event in view.
+## Execution Workflow
+1. **Event Trigger**: A telemetry or system mutation event is initiated by the Agent Orchestra.
+2. **State Propagation**: The updated state payload propagates downstream to the `EvolutionLog` component.
+3. **Data Processing**: The component normalizes and sorts the incoming log entries chronologically by timestamp.
+4. **DOM Mutation**: An auto-scroll routine triggers automatically, locking the viewport to the latest incoming event.
