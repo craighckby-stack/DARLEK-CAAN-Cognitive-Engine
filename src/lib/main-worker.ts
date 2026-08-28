@@ -2,17 +2,26 @@ import { runAstDiffGate, AstDiffResult } from './ast-diff-gate';
 import { validateStructuralSanity, StructuralSanityResult } from './structural-sanity-guard';
 
 /**
+ * Represents a generic repository or code file structure.
+ */
+export interface CodeFile {
+  path: string;
+  content: string;
+  [key: string]: unknown;
+}
+
+/**
  * Worker Pool Pattern Implementation
  * Manages concurrent background tasks to prevent event loop blockages
  * during heavy AST/complexity analysis.
  */
 export class MainWorkerPool {
-  private concurrencyLimit: number;
-  private activeCount: number = 0;
-  private queue: Array<() => Promise<void>> = [];
+  private readonly concurrencyLimit: number;
+  private activeCount = 0;
+  private readonly queue: Array<() => Promise<void>> = [];
 
-  constructor(concurrencyLimit: number = 4) {
-    this.concurrencyLimit = Math.max(1, concurrencyLimit);
+  constructor(concurrencyLimit = 4) {
+    this.concurrencyLimit = Math.max(1, Math.floor(concurrencyLimit));
   }
 
   /**
@@ -20,14 +29,18 @@ export class MainWorkerPool {
    */
   private async enqueue<T>(taskFn: () => Promise<T>): Promise<T> {
     return new Promise<T>((resolve, reject) => {
-      const wrappedTask = async () => {
+      const wrappedTask = async (): Promise<void> => {
         try {
-          // Yield to event loop before starting heavy work
-          await new Promise((r) => setTimeout(r, 0));
+          // Yield to event loop using setImmediate if available for optimal micro-task interleaving
+          if (typeof setImmediate === 'function') {
+            await new Promise<void>((r) => setImmediate(r));
+          } else {
+            await new Promise<void>((r) => setTimeout(r, 0));
+          }
           const result = await taskFn();
           resolve(result);
         } catch (error) {
-          reject(error);
+          reject(error instanceof Error ? error : new Error(String(error)));
         } finally {
           this.activeCount--;
           this.processNext();
@@ -39,12 +52,12 @@ export class MainWorkerPool {
     });
   }
 
-  private processNext() {
+  private processNext(): void {
     if (this.activeCount < this.concurrencyLimit && this.queue.length > 0) {
       const nextTask = this.queue.shift();
       if (nextTask) {
         this.activeCount++;
-        nextTask();
+        void nextTask();
       }
     }
   }
@@ -58,8 +71,6 @@ export class MainWorkerPool {
     filePath: string
   ): Promise<AstDiffResult> {
     return this.enqueue(async () => {
-      // The actual synchronous heavy lifting is performed here,
-      // but managed by the concurrency queue to prevent overwhelming the server.
       return runAstDiffGate(originalCode, proposedCode, filePath);
     });
   }
@@ -71,8 +82,8 @@ export class MainWorkerPool {
     originalCode: string,
     proposedCode: string,
     filePath: string,
-    repoFiles: any[],
-    newFiles: any[]
+    repoFiles: CodeFile[],
+    newFiles: CodeFile[]
   ): Promise<StructuralSanityResult> {
     return this.enqueue(async () => {
       return validateStructuralSanity(originalCode, proposedCode, filePath, repoFiles, newFiles);
