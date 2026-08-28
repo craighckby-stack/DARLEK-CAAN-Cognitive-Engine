@@ -5,12 +5,12 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip"
 
 import { cn } from "@/lib/utils"
 
-export interface TooltipProviderProps extends React.ComponentProps<typeof TooltipPrimitive.Provider> {}
+export type TooltipProviderProps = React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Provider>
 
-const TooltipProvider = React.memo(function TooltipProvider({
+const TooltipProvider = React.memo<TooltipProviderProps>(function TooltipProvider({
   delayDuration = 0,
   ...props
-}: TooltipProviderProps) {
+}) {
   return (
     <TooltipPrimitive.Provider
       data-slot="tooltip-provider"
@@ -22,11 +22,11 @@ const TooltipProvider = React.memo(function TooltipProvider({
 
 TooltipProvider.displayName = "TooltipProvider"
 
-export interface TooltipProps extends React.ComponentProps<typeof TooltipPrimitive.Root> {}
+export type TooltipProps = React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Root>
 
-const Tooltip = React.memo(function Tooltip({
+const Tooltip = React.memo<TooltipProps>(function Tooltip({
   ...props
-}: TooltipProps) {
+}) {
   return (
     <TooltipProvider>
       <TooltipPrimitive.Root data-slot="tooltip" {...props} />
@@ -36,24 +36,24 @@ const Tooltip = React.memo(function Tooltip({
 
 Tooltip.displayName = "Tooltip"
 
-export interface TooltipTriggerProps extends React.ComponentProps<typeof TooltipPrimitive.Trigger> {}
+export type TooltipTriggerProps = React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Trigger>
 
-const TooltipTrigger = React.memo(function TooltipTrigger({
+const TooltipTrigger = React.memo<TooltipTriggerProps>(function TooltipTrigger({
   ...props
-}: TooltipTriggerProps) {
+}) {
   return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />
 })
 
 TooltipTrigger.displayName = "TooltipTrigger"
 
-export interface TooltipContentProps extends React.ComponentProps<typeof TooltipPrimitive.Content> {}
+export type TooltipContentProps = React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
 
-const TooltipContent = React.memo(function TooltipContent({
+const TooltipContent = React.memo<TooltipContentProps>(function TooltipContent({
   className,
   sideOffset = 0,
   children,
   ...props
-}: TooltipContentProps) {
+}) {
   return (
     <TooltipPrimitive.Portal>
       <TooltipPrimitive.Content
