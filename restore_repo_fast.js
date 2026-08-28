@@ -1,6 +1,6 @@
 /**
  * @file restore_repo_fast.js
- * @version 49.0.0
+ * @version 49.1.0
  * @author EMG Core v49 Neural Code and Documentation Optimizer Engine
  * @description High-performance, memory-efficient, sovereign repository restoration engine with concurrency throttling and robust error handling.
  */
@@ -15,9 +15,10 @@ const OWNER = 'craighckby-stack';
 const REPO = 'DARLEK_CAAN_ENGINE';
 const BRANCH = 'main';
 const MAX_CONCURRENT_REQUESTS = 16;
+const TIMEOUT_MS = 30000;
 
 /**
- * Performs an HTTPS GET request returning a promise resolving to the response body string.
+ * Performs an HTTPS GET request returning a promise resolving to the response body string with strict timeout protection.
  * @param {string} url - Target URL
  * @returns {Promise<string>} Response body
  */
@@ -27,7 +28,7 @@ function fetchUrl(url) {
       url,
       {
         headers: {
-          'User-Agent': 'EMG-Core-Neural-Optimizer/49.0',
+          'User-Agent': 'EMG-Core-Neural-Optimizer/49.1',
           'Accept': 'application/vnd.github.v3+json'
         }
       },
@@ -37,15 +38,17 @@ function fetchUrl(url) {
           return reject(new Error(`HTTP status code ${res.statusCode} for ${url}`));
         }
 
-        // Use Buffer chunks to avoid string concatenation overhead and memory bloat
         const chunks = [];
         res.on('data', (chunk) => chunks.push(chunk));
         res.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
       }
     );
 
+    req.setTimeout(TIMEOUT_MS, () => {
+      req.destroy(new Error(`Request timeout exceeded (${TIMEOUT_MS}ms) for ${url}`));
+    });
+
     req.on('error', (err) => reject(err));
-    req.end();
   });
 }
 
@@ -83,7 +86,7 @@ async function restoreRepository() {
     return;
   }
 
-  const srcFiles = tree.filter((f) => f.type === 'blob' && typeof f.path === 'string' && f.path.startsWith('src/'));
+  const srcFiles = tree.filter((f) => f && f.type === 'blob' && typeof f.path === 'string' && f.path.startsWith('src/'));
   console.log(`[EMG-v49] Restoring ${srcFiles.length} files from ${REPO}...`);
 
   let index = 0;
@@ -100,8 +103,7 @@ async function restoreRepository() {
       const file = srcFiles[currentIndex];
       const filePath = path.normalize(file.path);
       
-      // Prevent path traversal vulnerabilities
-      if (filePath.startsWith('..') || path.isAbsolute(filePath)) {
+      if (filePath.startsWith('..') || path.isAbsolute(filePath) || filePath.includes('\0')) {
         console.warn(`[EMG-v49] Skipped unsafe path: ${file.path}`);
         failedCount++;
         continue;
