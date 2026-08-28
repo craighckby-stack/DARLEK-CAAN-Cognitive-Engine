@@ -42,12 +42,13 @@ function applyEvolutionPatch() {
 
     const sourceContent = fs.readFileSync(resolvedPath, 'utf8');
 
+    // Reset regex index state prior to testing and replacement
+    CONFIG.pattern.lastIndex = 0;
     if (!CONFIG.pattern.test(sourceContent)) {
       console.log(`[EMG Core] Target pattern not detected in "${CONFIG.relativePath}". Operations skipped.`);
       return false;
     }
 
-    // Reset regex index state prior to replacement
     CONFIG.pattern.lastIndex = 0;
     const transformedContent = sourceContent.replace(CONFIG.pattern, CONFIG.replacement);
 
