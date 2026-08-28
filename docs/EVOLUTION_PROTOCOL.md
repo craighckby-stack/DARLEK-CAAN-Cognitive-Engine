@@ -1,7 +1,7 @@
 # DARLEK CANN v3.1 Evolution Protocol
 
 ## Architectural Blueprint
-This module serves as the primary injection vector for the Dalek Caan UI components. It utilizes an idempotent marker system to ensure runtime UI updates prevent duplicate DOM node generation and mitigate potential memory leaks.
+This module serves as the primary injection vector for the Dalek Caan UI components. It utilizes an idempotent marker system to ensure runtime UI updates prevent duplicate DOM node generation and mitigate potential memory leaks across dynamic rendering cycles.
 
 ## Integration Schema
 - **Target File**: `src/App.tsx`
