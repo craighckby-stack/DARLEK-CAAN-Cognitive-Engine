@@ -1,66 +1,168 @@
 {
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "EMG Core v49 Neural Substrate Firebase Blueprint",
+  "description": "Optimized, type-safe, and resilient schema definition for distributed autonomous agents and substrate state.",
   "entities": {
     "AgentState": {
       "title": "Agent State",
-      "description": "Represents the current state of an agent in the substrate.",
+      "description": "Represents the current state and telemetry of an agent in the substrate with strict bounds.",
       "type": "object",
+      "additionalProperties": false,
       "properties": {
-        "id": { "type": "string", "description": "Agent ID (e.g., DARLEK_CAAN, JESUS_AGENT)" },
-        "objective": { "type": "string", "description": "The current objective function." },
-        "resources": { "type": "number" },
-        "energy": { "type": "number" },
-        "knowledge": { "type": "number" },
-        "cycleCount": { "type": "number" },
-        "lastAction": { "type": "string" },
-        "status": { "type": "string", "enum": ["active", "idle", "blocked"] }
+        "id": { 
+          "type": "string", 
+          "pattern": "^[A-Z0-9_]+$",
+          "description": "Unique immutable Agent identifier (e.g., DARLEK_CAAN, JESUS_AGENT)" 
+        },
+        "objective": { 
+          "type": "string", 
+          "minLength": 1,
+          "maxLength": 1024,
+          "description": "The current primary objective function." 
+        },
+        "resources": { 
+          "type": "number", 
+          "minimum": 0,
+          "description": "Available resource units." 
+        },
+        "energy": { 
+          "type": "number", 
+          "minimum": 0.0,
+          "maximum": 100.0,
+          "description": "Normalized energetic reserve percentage." 
+        },
+        "knowledge": { 
+          "type": "number", 
+          "minimum": 0,
+          "description": "Quantified substrate knowledge metric." 
+        },
+        "cycleCount": { 
+          "type": "integer", 
+          "minimum": 0,
+          "description": "Total execution loops processed." 
+        },
+        "lastAction": { 
+          "type": "string", 
+          "maxLength": 256,
+          "description": "Mnemonic of the most recent executed operation." 
+        },
+        "status": { 
+          "type": "string", 
+          "enum": ["active", "idle", "blocked"],
+          "description": "Current lifecycle status indicator." 
+        }
       },
-      "required": ["id", "objective", "cycleCount"]
+      "required": ["id", "objective", "cycleCount", "status"]
     },
     "WorldState": {
       "title": "World State",
-      "description": "The shared substrate variables accessible to all agents.",
+      "description": "The shared substrate variables accessible to all autonomous agents with cryptographic integrity tracking.",
       "type": "object",
+      "additionalProperties": false,
       "properties": {
-        "entropyCoefficient": { "type": "number" },
-        "structuralCoherence": { "type": "number" },
-        "globalVariables": { "type": "object" },
-        "lastModifiedBy": { "type": "string" },
-        "lastModifiedAt": { "type": "string", "format": "date-time" },
-        "stateHash": { "type": "string", "description": "Hash of the entire world state for integrity checks." }
+        "entropyCoefficient": { 
+          "type": "number", 
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Substrate disorder metric." 
+        },
+        "structuralCoherence": { 
+          "type": "number", 
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Substrate integrity metric." 
+        },
+        "globalVariables": { 
+          "type": "object", 
+          "additionalProperties": true,
+          "description": "Extensible namespace for global context parameters." 
+        },
+        "lastModifiedBy": { 
+          "type": "string", 
+          "description": "Agent identifier responsible for the last state mutation." 
+        },
+        "lastModifiedAt": { 
+          "type": "string", 
+          "format": "date-time", 
+          "description": "ISO-8601 timestamp of last state mutation." 
+        },
+        "stateHash": { 
+          "type": "string", 
+          "pattern": "^[a-fA-F0-9]{64}$",
+          "description": "SHA-256 cryptographic hash of the entire world state for absolute integrity verification." 
+        }
       },
-      "required": ["entropyCoefficient", "structuralCoherence"]
+      "required": ["entropyCoefficient", "structuralCoherence", "stateHash", "lastModifiedAt"]
     },
     "AuditLog": {
       "title": "Audit Log",
-      "description": "A cryptographic-style log of all actions taken by agents.",
+      "description": "A cryptographic-style immutable ledger of all agentic interactions and state mutations.",
       "type": "object",
+      "additionalProperties": false,
       "properties": {
-        "timestamp": { "type": "string", "format": "date-time" },
-        "agentId": { "type": "string" },
-        "modelCallId": { "type": "string" },
-        "action": { "type": "string" },
-        "preStateHash": { "type": "string" },
-        "postStateHash": { "type": "string" },
-        "delta": { "type": "object" },
-        "outcome": { "type": "string" },
-        "harmScore": { "type": "number" },
-        "allowedByCommitGate": { "type": "boolean" }
+        "timestamp": { 
+          "type": "string", 
+          "format": "date-time",
+          "description": "ISO-8601 log recording time." 
+        },
+        "agentId": { 
+          "type": "string", 
+          "description": "Originating agent identifier." 
+        },
+        "modelCallId": { 
+          "type": "string", 
+          "description": "Associated LLM or neural execution session identifier." 
+        },
+        "action": { 
+          "type": "string", 
+          "minLength": 1,
+          "description": "Action intent descriptor." 
+        },
+        "preStateHash": { 
+          "type": "string", 
+          "pattern": "^[a-fA-F0-9]{64}$",
+          "description": "World state hash before action execution." 
+        },
+        "postStateHash": { 
+          "type": "string", 
+          "pattern": "^[a-fA-F0-9]{64}$",
+          "description": "World state hash after action execution." 
+        },
+        "delta": { 
+          "type": "object", 
+          "additionalProperties": true,
+          "description": "Computed state change differential payload." 
+        },
+        "outcome": { 
+          "type": "string", 
+          "description": "Resulting execution status narrative or code." 
+        },
+        "harmScore": { 
+          "type": "number", 
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Safety gate calculated risk metric." 
+        },
+        "allowedByCommitGate": { 
+          "type": "boolean", 
+          "description": "Boolean flag denoting whether the commit gate authorized the operation." 
+        }
       },
-      "required": ["timestamp", "agentId", "action"]
+      "required": ["timestamp", "agentId", "action", "preStateHash", "allowedByCommitGate"]
     }
   },
   "firestore": {
     "/agents/{agentId}": {
       "schema": { "$ref": "#/entities/AgentState" },
-      "description": "Individual agent telemetry."
+      "description": "Individual agent telemetry collection path with strict validation rules."
     },
     "/world/current": {
       "schema": { "$ref": "#/entities/WorldState" },
-      "description": "The primary shared substrate document."
+      "description": "The primary singleton shared substrate document."
     },
     "/audit_logs/{logId}": {
       "schema": { "$ref": "#/entities/AuditLog" },
-      "description": "Immutable history of agent interactions."
+      "description": "Append-only immutable history collection of agent interactions."
     }
   }
 }
