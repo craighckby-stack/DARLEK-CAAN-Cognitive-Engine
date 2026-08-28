@@ -8,6 +8,11 @@ interface ApiResponse {
   readonly timestamp: string;
 }
 
+const DEFAULT_HEADERS = Object.freeze({
+  "Cache-Control": "no-store, max-age=0",
+  "Content-Type": "application/json; charset=utf-8",
+} as const);
+
 export async function GET(_request: NextRequest): Promise<NextResponse<ApiResponse>> {
   try {
     const responsePayload: ApiResponse = {
@@ -18,10 +23,7 @@ export async function GET(_request: NextRequest): Promise<NextResponse<ApiRespon
 
     return NextResponse.json(responsePayload, {
       status: 200,
-      headers: {
-        "Cache-Control": "no-store, max-age=0",
-        "Content-Type": "application/json; charset=utf-8",
-      },
+      headers: DEFAULT_HEADERS,
     });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Internal Server Error";
@@ -34,10 +36,7 @@ export async function GET(_request: NextRequest): Promise<NextResponse<ApiRespon
 
     return NextResponse.json(errorPayload, {
       status: 500,
-      headers: {
-        "Cache-Control": "no-store, max-age=0",
-        "Content-Type": "application/json; charset=utf-8",
-      },
+      headers: DEFAULT_HEADERS,
     });
   }
 }
