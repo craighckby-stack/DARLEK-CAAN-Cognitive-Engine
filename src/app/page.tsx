@@ -7,6 +7,7 @@ export const revalidate = 0;
 
 /**
  * Fallback skeleton for PageClient initial suspension boundary.
+ * Optimized with explicit layout dimensions and minimal paint overhead.
  */
 function PageLoadingSkeleton(): JSX.Element {
   return (
