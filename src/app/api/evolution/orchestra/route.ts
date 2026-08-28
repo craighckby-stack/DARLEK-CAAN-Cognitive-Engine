@@ -124,7 +124,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: 'Mode must be "parallel" or "debate".' }, { status: 400 });
     }
 
-    const agents: AgentConfig[] = agentConfigs && agentConfigs.length === 3 ? agentConfigs : DEFAULT_AGENTS;
+    const agents: AgentConfig[] = agentConfigs && agentConfigs.length > 0 ? agentConfigs : DEFAULT_AGENTS;
     const effectiveRounds = Math.min(Math.max(1, rounds), 100);
     const logs: OrchestraLog[] = [];
 
@@ -215,7 +215,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       logs.push({
         timestamp: now(),
         type: 'info',
-        message: `Parallel complete — ${successfulCount}/3 agents responded, total latency: ${totalLatency}ms`,
+        message: `Parallel complete — ${successfulCount}/${agents.length} agents responded, total latency: ${totalLatency}ms`,
       });
 
       return NextResponse.json({
@@ -232,7 +232,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           latencyMs: r.latencyMs,
         })),
         logs,
-        summary: `${successfulCount}/3 agents responded in parallel mode.`,
+        summary: `${successfulCount}/${agents.length} agents responded in parallel mode.`,
       });
     }
 
@@ -264,7 +264,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
         // Add current agent's prompt
         const currentPrompt =
-          round === 1
+          round === 1 && debateTurns.length === 0
             ? `Analyze the following topic from your unique perspective as ${agent.name}.\n\nTOPIC:\n${topic}\n\nProvide your analysis. Be specific, insightful, and substantive.`
             : `The orchestra is in debate mode, Round ${round}/${effectiveRounds}.\n\nORIGINAL TOPIC:\n${topic}\n\n--- YOUR TURN (${agent.name}, Round ${round}) ---\nReview the prior discussion. You may:\n- Build upon points you agree with\n- Challenge positions you disagree with\n- Introduce new perspectives or data\n- Synthesize the discussion toward consensus or highlight irreconcilable differences\n\nRespond as ${agent.name}. Be substantive and move the discussion forward.`;
 
