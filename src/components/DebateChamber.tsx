@@ -1,10 +1,11 @@
 'use client';
 
+import React, { useMemo, useCallback } from 'react';
 import type { DebateAgent, AgentVote } from '@/lib/types';
 import { COLORS } from '@/lib/constants';
 import { Users } from 'lucide-react';
 
-interface DebateChamberProps {
+export interface DebateChamberProps {
   agents: DebateAgent[];
   onToggleAgent?: (agentId: string) => void;
   onSelectAll?: (active: boolean) => void;
@@ -29,11 +30,31 @@ export default function DebateChamber({
   cognitiveFriction,
   epistemicRuling 
 }: DebateChamberProps) {
-  // Merge agent definitions with vote results
-  const agentsWithVotes = agents.map(agent => {
-    const vote = votes?.find(v => v.agentId === agent.id);
-    return { ...agent, vote };
-  });
+  // Memoize agent vote mappings to prevent unnecessary recomputations
+  const agentsWithVotes = useMemo(() => {
+    return agents.map(agent => {
+      const vote = votes?.find(v => v.agentId === agent.id);
+      return { ...agent, vote };
+    });
+  }, [agents, votes]);
+
+  // Handle select all toggle logic safely
+  const handleSelectAllClick = useCallback(() => {
+    if (!onSelectAll) return;
+    const hasIdle = agents.some(a => a.status === 'idle');
+    onSelectAll(hasIdle);
+  }, [onSelectAll, agents]);
+
+  const isAllActive = useMemo(() => {
+    return agents.length > 0 && agents.every(a => a.status === 'active');
+  }, [agents]);
+
+  // Determine consensus display color safely
+  const consensusColor = useMemo(() => {
+    if (consensus === 'APPROVE') return COLORS.green;
+    if (consensus === 'REJECT') return COLORS.dalekRed;
+    return COLORS.gold;
+  }, [consensus]);
 
   return (
     <div className="dalek-panel rounded-lg p-4 space-y-3">
@@ -43,10 +64,11 @@ export default function DebateChamber({
           <span style={{ fontSize: '11px' }}>DEBATE CHAMBER</span>
           {onSelectAll && !isActive && (
             <button
-              onClick={() => onSelectAll(agents.some(a => a.status === 'idle') ? true : false)}
+              onClick={handleSelectAllClick}
+              type="button"
               className="ml-2 px-1.5 py-0.5 rounded text-[8px] bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors uppercase tracking-wider border border-white/10"
             >
-              {agents.every(a => a.status === 'active') ? 'DESELECT ALL' : 'SELECT ALL'}
+              {isAllActive ? 'DESELECT ALL' : 'SELECT ALL'}
             </button>
           )}
         </div>
@@ -57,7 +79,7 @@ export default function DebateChamber({
                 fontSize: '8px',
                 fontFamily: 'var(--font-orbitron), sans-serif',
                 letterSpacing: '0.08em',
-                color: consensus === 'APPROVE' ? COLORS.green : consensus === 'REJECT' ? COLORS.dalekRed : COLORS.gold,
+                color: consensusColor,
                 fontWeight: 700,
               }}
             >
@@ -82,9 +104,10 @@ export default function DebateChamber({
       {/* Agent grid with votes */}
       <div className="grid grid-cols-1 gap-2">
         {agentsWithVotes.map((agent) => {
-          const voteColor = agent.vote?.vote === 'approve' ? COLORS.green : agent.vote?.vote === 'reject' ? COLORS.dalekRed : COLORS.gold;
-          const voteIcon = agent.vote?.vote === 'approve' ? '\u2713' : agent.vote?.vote === 'reject' ? '\u2717' : '\u25CB';
-          const voteLabel = agent.vote?.vote === 'approve' ? 'APPROVE' : agent.vote?.vote === 'reject' ? 'REJECT' : 'ABSTAIN';
+          const voteType = agent.vote?.vote;
+          const voteColor = voteType === 'approve' ? COLORS.green : voteType === 'reject' ? COLORS.dalekRed : COLORS.gold;
+          const voteIcon = voteType === 'approve' ? '\u2713' : voteType === 'reject' ? '\u2717' : '\u25CB';
+          const voteLabel = voteType === 'approve' ? 'APPROVE' : voteType === 'reject' ? 'REJECT' : 'ABSTAIN';
 
           return (
             <div
@@ -196,7 +219,7 @@ export default function DebateChamber({
                   <div className="flex-1 bg-[#120512] h-1.5 rounded border border-purple-900/20 overflow-hidden">
                     <div 
                       className="bg-gradient-to-r from-purple-600 to-fuchsia-500 h-full transition-all duration-1000"
-                      style={{ width: `${consensusCoefficient * 100}%` }}
+                      style={{ width: `${Math.max(0, Math.min(100, consensusCoefficient * 100))}%` }}
                     />
                   </div>
                   <span className="text-[9px] font-mono text-purple-400 font-bold">
@@ -228,7 +251,7 @@ export default function DebateChamber({
       )}
 
       {/* Current debate topic */}
-      {currentTopic && (
+      {currentTopic ? (
         <div
           className="debate-topic px-3 py-2 rounded text-center"
           style={{
@@ -243,9 +266,7 @@ export default function DebateChamber({
             {currentTopic}
           </p>
         </div>
-      )}
-
-      {!currentTopic && (
+      ) : (
         <div
           className="px-3 py-2 rounded text-center"
           style={{ background: '#060606' }}
