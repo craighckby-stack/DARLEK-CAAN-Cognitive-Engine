@@ -1,6 +1,6 @@
 export type MutationStatus = 'pending' | 'applied' | 'rejected';
 
-export interface MutationPayload extends Record<string, unknown> {
+export interface MutationPayload extends Readonly<Record<string, unknown>> {
   readonly sessionId: string;
   readonly filePath: string;
   readonly status: MutationStatus;
