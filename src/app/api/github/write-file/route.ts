@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
-import { join, resolve, dirname } from 'path';
+import { resolve, dirname } from 'path';
 import type { WriteFileBody } from '@/lib/types';
 import { sanitizeContent } from '@/lib/scanner';
-import { safeResponseJson } from '@/lib/safe-json';
+import { safeResponseJson, safeReqJson } from '@/lib/safe-json';
+
+export const dynamic = 'force-dynamic';
 
 // Helper to ensure target repository exists on GitHub
 async function ensureRepoExists(token: string, owner: string, repo: string): Promise<boolean> {
@@ -46,7 +48,7 @@ async function getFileSha(token: string, owner: string, repo: string, branch: st
     });
     if (res.ok) {
       const data = await safeResponseJson(res);
-      return data.sha || null;
+      return (data as Record<string, any>)?.sha || null;
     }
     return null;
   } catch {
@@ -72,13 +74,13 @@ async function ensureBranchExists(token: string, owner: string, repo: string, br
     if (!repoRes.ok) return false;
 
     const repoData = await safeResponseJson(repoRes);
-    const defaultBranch = repoData.default_branch || 'main';
+    const defaultBranch = (repoData as Record<string, any>)?.default_branch || 'main';
 
     const defRefRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/ref/heads/${encodeURIComponent(defaultBranch)}`, { headers });
     if (!defRefRes.ok) return false;
 
     const defRefData = await safeResponseJson(defRefRes);
-    const defaultSha = defRefData.object?.sha;
+    const defaultSha = (defRefData as Record<string, any>)?.object?.sha;
     if (!defaultSha) return false;
 
     // Create branch
@@ -97,15 +99,11 @@ async function ensureBranchExists(token: string, owner: string, repo: string, br
   }
 }
 
-import { safeReqJson } from '@/lib/safe-json';
-
-export const dynamic = 'force-dynamic';
-
-export async function GET() {
+export async function GET(): Promise<NextResponse> {
   return NextResponse.json({ status: 'online', service: 'GITHUB_WRITE_FILE_API' });
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const body: WriteFileBody = await safeReqJson(req, {} as WriteFileBody);
     const { token, owner, repo, branch, path: filePath, content, sha, commitMessage } = body;
@@ -147,7 +145,7 @@ export async function POST(req: NextRequest) {
     await ensureBranchExists(token, owner, repo, branch);
 
     // Resolve accurate live SHA from GitHub to eliminate stale SHA mismatches
-    let finalSha = await getFileSha(token, owner, repo, branch, cleanPath) || sha || null;
+    const finalSha = await getFileSha(token, owner, repo, branch, cleanPath) || sha || null;
 
     const encodedPath = cleanPath.split('/').map(encodeURIComponent).join('/');
     const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodedPath}`;
@@ -206,13 +204,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const data = await safeResponseJson(res);
+    const data = (await safeResponseJson(res)) as Record<string, any>;
 
     return NextResponse.json({
       success: true,
-      commitSha: data.commit?.sha || '',
-      contentSha: data.content?.sha || '',
-      commitUrl: data.commit?.html_url || '',
+      commitSha: data?.commit?.sha || '',
+      contentSha: data?.content?.sha || '',
+      commitUrl: data?.commit?.html_url || '',
     });
   } catch (error) {
     console.error('Write file error:', error);
@@ -220,4 +218,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
-
