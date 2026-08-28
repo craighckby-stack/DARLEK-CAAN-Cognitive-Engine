@@ -7,16 +7,23 @@
 
 'use strict';
 
-const fs = require('fs');
-const https = require('https');
-const path = require('path');
+const fs = require('node:fs');
+const https = require('node:https');
+const path = require('node:path');
 
 const MISSING_FILES_PATH = 'missing_files.json';
 const BASE_URL = 'https://raw.githubusercontent.com/craighckby-stack/epistemic_debate_engine/main/';
+const REQUEST_TIMEOUT_MS = 30000;
+const USER_AGENT = 'EMG-Neural-Code-Optimizer/4.9';
+
+/**
+ * @typedef {Object} FileManifestEntry
+ * @property {string} path - Relative path of the missing target file.
+ */
 
 /**
  * Validates and reads the missing files manifest.
- * @returns {Array<{path: string}>}
+ * @returns {FileManifestEntry[]} Array of missing file objects.
  */
 function loadMissingManifest() {
   try {
@@ -30,49 +37,78 @@ function loadMissingManifest() {
     }
     return parsed;
   } catch (error) {
-    console.error(`[CRITICAL] Failed to load missing files manifest: ${error.message}`);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`[CRITICAL] Failed to load missing files manifest: ${message}`);
     process.exit(1);
   }
 }
 
 /**
- * Downloads a single file via HTTPS with robust error handling and stream management.
- * @param {{path: string}} fileObj 
- * @returns {Promise<boolean>} Success status
+ * Downloads a single file via HTTPS with stream management, write-buffering, and robust cleanup.
+ * @param {FileManifestEntry} fileObj - Object containing file path details.
+ * @returns {Promise<boolean>} Success status of the download operation.
  */
 function download(fileObj) {
   return new Promise((resolve) => {
+    if (!fileObj || typeof fileObj.path !== 'string' || !fileObj.path.trim()) {
+      console.error('[ERROR] Invalid file object provided for download.');
+      return resolve(false);
+    }
+
+    const normalizedPath = path.normalize(fileObj.path);
     const targetUrl = BASE_URL + fileObj.path;
     const requestOptions = {
-      headers: { 'User-Agent': 'EMG-Neural-Code-Optimizer/4.9' }
+      headers: { 'User-Agent': USER_AGENT }
     };
+
+    const dir = path.dirname(normalizedPath);
+    try {
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+    } catch (mkdirError) {
+      const message = mkdirError instanceof Error ? mkdirError.message : String(mkdirError);
+      console.error(`[ERROR] Failed to create directory ${dir}: ${message}`);
+      return resolve(false);
+    }
 
     const req = https.get(targetUrl, requestOptions, (res) => {
       if (res.statusCode !== 200) {
         console.error(`[ERROR] Failed to download ${fileObj.path}: HTTP status code ${res.statusCode}`);
-        res.resume(); // Consume response data to free up memory
+        res.resume(); // Consume response stream to free memory
         return resolve(false);
       }
 
-      let data = '';
-      res.on('data', chunk => {
-        data += chunk;
-      });
+      const writeStream = fs.createWriteStream(normalizedPath);
 
-      res.on('end', () => {
-        try {
-          const dir = path.dirname(fileObj.path);
-          if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-          }
-          fs.writeFileSync(fileObj.path, data, 'utf8');
+      res.pipe(writeStream);
+
+      writeStream.on('finish', () => {
+        writeStream.close(() => {
           console.log(`Successfully downloaded: ${fileObj.path}`);
           resolve(true);
-        } catch (writeError) {
-          console.error(`[ERROR] Failed to write file ${fileObj.path}: ${writeError.message}`);
-          resolve(false);
-        }
+        });
       });
+
+      writeStream.on('error', (writeError) => {
+        console.error(`[ERROR] Failed to write file ${fileObj.path}: ${writeError.message}`);
+        writeStream.destroy();
+        fs.unlink(normalizedPath, () => {}); // Asynchronously clean up partial file
+        resolve(false);
+      });
+
+      res.on('error', (resError) => {
+        console.error(`[ERROR] Response stream error downloading ${fileObj.path}: ${resError.message}`);
+        writeStream.destroy();
+        fs.unlink(normalizedPath, () => {});
+        resolve(false);
+      });
+    });
+
+    req.setTimeout(REQUEST_TIMEOUT_MS, () => {
+      console.error(`[ERROR] Request timeout downloading ${fileObj.path}`);
+      req.destroy();
+      resolve(false);
     });
 
     req.on('error', (err) => {
@@ -104,8 +140,17 @@ async function doAll() {
   console.log(`Download operation complete. Total files processed: ${count}.`);
 }
 
+module.exports = {
+  loadMissingManifest,
+  download,
+  doAll
+};
+
 // Execute execution cycle
-doAll().catch((err) => {
-  console.error(`[FATAL] Unhandled execution error in doAll: ${err.message}`);
-  process.exit(1);
-});
+if (require.main === module) {
+  doAll().catch((err) => {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`[FATAL] Unhandled execution error in doAll: ${message}`);
+    process.exit(1);
+  });
+}
