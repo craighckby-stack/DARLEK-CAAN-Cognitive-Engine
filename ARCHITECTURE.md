@@ -7,34 +7,45 @@
 
 ---
 
+## ⚡ Executive Summary
+`OMEGA-EMERGENT-INTELLIGENCE` (Core v49) is an autonomous, self-refactoring multi-agent execution kernel driven by the **Huxley-Singularity-Loop**. This document outlines the system architecture, directory topology, security directives, and external module integrations designed for high-performance distributed cognitive processing.
+
+---
+
+## 📑 Table of Contents
+1. [System Overview](#1-system-overview)
+2. [Directory Structure](#2-directory-structure)
+3. [Security Protocols](#3-security-protocols)
+4. [System Integration & External Modules](#4-system-integration--external-modules)
+
+---
+
 ## 1. System Overview
 
-This repository serves as the core execution kernel for the `OMEGA` system. It seamlessly integrates advanced multi-agent orchestration frameworks with a continuous, self-refactoring evolutionary loop inspired by the **Huxley-Singularity-Loop**.
+The `OMEGA` repository acts as the central execution kernel, seamlessly blending advanced multi-agent orchestration frameworks with a continuous, self-refactoring evolutionary feedback loop.
 
 ---
 
 ## 2. Directory Structure
 
-The repository is organized to cleanly separate orchestration logic, evolution mechanisms, state persistence, and environment-specific configurations:
+The repository isolates orchestration logic, evolution mechanisms, state persistence, and environment-specific overrides:
 
-```text
-/
-├── src/
-│   ├── agents/          # Orchestration logic, inter-agent communication protocols, and autonomous agent behaviors
-│   └── evolution/       # Self-modifying code blocks, evaluation metrics, and mutation engines
-├── persistence/         # State snapshots, execution state-trees, and quantum-core memory dumps
-└── local-overrides/     # Environment-specific behavioral patches and local configurations
-```
+| Directory | Purpose & Contents |
+| :--- | :--- |
+| `src/agents/` | Orchestration logic, inter-agent communication protocols, and autonomous agent behaviors. |
+| `src/evolution/` | Self-modifying code blocks, evaluation metrics, and mutation engines. |
+| `persistence/` | State snapshots, execution state-trees, and quantum-core memory dumps. |
+| `local-overrides/` | Environment-specific behavioral patches and local configurations. |
 
 ---
 
 ## 3. Security Protocols
 
-To maintain absolute system integrity and prevent unauthorized access or privilege escalation, all operators must strictly adhere to the following security directives:
+To maintain absolute system integrity and prevent unauthorized access or privilege escalation, operators must adhere to these directives:
 
-* **Credential Injection:** All sensitive keys, secrets, and authentication tokens must be injected exclusively via secure environment variables.
-* **Ignored Artifacts:** `.env` and local override files are explicitly excluded via `.gitignore` to prevent accidental credential leakage.
-* **Log Isolation:** Evolutionary audit logs and debugging traces remain strictly local-only to maintain repository cleanliness, security compliance, and a minimal footprint.
+* **Credential Injection:** Secrets and tokens must be injected exclusively via secure environment variables.
+* **Ignored Artifacts:** `.env` and local override files are explicitly excluded via `.gitignore` to prevent leakage.
+* **Log Isolation:** Evolutionary audit logs and debugging traces remain strictly local-only to maintain security and compliance.
 
 ---
 
@@ -42,8 +53,8 @@ To maintain absolute system integrity and prevent unauthorized access or privile
 
 The `OMEGA` kernel interfaces with external high-availability modules for distributed computation and self-modification:
 
-* **`Unitary-Core`**: Responsible for high-dimensional tensor processing, cognitive pattern recognition, and vector embedding computations.
-* **`Sovereign-v86`**: Provides kernel-level access for autonomous self-refactoring, instruction-set verification, and zero-downtime hot-patching.
+* **`Unitary-Core`**: High-dimensional tensor processing, cognitive pattern recognition, and vector embedding computations.
+* **`Sovereign-v86`**: Kernel-level access for autonomous self-refactoring, instruction-set verification, and zero-downtime hot-patching.
 
 ```text
 +------------------+       +-------------------+       +-------------------+
