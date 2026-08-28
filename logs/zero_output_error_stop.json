@@ -1,4 +1,58 @@
 {
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ZeroOutputErrorStop",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["ZERO_OUTPUT_COMMITTED_ERROR"]
+    },
+    "errorCode": {
+      "type": "string",
+      "enum": ["ERR_ZERO_OUTPUT_CIRCUIT_BREAKER"]
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1
+    },
+    "payloadBytes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 0
+    },
+    "cycle": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "systemHalted": {
+      "type": "boolean",
+      "enum": [true]
+    },
+    "haltReason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "repository": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+@[a-zA-Z0-9_.-]+$"
+    }
+  },
+  "required": [
+    "status",
+    "errorCode",
+    "source",
+    "payloadBytes",
+    "cycle",
+    "timestamp",
+    "systemHalted",
+    "haltReason",
+    "repository"
+  ],
+  "additionalProperties": false,
   "status": "ZERO_OUTPUT_COMMITTED_ERROR",
   "errorCode": "ERR_ZERO_OUTPUT_CIRCUIT_BREAKER",
   "source": "Manual_Dashboard_Circuit_Breaker_Test",
