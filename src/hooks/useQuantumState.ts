@@ -1,47 +1,32 @@
-import { useState, useCallback } from 'react';
-export const useQuantumState = <T>(initial: T) => {
-  const [state, setState] = useState<T>(initial);
-  const updateState = useCallback((updater: (prev: T) => T) => {
-    setState(prev => ({ ...updater(prev), timestamp: Date.now() }));
+import { useState, useCallback, useMemo } from 'react';
+
+export type QuantumState<T> = T & { timestamp: number };
+export type QuantumUpdater<T> = (prev: QuantumState<T>) => T;
+export type UseQuantumStateReturn<T> = readonly [QuantumState<T>, (updater: QuantumUpdater<T>) => void];
+
+export const useQuantumState = <T extends Record<string, any>>(initial: T): UseQuantumStateReturn<T> => {
+  const [state, setState] = useState<QuantumState<T>>(() => ({
+    ...initial,
+    timestamp: Date.now(),
+  }));
+
+  const updateState = useCallback((updater: QuantumUpdater<T>) => {
+    setState(prev => {
+      try {
+        const nextState = updater(prev);
+        if (!nextState || typeof nextState !== 'object') {
+          throw new Error('Quantum updater must return a valid object state.');
+        }
+        return {
+          ...nextState,
+          timestamp: Date.now(),
+        } as QuantumState<T>;
+      } catch (error) {
+        console.error('[EMG Core v49] QuantumState Mutation Failure:', error);
+        return prev;
+      }
+    });
   }, []);
-  return [state, updateState] as const;
+
+  return useMemo(() => [state, updateState] as const, [state, updateState]);
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
