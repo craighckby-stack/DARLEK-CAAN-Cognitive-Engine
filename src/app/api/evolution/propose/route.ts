@@ -51,49 +51,58 @@ interface ParsedMutationResponse {
   proposedCode?: string;
 }
 
+interface ExtendedProposeBody extends ProposeBody {
+  sessionId?: string;
+  userReposContext?: UserRepoItem[];
+  isArchitecturalGenesis?: boolean;
+  hallucinationLevel?: number;
+  repoFiles?: string[];
+}
+
 /**
- * Detects if file content is encrypted, binary, or non-code using pattern and entropy checks.
+ * Detects if file content is encrypted, binary, or non-code using optimized pattern and entropy checks.
  */
 function isNonCodeContent(content: string): NonCodeResult {
   if (content.includes('"iv"') && content.includes('"data"') && content.includes('AES')) {
     return { isNonCode: true, reason: 'File appears to be encrypted (AES) data, not source code' };
   }
 
-  const trimmed = content.trim().slice(0, 2000);
-  if (trimmed.length < 10) {
+  const trimmed = content.trim();
+  const sample = trimmed.length > 2000 ? trimmed.slice(0, 2000) : trimmed;
+  if (sample.length < 10) {
     return { isNonCode: false, reason: '' };
   }
 
   const hasCodeMarkers = 
-    trimmed.includes('{') || 
-    trimmed.includes('}') || 
-    trimmed.includes(';') || 
-    trimmed.includes('const ') || 
-    trimmed.includes('import ') || 
-    trimmed.includes('export ') || 
-    trimmed.includes('function ') || 
-    trimmed.includes('class ') || 
-    trimmed.includes('//') || 
-    trimmed.includes('/*') || 
-    trimmed.includes('<div') || 
-    trimmed.includes('import(');
+    sample.includes('{') || 
+    sample.includes('}') || 
+    sample.includes(';') || 
+    sample.includes('const ') || 
+    sample.includes('import ') || 
+    sample.includes('export ') || 
+    sample.includes('function ') || 
+    sample.includes('class ') || 
+    sample.includes('//') || 
+    sample.includes('/*') || 
+    sample.includes('<div') || 
+    sample.includes('import(');
 
   if (hasCodeMarkers) {
     return { isNonCode: false, reason: '' };
   }
 
-  const base64CharsOnly = trimmed.replace(/[^A-Za-z0-9+/=]/g, '').length;
-  const regularSpaces = (trimmed.match(/ /g) || []).length;
+  const base64CharsOnly = sample.replace(/[^A-Za-z0-9+/=]/g, '').length;
+  const regularSpaces = (sample.match(/ /g) || []).length;
   
-  if (trimmed.length > 100) {
-    const isMainlyBase64Chars = base64CharsOnly / trimmed.length > 0.85;
-    const hasAlmostNoSpaces = (regularSpaces / trimmed.length) < 0.02;
+  if (sample.length > 100) {
+    const isMainlyBase64Chars = base64CharsOnly / sample.length > 0.85;
+    const hasAlmostNoSpaces = (regularSpaces / sample.length) < 0.02;
     if (isMainlyBase64Chars && hasAlmostNoSpaces) {
       return { isNonCode: true, reason: 'File appears to be base64-encoded data, not source code' };
     }
   }
 
-  if (/^data:[\w/\-+.]+;base64,/.test(trimmed)) {
+  if (/^data:[\w/\-+.]+;base64,/.test(sample)) {
     return { isNonCode: true, reason: 'File appears to be base64-encoded data, not source code' };
   }
 
@@ -193,7 +202,7 @@ async function fetchAIProjectSiphon(token?: string): Promise<string> {
     if (!treeRes.ok) {
       throw new Error(`Failed to fetch tree: ${treeRes.status}`);
     }
-    const treeData = await treeRes.json();
+    const treeData = await treeRes.json() as { tree?: GitTreeItem[] };
     if (!treeData.tree || !Array.isArray(treeData.tree)) {
       throw new Error('Invalid tree format');
     }
@@ -210,26 +219,27 @@ async function fetchAIProjectSiphon(token?: string): Promise<string> {
       return '';
     }
 
-    const preferred = codeFiles.filter((f: GitTreeItem) => 
-      f.path.toLowerCase().includes('core') || 
-      f.path.toLowerCase().includes('agent') || 
-      f.path.toLowerCase().includes('debate') || 
-      f.path.toLowerCase().includes('engine')
-    );
+    const preferred = codeFiles.filter((f: GitTreeItem) => {
+      const p = f.path.toLowerCase();
+      return p.includes('core') || p.includes('agent') || p.includes('debate') || p.includes('engine');
+    });
     const filesToFetch = preferred.length > 0 ? preferred.slice(0, 3) : codeFiles.slice(0, 3);
 
-    let siphonText = '';
-    for (const file of filesToFetch) {
-      const contentRes = await fetch(`https://api.github.com/repos/${repoTarget}/contents/${file.path}`, { headers });
-      if (contentRes.ok) {
-        const contentData = await contentRes.json();
-        if (contentData.content) {
-          const rawCode = Buffer.from(contentData.content, 'base64').toString('utf8');
-          siphonText += `\n\n--- SIPHONED SOURCE: ${repoTarget} | File: ${file.path} ---\n${rawCode.slice(0, 5000)}\n------------------------------------------------\n`;
-        }
+    const siphonPromises = filesToFetch.map(async (file) => {
+      try {
+        const contentRes = await fetch(`https://api.github.com/repos/${repoTarget}/contents/${file.path}`, { headers });
+        if (!contentRes.ok) return null;
+        const contentData = await contentRes.json() as { content?: string };
+        if (!contentData.content) return null;
+        const rawCode = Buffer.from(contentData.content, 'base64').toString('utf8');
+        return `\n\n--- SIPHONED SOURCE: ${repoTarget} | File: ${file.path} ---\n${rawCode.slice(0, 5000)}\n------------------------------------------------\n`;
+      } catch {
+        return null;
       }
-    }
-    return siphonText;
+    });
+
+    const results = await Promise.all(siphonPromises);
+    return results.filter(Boolean).join('');
   } catch (err) {
     console.warn('[Siphon Fetch] Failed to fetch live repo code:', err);
     return '';
@@ -242,13 +252,7 @@ export async function GET(): Promise<NextResponse> {
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
-    const body: ProposeBody & { 
-      sessionId?: string; 
-      userReposContext?: UserRepoItem[]; 
-      isArchitecturalGenesis?: boolean; 
-      hallucinationLevel?: number; 
-      repoFiles?: string[] 
-    } = await safeReqJson(req, {} as ProposeBody);
+    const body = await safeReqJson<ExtendedProposeBody>(req, {} as ExtendedProposeBody);
     
     const { fileContent, filePath, apiKeys, rejectionMemory } = body;
     const sessionId = body.sessionId;
@@ -258,13 +262,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     const lowerPath = filePath.toLowerCase();
-    const isKnownTextExt = lowerPath.endsWith('.md') || 
-                           lowerPath.endsWith('.txt') || 
-                           lowerPath.endsWith('.raw') || 
-                           lowerPath.endsWith('.config') || 
-                           lowerPath.endsWith('.json') || 
-                           lowerPath.endsWith('.yml') || 
-                           lowerPath.endsWith('.yaml');
+    const isKnownTextExt = ['.md', '.txt', '.raw', '.config', '.json', '.yml', '.yaml'].some((ext) => lowerPath.endsWith(ext));
 
     if (!isKnownTextExt) {
       const nonCodeCheck = isNonCodeContent(fileContent);
@@ -292,10 +290,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         const recentMutations = await db.mutationHistory.findMany({
           where: { sessionId, status: 'applied' },
           orderBy: { createdAt: 'desc' },
-          take: 5
+          take: 5,
+          select: { filePath: true, analysis: true }
         });
         if (recentMutations.length > 0) {
-          appliedMutationsContext = `\n\nRECENT SYSTEM MUTATIONS (Context of what you have done so far in this session to help you integrate and align future mutations):\n${recentMutations.map((m: { filePath: string; analysis: string }) => `  - File: ${m.filePath} | Analysis: ${m.analysis}`).join('\n')}`;
+          appliedMutationsContext = `\n\nRECENT SYSTEM MUTATIONS (Context of what you have done so far in this session to help you integrate and align future mutations):\n${recentMutations.map((m) => `  - File: ${m.filePath} | Analysis: ${m.analysis}`).join('\n')}`;
         }
       } catch (err) {
         console.error('Error fetching mutation history:', err);
@@ -411,7 +410,7 @@ ${fileContent.slice(0, 35000)}
     for (const block of codeBlocks) {
       const content = block[1].trim();
       try {
-        const json = JSON.parse(content);
+        const json = JSON.parse(content) as ParsedMutationResponse;
         if (json.analysis || json.riskScore !== undefined || json.newFiles) {
           parsed = json;
           continue;
@@ -429,7 +428,7 @@ ${fileContent.slice(0, 35000)}
       try {
         const jsonMatch = rawText.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-          parsed = JSON.parse(jsonMatch[0].replace(/[\u0000-\u001F\u007F-\u009F]/g, ' '));
+          parsed = JSON.parse(jsonMatch[0].replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ')) as ParsedMutationResponse;
         }
       } catch {
         // Ignore fallback JSON extraction failures
