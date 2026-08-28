@@ -25,6 +25,33 @@ export interface LlmResult {
   latencyMs?: number;
 }
 
+// === CONSTANTS & ERROR NORMALIZATION ===
+
+const ERROR_PATTERNS = {
+  GEOBLOCK: ['location is not supported', 'FAILED_PRECONDITION'],
+  AUTH: ['Authentication Error', '401', '403', 'API_KEY_INVALID'],
+  QUOTA: ['429', 'quota', 'Quota'],
+  SDK_CONFIG: ['Configuration file not found', '.z-ai-config'],
+} as const;
+
+function getErrorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
+function logProviderWarning(context: string, msg: string): void {
+  if (ERROR_PATTERNS.GEOBLOCK.some(p => msg.includes(p))) {
+    console.warn(`[${context}] Gemini geoblocked — falling back to offline engine.`);
+  } else if (ERROR_PATTERNS.AUTH.some(p => msg.includes(p))) {
+    console.warn(`[${context}] Gemini API key invalid/unauthorized — falling back to offline engine.`);
+  } else if (ERROR_PATTERNS.QUOTA.some(p => msg.includes(p))) {
+    console.warn(`[${context}] Gemini quota limit reached (429) — falling back.`);
+  } else if (ERROR_PATTERNS.SDK_CONFIG.some(p => msg.includes(p))) {
+    console.warn(`[${context}] SDK config not found — falling back to offline Dalek Brain.`);
+  } else {
+    console.warn(`[${context}] Warning:`, msg);
+  }
+}
+
 // === GEMINI (primary when key available) ===
 
 async function callGeminiPrimary(
@@ -40,21 +67,9 @@ async function callGeminiPrimary(
       maxTokens: maxTokens ?? 8192,
       temperature: temperature ?? 0.6,
     });
-    if (text) {
-      return { text, provider: 'Gemini', latencyMs: Date.now() - start };
-    }
-    return { text: null, provider: 'Gemini', latencyMs: Date.now() - start };
+    return { text: text || null, provider: 'Gemini', latencyMs: Date.now() - start };
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes('location is not supported') || msg.includes('FAILED_PRECONDITION')) {
-      console.warn('[LLM] Gemini geoblocked — falling back to offline engine.');
-    } else if (msg.includes('Authentication Error') || msg.includes('401') || msg.includes('403') || msg.includes('API_KEY_INVALID')) {
-      console.warn('[LLM] Gemini API key invalid/unauthorized — falling back to offline engine.');
-    } else if (msg.includes('429') || msg.includes('quota') || msg.includes('Quota')) {
-      console.warn('[LLM] Gemini quota limit reached (429) — falling back.');
-    } else {
-      console.warn('[LLM] Gemini warning:', msg);
-    }
+    logProviderWarning('LLM', getErrorMessage(err));
     return { text: null, provider: 'Gemini', latencyMs: Date.now() - start };
   }
 }
@@ -80,12 +95,7 @@ async function callSDK(
     const text = completion.choices?.[0]?.message?.content || null;
     return { text, provider: 'SDK', latencyMs: Date.now() - start };
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes('Configuration file not found') || msg.includes('.z-ai-config')) {
-      console.warn('[LLM] SDK config not found — falling back to offline Dalek Brain.');
-    } else {
-      console.warn('[LLM] SDK warning:', msg);
-    }
+    logProviderWarning('LLM', getErrorMessage(err));
     return { text: null, provider: 'SDK', latencyMs: Date.now() - start };
   }
 }
@@ -117,12 +127,7 @@ async function callSDKMultiTurn(
     const text = completion.choices?.[0]?.message?.content || null;
     return { text, provider: 'SDK', latencyMs: Date.now() - start };
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes('Configuration file not found') || msg.includes('.z-ai-config')) {
-      console.warn('[LLM] SDK multi-turn config not found — falling back.');
-    } else {
-      console.warn('[LLM] SDK multi-turn warning:', msg);
-    }
+    logProviderWarning('LLM MultiTurn', getErrorMessage(err));
     return { text: null, provider: 'SDK', latencyMs: Date.now() - start };
   }
 }
@@ -147,11 +152,13 @@ export async function callLlm(options: LlmOptions): Promise<LlmResult> {
   if (sdkResult.text) return sdkResult;
 
   // 3. Dalek Brain — local, zero-network analysis engine
-  // If it's a debate/persona context, generate a constructive local fallback vote
+  const lowerSystem = systemPrompt.toLowerCase();
+  const lowerUser = userPrompt.toLowerCase();
   const isDebate =
-    systemPrompt.toLowerCase().includes('debate') ||
-    systemPrompt.toLowerCase().includes('persona') ||
-    userPrompt.toLowerCase().includes('vote');
+    lowerSystem.includes('debate') ||
+    lowerSystem.includes('persona') ||
+    lowerUser.includes('vote');
+
   if (isDebate) {
     const personaMatch =
       systemPrompt.match(/You are (?:a debate agent in the AHI Synthesis Loop\.\s*\[PROFILE\]\s*)?([a-zA-Z0-9_\s]+)/i) ||
@@ -162,8 +169,7 @@ export async function callLlm(options: LlmOptions): Promise<LlmResult> {
 
     const riskMatch =
       userPrompt.match(/Risk Score:\s*(\d+)/i) ||
-      systemPrompt.match(/risk:\s*(\d+)/i) ||
-      userPrompt.match(/risk:\s*(\d+)/i);
+      systemPrompt.match(/risk:\s*(\d+)/i);
     const risk = riskMatch ? parseInt(riskMatch[1], 10) : 3;
 
     let vote: 'approve' | 'reject' | 'abstain' = 'approve';
@@ -253,16 +259,7 @@ export async function callLlmMultiTurn(
         return { text, provider: 'Gemini', latencyMs: Date.now() - start };
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes('location is not supported') || msg.includes('FAILED_PRECONDITION')) {
-        console.warn('[LLM MultiTurn] Gemini geoblocked — falling back to offline engine.');
-      } else if (msg.includes('Authentication Error') || msg.includes('401') || msg.includes('403') || msg.includes('API_KEY_INVALID')) {
-        console.warn('[LLM MultiTurn] Gemini API key invalid/unauthorized — falling back to offline engine.');
-      } else if (msg.includes('429') || msg.includes('quota') || msg.includes('Quota')) {
-        console.warn('[LLM MultiTurn] Gemini quota limit reached (429) — falling back.');
-      } else {
-        console.warn('[LLM MultiTurn] Gemini warning:', msg);
-      }
+      logProviderWarning('LLM MultiTurn', getErrorMessage(err));
     }
   }
 
@@ -297,16 +294,7 @@ export async function callLlmChat(
       });
       if (text) return { text, provider: 'Gemini', latencyMs: Date.now() - start };
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes('location is not supported') || msg.includes('FAILED_PRECONDITION')) {
-        console.warn('[LLM Chat] Gemini geoblocked — falling back to offline engine.');
-      } else if (msg.includes('Authentication Error') || msg.includes('401') || msg.includes('403') || msg.includes('API_KEY_INVALID')) {
-        console.warn('[LLM Chat] Gemini API key invalid/unauthorized — falling back to offline engine.');
-      } else if (msg.includes('429') || msg.includes('quota') || msg.includes('Quota')) {
-        console.warn('[LLM Chat] Gemini quota limit reached (429) — falling back.');
-      } else {
-        console.warn('[LLM Chat] Gemini warning:', msg);
-      }
+      logProviderWarning('LLM Chat', getErrorMessage(err));
     }
   }
 
@@ -314,9 +302,11 @@ export async function callLlmChat(
   const sdkMessages: Array<{ role: 'system' | 'assistant' | 'user'; content: string }> = [
     { role: 'system', content: systemPrompt },
   ];
-  // Add last few history items for context
+  
+  // Add last few history items for context with optimized iteration
   const recentHistory = history.slice(-6);
-  for (const msg of recentHistory) {
+  for (let i = 0; i < recentHistory.length; i++) {
+    const msg = recentHistory[i];
     if (msg.role === 'caan') sdkMessages.push({ role: 'assistant', content: msg.content });
     else if (msg.role === 'operator') sdkMessages.push({ role: 'user', content: msg.content });
   }
