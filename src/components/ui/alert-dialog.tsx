@@ -6,29 +6,32 @@ import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog"
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
 
-function AlertDialog({
+const AlertDialog = React.memo(function AlertDialog({
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Root>) {
   return <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />
-}
+})
+AlertDialog.displayName = "AlertDialog"
 
-function AlertDialogTrigger({
+const AlertDialogTrigger = React.memo(function AlertDialogTrigger({
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Trigger>) {
   return (
     <AlertDialogPrimitive.Trigger data-slot="alert-dialog-trigger" {...props} />
   )
-}
+})
+AlertDialogTrigger.displayName = "AlertDialogTrigger"
 
-function AlertDialogPortal({
+const AlertDialogPortal = React.memo(function AlertDialogPortal({
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Portal>) {
   return (
     <AlertDialogPrimitive.Portal data-slot="alert-dialog-portal" {...props} />
   )
-}
+})
+AlertDialogPortal.displayName = "AlertDialogPortal"
 
-function AlertDialogOverlay({
+const AlertDialogOverlay = React.memo(function AlertDialogOverlay({
   className,
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Overlay>) {
@@ -42,9 +45,10 @@ function AlertDialogOverlay({
       {...props}
     />
   )
-}
+})
+AlertDialogOverlay.displayName = "AlertDialogOverlay"
 
-function AlertDialogContent({
+const AlertDialogContent = React.memo(function AlertDialogContent({
   className,
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Content>) {
@@ -61,9 +65,10 @@ function AlertDialogContent({
       />
     </AlertDialogPortal>
   )
-}
+})
+AlertDialogContent.displayName = "AlertDialogContent"
 
-function AlertDialogHeader({
+const AlertDialogHeader = React.memo(function AlertDialogHeader({
   className,
   ...props
 }: React.ComponentProps<"div">) {
@@ -74,9 +79,10 @@ function AlertDialogHeader({
       {...props}
     />
   )
-}
+})
+AlertDialogHeader.displayName = "AlertDialogHeader"
 
-function AlertDialogFooter({
+const AlertDialogFooter = React.memo(function AlertDialogFooter({
   className,
   ...props
 }: React.ComponentProps<"div">) {
@@ -90,9 +96,10 @@ function AlertDialogFooter({
       {...props}
     />
   )
-}
+})
+AlertDialogFooter.displayName = "AlertDialogFooter"
 
-function AlertDialogTitle({
+const AlertDialogTitle = React.memo(function AlertDialogTitle({
   className,
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Title>) {
@@ -103,9 +110,10 @@ function AlertDialogTitle({
       {...props}
     />
   )
-}
+})
+AlertDialogTitle.displayName = "AlertDialogTitle"
 
-function AlertDialogDescription({
+const AlertDialogDescription = React.memo(function AlertDialogDescription({
   className,
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Description>) {
@@ -116,9 +124,10 @@ function AlertDialogDescription({
       {...props}
     />
   )
-}
+})
+AlertDialogDescription.displayName = "AlertDialogDescription"
 
-function AlertDialogAction({
+const AlertDialogAction = React.memo(function AlertDialogAction({
   className,
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Action>) {
@@ -128,9 +137,10 @@ function AlertDialogAction({
       {...props}
     />
   )
-}
+})
+AlertDialogAction.displayName = "AlertDialogAction"
 
-function AlertDialogCancel({
+const AlertDialogCancel = React.memo(function AlertDialogCancel({
   className,
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Cancel>) {
@@ -140,7 +150,8 @@ function AlertDialogCancel({
       {...props}
     />
   )
-}
+})
+AlertDialogCancel.displayName = "AlertDialogCancel"
 
 export {
   AlertDialog,
