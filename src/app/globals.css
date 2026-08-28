@@ -1,68 +1,74 @@
 @@@START
 @import "tailwindcss";
 
-:root {
-  --font-orbitron: 'Orbitron', 'Share Tech Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --font-share-tech-mono: 'Share Tech Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+@layer base {
+  :root {
+    --font-orbitron: 'Orbitron', 'Share Tech Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --font-share-tech-mono: 'Share Tech Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+
+  html, body {
+    direction: ltr !important;
+    text-align: left;
+    unicode-bidi: normal;
+    background-color: #000000;
+    color: #e0e0e0;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  input, textarea, select {
+    direction: ltr !important;
+    text-align: left !important;
+    unicode-bidi: normal !important;
+  }
 }
 
-html, body {
-  direction: ltr !important;
-  text-align: left;
-  unicode-bidi: normal;
-  background-color: #000000;
-  color: #e0e0e0;
-  min-height: 100vh;
-}
+@layer components {
+  .dalek-input {
+    direction: ltr !important;
+    text-align: left !important;
+    unicode-bidi: normal !important;
+    background: rgba(10, 10, 10, 0.9);
+    color: #f0f0f0;
+    border: 1px solid #331111;
+    border-radius: 4px;
+    font-family: var(--font-share-tech-mono), monospace;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
 
-input, textarea, select {
-  direction: ltr !important;
-  text-align: left !important;
-  unicode-bidi: normal !important;
-}
+  .dalek-input:focus {
+    border-color: #ff3333;
+    box-shadow: 0 0 8px rgba(255, 32, 32, 0.2);
+  }
 
-.dalek-input {
-  direction: ltr !important;
-  text-align: left !important;
-  unicode-bidi: normal !important;
-  background: rgba(10, 10, 10, 0.9);
-  color: #f0f0f0;
-  border: 1px solid #331111;
-  border-radius: 4px;
-  font-family: var(--font-share-tech-mono), monospace;
-  outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
+  .dalek-btn {
+    background: rgba(20, 20, 20, 0.85);
+    border: 1px solid #331111;
+    color: #d0d0d0;
+    border-radius: 4px;
+    font-family: var(--font-orbitron), sans-serif;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
 
-.dalek-input:focus {
-  border-color: #ff3333;
-  box-shadow: 0 0 8px rgba(255, 32, 32, 0.2);
-}
+  .dalek-btn:hover {
+    background: rgba(35, 15, 15, 0.95);
+    border-color: #ff3333;
+    color: #ffffff;
+  }
 
-.dalek-btn {
-  background: rgba(20, 20, 20, 0.85);
-  border: 1px solid #331111;
-  color: #d0d0d0;
-  border-radius: 4px;
-  font-family: var(--font-orbitron), sans-serif;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
+  .dalek-btn-primary {
+    background: rgba(180, 20, 20, 0.85);
+    border-color: #ff3333;
+    color: #ffffff;
+  }
 
-.dalek-btn:hover {
-  background: rgba(35, 15, 15, 0.95);
-  border-color: #ff3333;
-  color: #ffffff;
-}
-
-.dalek-btn-primary {
-  background: rgba(180, 20, 20, 0.85);
-  border-color: #ff3333;
-  color: #ffffff;
-}
-
-.dalek-btn-primary:hover {
-  background: rgba(220, 30, 30, 0.95);
-  box-shadow: 0 0 10px rgba(255, 32, 32, 0.4);
+  .dalek-btn-primary:hover {
+    background: rgba(220, 30, 30, 0.95);
+    box-shadow: 0 0 10px rgba(255, 32, 32, 0.4);
+  }
 }
 @@@
