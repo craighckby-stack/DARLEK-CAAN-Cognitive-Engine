@@ -4,7 +4,7 @@ import type { HealthCheckResult, SaturationMetrics } from '@/lib/types';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-type MutationStatus = 'pending' | 'applied' | 'rejected' | string;
+type MutationStatus = 'pending' | 'applied' | 'rejected' | (string & {});
 
 interface MutationInput {
   readonly status?: MutationStatus;
@@ -24,7 +24,7 @@ interface ErrorResponse {
 const ROUND_TWO = 2;
 const ROUND_THREE = 3;
 
-export async function POST(req: NextRequest): NextResponse<HealthCheckResult | ErrorResponse> {
+export async function POST(req: NextRequest): Promise<NextResponse<HealthCheckResult | ErrorResponse>> {
   let body: RequestBody = {};
   try {
     const text = await req.text();
@@ -32,7 +32,14 @@ export async function POST(req: NextRequest): NextResponse<HealthCheckResult | E
       body = JSON.parse(text) as RequestBody;
     }
   } catch {
-    // Fallback to empty body on parse error
+    return NextResponse.json(
+      {
+        metrics: null,
+        overallHealth: 'critical',
+        error: 'Invalid JSON payload format.',
+      } satisfies ErrorResponse,
+      { status: 400 }
+    );
   }
 
   const mutations = Array.isArray(body?.mutations) ? body.mutations : [];
