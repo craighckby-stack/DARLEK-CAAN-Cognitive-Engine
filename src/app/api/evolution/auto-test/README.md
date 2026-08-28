@@ -22,13 +22,24 @@ The **Auto-Test Runner** functions as the primary **Coherence Gate**, enforcing 
 > The `MutationEngine` invokes this module as a blocking operation immediately following every generation cycle. No code may persist without successfully clearing the Coherence Gate.
 
 ### Code Verification Example
+
 ```typescript
 /**
- * Example integration pattern for the Coherence Gate.
+ * @file validateMutation.ts
+ * @description Example integration pattern for the Coherence Gate.
  * Validates proposed code mutations against structural and security baselines.
  */
+
 import { AutoTestRunner } from '@/app/api/evolution/auto-test';
 
+/**
+ * Validates a proposed code mutation against baseline requirements.
+ * 
+ * @param {string} proposedCode - The newly generated code payload.
+ * @param {string} originalCode - The baseline source code prior to mutation.
+ * @returns {Promise<boolean>} Resolves to true if the mutation passes all checks.
+ * @throws {Error} Throws if high-severity failures are detected.
+ */
 async function validateMutation(proposedCode: string, originalCode: string): Promise<boolean> {
   const runner = new AutoTestRunner();
   const telemetry = await runner.executePipeline({ proposedCode, originalCode });
