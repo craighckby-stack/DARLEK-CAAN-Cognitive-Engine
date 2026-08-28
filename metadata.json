@@ -1,5 +1,6 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/EMG-Core/v49/main/metadata.json",
   "title": "ExtensionMetadata",
   "type": "object",
   "required": [
@@ -12,6 +13,7 @@
     "name": {
       "type": "string",
       "minLength": 1,
+      "maxLength": 128,
       "examples": [
         "Git Secret & PII Sanitizer"
       ]
@@ -19,6 +21,7 @@
     "description": {
       "type": "string",
       "minLength": 1,
+      "maxLength": 512,
       "examples": [
         "Deep PII and Secret Scanner for GitHub repositories."
       ]
@@ -26,7 +29,8 @@
     "requestFramePermissions": {
       "type": "array",
       "items": {
-        "type": "string"
+        "type": "string",
+        "minLength": 1
       },
       "uniqueItems": true,
       "default": []
