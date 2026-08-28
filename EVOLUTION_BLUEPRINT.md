@@ -1,16 +1,16 @@
-# DARLEK CANN v3.2 - Evolution Blueprint
+# DARLEK CANN v3.2 — Evolution Blueprint
 
 ## Architecture
 
-- **Atomic Injection**: Utilizes marker-based regular expressions to ensure idempotent updates and prevent state corruption.
-- **Transactional Safety**: Automatically provisions isolated backups in `.evolve_backups/` prior to executing any write operations.
-- **Integration Layer**: Incorporates siphoned UI patterns and design tokens from legacy systems `darlek-cann-v3` and `SN: OMEGA`.
+- **Atomic Injection**: Utilizes marker-based regular expressions to guarantee idempotent updates and prevent state corruption during file mutations.
+- **Transactional Safety**: Automatically provisions isolated backups within the `.evolve_backups/` directory prior to executing any write operations.
+- **Integration Layer**: Incorporates siphoned UI patterns and design tokens derived from legacy systems `darlek-cann-v3` and `SN: OMEGA`.
 
 ## Workflow Execution Pipeline
 
-1. **Scan Phase**: `updateModule.js` ingests and parses `src/App.tsx`.
-2. **Validation Phase**: Verifies the presence and integrity of designated injection markers.
-3. **Execution Phase**: Performs an atomic file write accompanied by a pre-flight backup snapshot.
+1. **Scan Phase**: `updateModule.js` ingests and parses the primary target source file (`src/App.tsx`).
+2. **Validation Phase**: Verifies the presence, syntax, and structural integrity of designated injection boundaries.
+3. **Execution Phase**: Performs an atomic file write accompanied by a pre-flight backup snapshot to ensure zero-downtime recovery.
 
 ```javascript
 /**
