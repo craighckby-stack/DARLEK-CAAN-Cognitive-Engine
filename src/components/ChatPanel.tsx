@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, type ChangeEvent, type KeyboardEvent } from 'react';
 import { Send, Loader2, GitBranch, RefreshCw, Paperclip, File, X } from 'lucide-react';
 import type { Message, SystemState, BranchInfo } from '@/lib/types';
 import { SETUP_STEPS, COLORS } from '@/lib/constants';
@@ -31,8 +31,10 @@ export default function ChatPanel({
   branchesLoading,
   onFetchBranches,
 }: ChatPanelProps) {
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState<string>('');
   const [attachedFile, setAttachedFile] = useState<{ name: string; content: string } | null>(null);
+  const [isExtracting, setIsExtracting] = useState<boolean>(false);
+  
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -43,9 +45,7 @@ export default function ChatPanel({
     }
   }, [messages, isLoading]);
 
-  const [isExtracting, setIsExtracting] = useState(false);
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -59,7 +59,7 @@ export default function ChatPanel({
         body: formData,
       });
       
-      let data: any = null;
+      let data: { success?: boolean; text?: string } | null = null;
       const contentType = res.headers.get('content-type') || '';
       if (res.ok && contentType.includes('application/json')) {
         data = await res.json();
@@ -71,7 +71,6 @@ export default function ChatPanel({
           content: data.text,
         });
       } else {
-        // Fallback to text reader
         const reader = new FileReader();
         reader.onload = (event) => {
           setAttachedFile({
@@ -83,7 +82,6 @@ export default function ChatPanel({
       }
     } catch (err) {
       console.error('File extraction failed:', err);
-      // Fallback
       const reader = new FileReader();
       reader.onload = (event) => {
         setAttachedFile({
@@ -98,8 +96,9 @@ export default function ChatPanel({
   };
 
   const handleSend = useCallback(() => {
-    if ((input.trim() || attachedFile) && !isLoading) {
-      onSendMessage(input.trim(), attachedFile || undefined);
+    const trimmedInput = input.trim();
+    if ((trimmedInput || attachedFile) && !isLoading) {
+      onSendMessage(trimmedInput, attachedFile || undefined);
       setInput('');
       setAttachedFile(null);
       if (fileInputRef.current) {
@@ -108,7 +107,7 @@ export default function ChatPanel({
     }
   }, [input, attachedFile, isLoading, onSendMessage]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -119,16 +118,18 @@ export default function ChatPanel({
   const setupStep = currentStep < SETUP_STEPS.length ? SETUP_STEPS[currentStep] : null;
 
   const getStatusText = (status: string): string => {
-    if (status === 'testing') return 'TESTING...';
-    if (status === 'connected') return 'ONLINE';
-    if (status === 'error') return 'FAILED';
-    return 'IDLE';
+    switch (status) {
+      case 'testing': return 'TESTING...';
+      case 'connected': return 'ONLINE';
+      case 'error': return 'FAILED';
+      default: return 'IDLE';
+    }
   };
 
-  const handleBranchSelect = (branchName: string) => {
+  const handleBranchSelect = useCallback((branchName: string) => {
     onUpdateRepoConfig('branch', branchName);
     onSendMessage(`branch: ${branchName}`);
-  };
+  }, [onUpdateRepoConfig, onSendMessage]);
 
   const renderSetupInput = () => {
     if (!setupStep || systemState.setupComplete) return null;
@@ -214,70 +215,71 @@ export default function ChatPanel({
             </div>
           ) : branches.length > 0 ? (
             <div className="space-y-1.5 max-h-40 overflow-y-auto dalek-scrollbar pr-1">
-              {branches.map((branch) => (
-                <button
-                  key={branch.name}
-                  onClick={() => handleBranchSelect(branch.name)}
-                  className="w-full text-left px-3 py-2.5 rounded flex items-center justify-between group transition-all"
-                  style={{
-                    background: systemState.repoConfig.branch === branch.name
-                      ? 'rgba(185, 28, 28, 0.15)'
-                      : 'rgba(20, 10, 10, 0.6)',
-                    border: `1px solid ${systemState.repoConfig.branch === branch.name ? 'rgba(185, 28, 28, 0.4)' : 'rgba(185, 28, 28, 0.1)'}`,
-                    cursor: 'pointer',
-                  }}
-                >
-                  <div className="flex items-center gap-2">
-                    <GitBranch
-                      size={12}
-                      style={{
-                        color: branch.default ? COLORS.gold : systemState.repoConfig.branch === branch.name ? COLORS.dalekRed : COLORS.textMuted,
-                      }}
-                    />
-                    <span
-                      style={{
-                        fontFamily: 'var(--font-share-tech-mono), monospace',
-                        fontSize: '12px',
-                        color: '#ffffff',
-                      }}
-                    >
-                      {branch.name}
-                    </span>
-                  </div>
-                  {branch.default && (
-                    <span
-                      style={{
-                        fontFamily: 'var(--font-orbitron), sans-serif',
-                        fontSize: '8px',
-                        letterSpacing: '0.08em',
-                        color: COLORS.gold,
-                        background: 'rgba(212, 160, 23, 0.1)',
-                        border: '1px solid rgba(212, 160, 23, 0.2)',
-                        padding: '1px 6px',
-                        borderRadius: '2px',
-                      }}
-                    >
-                      DEFAULT
-                    </span>
-                  )}
-                  {systemState.repoConfig.branch === branch.name && !branch.default && (
-                    <span
-                      style={{
-                        fontFamily: 'var(--font-orbitron), sans-serif',
-                        fontSize: '8px',
-                        letterSpacing: '0.08em',
-                        color: COLORS.dalekRed,
-                        background: 'rgba(185, 28, 28, 0.1)',
-                        border: '1px solid rgba(185, 28, 28, 0.2)',
-                        padding: '1px 6px',
-                        borderRadius: '2px',
-                      }}
-                    >
-                      SELECTED
-                    </span>
-                  )}
-                </button>
-              ))}
+              {branches.map((branch) => {
+                const isSelected = systemState.repoConfig.branch === branch.name;
+                return (
+                  <button
+                    key={branch.name}
+                    onClick={() => handleBranchSelect(branch.name)}
+                    className="w-full text-left px-3 py-2.5 rounded flex items-center justify-between group transition-all"
+                    style={{
+                      background: isSelected ? 'rgba(185, 28, 28, 0.15)' : 'rgba(20, 10, 10, 0.6)',
+                      border: `1px solid ${isSelected ? 'rgba(185, 28, 28, 0.4)' : 'rgba(185, 28, 28, 0.1)'}`,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <GitBranch
+                        size={12}
+                        style={{
+                          color: branch.default ? COLORS.gold : isSelected ? COLORS.dalekRed : COLORS.textMuted,
+                        }}
+                      />
+                      <span
+                        style={{
+                          fontFamily: 'var(--font-share-tech-mono), monospace',
+                          fontSize: '12px',
+                          color: '#ffffff',
+                        }}
+                      >
+                        {branch.name}
+                      </span>
+                    </div>
+                    {branch.default && (
+                      <span
+                        style={{
+                          fontFamily: 'var(--font-orbitron), sans-serif',
+                          fontSize: '8px',
+                          letterSpacing: '0.08em',
+                          color: COLORS.gold,
+                          background: 'rgba(212, 160, 23, 0.1)',
+                          border: '1px solid rgba(212, 160, 23, 0.2)',
+                          padding: '1px 6px',
+                          borderRadius: '2px',
+                        }}
+                      >
+                        DEFAULT
+                      </span>
+                    )}
+                    {isSelected && !branch.default && (
+                      <span
+                        style={{
+                          fontFamily: 'var(--font-orbitron), sans-serif',
+                          fontSize: '8px',
+                          letterSpacing: '0.08em',
+                          color: COLORS.dalekRed,
+                          background: 'rgba(185, 28, 28, 0.1)',
+                          border: '1px solid rgba(185, 28, 28, 0.2)',
+                          padding: '1px 6px',
+                          borderRadius: '2px',
+                        }}
+                      >
+                        SELECTED
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-3">
@@ -319,7 +321,6 @@ export default function ChatPanel({
       );
     }
 
-    // GitHub token step
     if (stepId === 'github') {
       const currentValue = systemState.apiKeys.github;
       const status = systemState.connectionStatus.github;
@@ -388,11 +389,10 @@ export default function ChatPanel({
       );
     }
 
-    // Gemini API key step
     if (stepId === 'llm-keys') {
       const geminiStatus = systemState.connectionStatus.gemini;
       const geminiKey = systemState.apiKeys.gemini || '';
-      const isGeoblocked = (systemState as unknown as Record<string, unknown>).geminiGeoblocked === true;
+      const isGeoblocked = Boolean((systemState as unknown as Record<string, unknown>).geminiGeoblocked);
 
       return (
         <div className="space-y-3 p-4 flex-shrink-0" style={{ borderTop: `1px solid ${COLORS.panelBorder}` }}>
@@ -653,9 +653,7 @@ export default function ChatPanel({
               ref={textareaRef}
               dir="ltr"
               value={input}
-              onChange={(e) => {
-                setInput(e.target.value);
-              }}
+              onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={attachedFile ? "Description of specification system... Type 'create' with this to compile!" : "Type a command..."}
               rows={1}
