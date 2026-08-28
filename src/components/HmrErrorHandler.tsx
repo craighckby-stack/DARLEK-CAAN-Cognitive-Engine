@@ -12,10 +12,15 @@ const SUPPRESSED_ERROR_PATTERNS = [
 
 const SUPPRESSED_ERROR_NAMES = new Set(['ChunkLoadError']);
 
+interface ErrorObject {
+  message?: unknown;
+  name?: unknown;
+}
+
 export default function HmrErrorHandler(): null {
   useEffect(() => {
     const handleRejection = (event: PromiseRejectionEvent): void => {
-      const reason = event.reason;
+      const { reason } = event;
       
       let message = '';
       let name = '';
@@ -23,11 +28,12 @@ export default function HmrErrorHandler(): null {
       if (typeof reason === 'string') {
         message = reason;
       } else if (reason !== null && typeof reason === 'object') {
-        if ('message' in reason && typeof (reason as Record<string, unknown>).message === 'string') {
-          message = (reason as { message: string }).message;
+        const errObj = reason as ErrorObject;
+        if (typeof errObj.message === 'string') {
+          message = errObj.message;
         }
-        if ('name' in reason && typeof (reason as Record<string, unknown>).name === 'string') {
-          name = (reason as { name: string }).name;
+        if (typeof errObj.name === 'string') {
+          name = errObj.name;
         }
       }
 
