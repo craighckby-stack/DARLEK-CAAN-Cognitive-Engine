@@ -36,6 +36,7 @@ export interface SaturationProps {
 
 /**
  * SaturationMetrics telemetry visualization component.
+ * Monitors structural changes and semantic saturation with optimized memoization.
  */
 export const SaturationMetrics: React.FC<SaturationProps> = ({ metrics, refreshRate = 1000 }) => {
   // Memoized threshold calculation to prevent redundant processing
