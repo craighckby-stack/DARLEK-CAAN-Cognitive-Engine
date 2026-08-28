@@ -1,29 +1,3 @@
-reposatory enhancer. 
-
-version 5 billion.
-
-see screen shots .
-
-nothing fancy passes to llm a chunk to process via debate system.  all editable. 
-
-security Auditor sanitiser work in progress.
-
-few other sims.
-
-work in progress if not working just being edited.
-
-
-also type prompt at bottom.   type help. features auto create repo from one document " describe what you want it does it.  work in progress currently just sets up tree for enhancment 
-
-
-below Gemini generated discription "over the top " 
-
-stable currently .  
-
-
-
-
-
 # 🛡️ Git Secret & PII Sanitizer & Autonomous Code Evolution Platform
 
 [![Live App](https://img.shields.io/badge/Live_App-Open_Application-00FF88?style=for-the-badge&logo=googlecloud)](https://ais-dev-amubz4v3czr3772fnvrcru-483535245139.asia-southeast1.run.app)
@@ -57,7 +31,7 @@ It combines multi-pattern regex matching, Shannon-entropy detection, and Luhn ch
 - **Granular Confidence Scoring**: Every finding is categorized as `High`, `Medium`, or `Low` confidence with line numbers, code snippets, and exact offset coordinates.
 
 ### 2. 🧯 Surgical Remediation & Full Git History Purge
-- **Non-Destructive In-Place Redaction**: Replaces only the matched secret value while preserving variable syntax, comments, and structure (e.g. `API_KEY="<OPENAI_API_KEY_REDACTED>"`).
+- **Non-Destructive In-Place Redaction**: Replaces only the matched secret value while preserving variable syntax, comments, and structure (e.g., `API_KEY="<OPENAI_API_KEY_REDACTED>"`).
 - **Automated `git filter-repo` Script Generator**: Generates deterministic `replacements.txt` rule sets to purge leaked tokens across all commits in historical Git tree objects without deleting files.
 - **Direct GitHub Commit Fix**: Instantly patch HEAD branches with conventional security commit messages (`fix(security): redact exposed API_KEY in <path>`).
 - **Confirmation Safety Circuit**: Multi-step confirmation required before destructive rewrite scripts are unlocked.
