@@ -15,6 +15,11 @@ const REMOTE_BLOBS_PATH = 'remote_blobs.json';
 const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/craighckby-stack/epistemic_debate_engine/main/';
 const USER_AGENT = 'EMG-Neural-Code-Optimizer-v49';
 
+/**
+ * Fetches remote content from a given URL using a secure HTTPS request.
+ * @param {string} url - The target URL to fetch.
+ * @returns {Promise<string>} The response body as a string.
+ */
 function fetchRemoteContent(url) {
   return new Promise((resolve, reject) => {
     const req = https.get(url, { headers: { 'User-Agent': USER_AGENT } }, (res) => {
@@ -22,12 +27,14 @@ function fetchRemoteContent(url) {
         res.resume();
         return reject(new Error(`Failed to fetch ${url}, status code: ${res.statusCode}`));
       }
-      let data = '';
+      
+      // Use array chunks to optimize memory efficiency for large payloads
+      const chunks = [];
       res.on('data', (chunk) => {
-        data += chunk;
+        chunks.push(chunk);
       });
       res.on('end', () => {
-        resolve(data);
+        resolve(Buffer.concat(chunks).toString('utf8'));
       });
     });
 
@@ -37,6 +44,10 @@ function fetchRemoteContent(url) {
   });
 }
 
+/**
+ * Main execution routine for identifying and updating changed files.
+ * @returns {Promise<void>}
+ */
 async function main() {
   let remoteBlobs;
   try {
@@ -47,10 +58,15 @@ async function main() {
     process.exit(1);
   }
 
+  if (!Array.isArray(remoteBlobs)) {
+    console.error(`Invalid structure in ${REMOTE_BLOBS_PATH}: Expected an array.`);
+    process.exit(1);
+  }
+
   const changed = [];
 
   const candidateFiles = remoteBlobs.filter(
-    (f) => typeof f.path === 'string' && f.path.startsWith('src/') && fs.existsSync(f.path)
+    (f) => f && typeof f.path === 'string' && f.path.startsWith('src/') && fs.existsSync(f.path)
   );
 
   const promises = candidateFiles.map(async (fileObj) => {
