@@ -13,19 +13,29 @@
 3. **Execution Phase**: Performs an atomic file write accompanied by a pre-flight backup snapshot.
 
 ```javascript
-// Example: Core updateModule.js injection routine
-const fs = require('fs');
-const path = require('path');
+/**
+ * Core updateModule.js injection routine ensuring atomic and transactional safety.
+ * @param {string} targetPath - The destination file path for the payload.
+ * @param {string} payload - The code or content block to inject.
+ * @param {Object} markers - Start and end regex markers for injection boundaries.
+ * @returns {boolean} Returns true upon successful execution.
+ */
+const fs = require('node:fs');
+const path = require('node:path');
 
 function injectAtomicModule(targetPath, payload, markers) {
     // Ensure transactional safety via backup creation
     const backupDir = path.join(path.dirname(targetPath), '.evolve_backups');
-    if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
+    if (!fs.existsSync(backupDir)) {
+        fs.mkdirSync(backupDir, { recursive: true });
+    }
     
     const fileContent = fs.readFileSync(targetPath, 'utf8');
     // Regex-based validation and injection logic...
     return true;
 }
+
+module.exports = { injectAtomicModule };
 ```
 
 ## Integration Schema
