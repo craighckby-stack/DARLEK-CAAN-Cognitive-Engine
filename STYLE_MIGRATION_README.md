@@ -1,7 +1,7 @@
 # 💠 STYLE MIGRATION PROTOCOL :: GLASS-EMERGENT
 
 ## ▮ OVERVIEW
-This module executes the mandatory transition of UI primitives from legacy **Zinc** palettes to the high-fidelity **Glass-Emergent** design system, as mandated by the `darlek-cann-v3` architecture. All legacy tokens are formally deprecated to enforce absolute stylistic purity and visual consistency.
+This module executes the mandatory transition of UI primitives from legacy **Zinc** palettes to the high-fidelity **Glass-Emergent** design system, as mandated by the `darlek-cann-v3` architecture. All legacy tokens are formally deprecated to enforce absolute stylistic purity and visual consistency across all interfaces.
 
 ---
 
@@ -23,6 +23,7 @@ import { STYLE_MAPPINGS } from './style-mappings';
 
 /**
  * Executes deterministic token transformation on source file contents.
+ * 
  * @param sourceContent - Raw string payload of the target source file.
  * @returns A promise resolving to the fully refactored string payload.
  */
