@@ -12,15 +12,15 @@ import {
 } from "@/components/ui/toast"
 import type { ToastProps } from "@radix-ui/react-toast"
 
-interface ToastItem extends ToastProps {
+export interface ToastItem extends ToastProps {
   id: string
   title?: React.ReactNode
   description?: React.ReactNode
   action?: React.ReactNode
 }
 
-const ToastItemComponent = memo(({ id, title, description, action, ...props }: ToastItem) => (
-  <Toast key={id} {...props}>
+const ToastItemComponent = memo<ToastItem>(({ id, title, description, action, ...props }) => (
+  <Toast {...props}>
     <div className="grid gap-1">
       {title && <ToastTitle>{title}</ToastTitle>}
       {description && <ToastDescription>{description}</ToastDescription>}
@@ -37,9 +37,10 @@ export const Toaster: React.FC = memo(() => {
 
   return (
     <ToastProvider>
-      {toasts.map((toast) => (
-        <ToastItemComponent key={toast.id} {...toast} />
-      ))}
+      {toasts.map((toast) => {
+        const { id, ...toastProps } = toast
+        return <ToastItemComponent key={id} id={id} {...toastProps} />
+      })}
       <ToastViewport />
     </ToastProvider>
   )
