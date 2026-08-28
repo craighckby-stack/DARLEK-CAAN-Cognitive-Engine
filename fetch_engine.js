@@ -5,61 +5,140 @@
  * Architecture: Type-safe modular unit with resilient state interfaces.
  */
 
+// @ts-check
+
 'use strict';
 
-const https = require('https');
+const https = require('node:https');
+const { URL } = require('node:url');
+
+/**
+ * Maximum safety threshold for response payload in characters (1MB).
+ * @type {number}
+ */
+const MAX_PAYLOAD_LIMIT = 1048576;
+
+/**
+ * Output display character limit.
+ * @type {number}
+ */
+const OUTPUT_LIMIT = 4000;
+
+/**
+ * Network request timeout duration in milliseconds.
+ * @type {number}
+ */
+const REQUEST_TIMEOUT_MS = 10000;
+
+/**
+ * Immutable headers configured for network requests.
+ * @type {Readonly<Record<string, string>>}
+ */
+const DEFAULT_HEADERS = Object.freeze({
+  'User-Agent': 'EMG-Core-v49-Neural-Code-Optimizer',
+  'Accept': 'text/plain,application/json,*/*'
+});
 
 /**
  * Safely fetches and streams a remote resource with robust error handling and memory optimization.
  * @param {string} targetUrl - The URL to fetch data from.
- * @returns {Promise<void>}
+ * @returns {Promise<void>} Resolves when resource fetching and processing complete successfully.
  */
 function executeFetchEngine(targetUrl) {
   return new Promise((resolve, reject) => {
+    if (typeof targetUrl !== 'string' || targetUrl.trim() === '') {
+      return reject(new TypeError('Target URL must be a non-empty string.'));
+    }
+
+    /** @type {URL} */
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(targetUrl);
+    } catch (urlError) {
+      return reject(new TypeError(`Invalid Target URL provided: ${/** @type {Error} */ (urlError).message}`));
+    }
+
     const options = {
-      headers: {
-        'User-Agent': 'EMG-Core-v49-Neural-Code-Optimizer',
-        'Accept': 'text/plain,application/json,*/*'
+      headers: DEFAULT_HEADERS
+    };
+
+    /** @type {boolean} */
+    let isSettled = false;
+
+    /**
+     * Rejects the promise once and guarantees single settlement state.
+     * @param {Error} err - The error object to reject with.
+     */
+    const fail = (err) => {
+      if (!isSettled) {
+        isSettled = true;
+        reject(err);
       }
     };
 
-    const req = https.get(targetUrl, options, (res) => {
+    /**
+     * Resolves the promise once and guarantees single settlement state.
+     */
+    const succeed = () => {
+      if (!isSettled) {
+        isSettled = true;
+        resolve();
+      }
+    };
+
+    const req = https.get(parsedUrl, options, (res) => {
+      const statusCode = res.statusCode ?? 0;
+
       // Validate HTTP status code
-      if (res.statusCode && (res.statusCode < 200 || res.statusCode >= 300)) {
+      if (statusCode < 200 || statusCode >= 300) {
         res.resume(); // Consume response data to free up memory
-        return reject(new Error(`HTTP Request Failed. Status Code: ${res.statusCode}`));
+        return fail(new Error(`HTTP Request Failed. Status Code: ${statusCode}`));
       }
 
       // Enforce strict encoding to prevent buffer corruption
       res.setEncoding('utf8');
 
-      let data = '';
+      /** @type {string[]} */
+      const chunks = [];
+      let totalLength = 0;
+
       res.on('data', (chunk) => {
-        data += chunk;
-        // Prevent memory overflow by capping accumulated string length if necessary
-        if (data.length > 1048576) { // 1MB safety threshold
+        if (isSettled) return;
+
+        totalLength += chunk.length;
+        if (totalLength > MAX_PAYLOAD_LIMIT) {
           res.destroy(new Error('Payload size exceeded maximum safety threshold.'));
+          return;
         }
+
+        chunks.push(chunk);
+      });
+
+      res.on('error', (resErr) => {
+        fail(new Error(`Network transmission error: ${resErr.message}`));
       });
 
       res.on('end', () => {
+        if (isSettled) return;
+
         try {
-          const output = data.substring(0, 4000);
+          const fullData = chunks.join('');
+          const output = fullData.substring(0, OUTPUT_LIMIT);
           console.log(output);
-          resolve();
+          succeed();
         } catch (err) {
-          reject(err);
+          fail(/** @type {Error} */ (err));
         }
       });
     });
 
     req.on('error', (err) => {
-      reject(new Error(`Network transmission error: ${err.message}`));
+      fail(new Error(`Network transmission error: ${err.message}`));
     });
 
     // Set request timeout for resilience
-    req.setTimeout(10000, () => {
-      req.destroy(new Error('Request timed out after 10000ms.'));
+    req.setTimeout(REQUEST_TIMEOUT_MS, () => {
+      req.destroy(new Error(`Request timed out after ${REQUEST_TIMEOUT_MS}ms.`));
     });
   });
 }
