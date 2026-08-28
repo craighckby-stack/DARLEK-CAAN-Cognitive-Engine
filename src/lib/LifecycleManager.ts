@@ -10,7 +10,7 @@ export class LifecycleManager {
     if (this.isDestroyed) {
       try {
         sub.unsubscribe();
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Failed to immediately teardown subscription on destroyed LifecycleManager:', error);
       }
       return;
@@ -27,10 +27,11 @@ export class LifecycleManager {
     const currentSubs = this.subscriptions;
     this.subscriptions = [];
 
-    for (let i = currentSubs.length - 1; i >= 0; i--) {
+    let i = currentSubs.length;
+    while (i-- > 0) {
       try {
         currentSubs[i].unsubscribe();
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Error during subscription teardown:', error);
       }
     }
