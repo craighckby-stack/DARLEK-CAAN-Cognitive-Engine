@@ -35,9 +35,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    if (this.props.onError) {
+    const { onError } = this.props;
+    if (onError) {
       try {
-        this.props.onError(error, errorInfo);
+        onError(error, errorInfo);
       } catch (reporterError) {
         console.error('Error in custom onError boundary handler:', reporterError);
       }
@@ -45,7 +46,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
     console.error('Uncaught error inside Neural Boundary:', error, errorInfo);
 
-    const errorMessage = error?.message || '';
+    const errorMessage = error?.message ?? '';
     const isChunkError =
       errorMessage.includes('Loading chunk') ||
       error?.name === 'ChunkLoadError' ||
@@ -94,7 +95,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         const parsed = JSON.parse(error.message) as FirestoreErrorPayload;
         if (parsed && typeof parsed === 'object' && parsed.operationType && parsed.authInfo) {
           isFirestoreError = true;
-          errorMessage = `Firestore ${parsed.operationType.toUpperCase()} error at path: ${parsed.path || 'unknown'}. ${parsed.error || 'Unknown database exception'}`;
+          errorMessage = `Firestore ${parsed.operationType.toUpperCase()} error at path: ${parsed.path ?? 'unknown'}. ${parsed.error ?? 'Unknown database exception'}`;
         }
       } catch {
         errorMessage = error.message;
