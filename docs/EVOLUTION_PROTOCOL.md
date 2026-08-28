@@ -1,4 +1,4 @@
-# DARLEK CANN v3.1: Evolution Protocol
+# DARLEK CAAN v3.1: Evolution Protocol
 
 ## Architectural Blueprint
 This module serves as the primary injection vector for the **Dalek Caan UI components**. It utilizes an idempotent marker system to ensure runtime UI updates prevent duplicate Document Object Model (DOM) node generation and mitigate potential memory leaks across dynamic rendering cycles.
@@ -19,7 +19,11 @@ This module serves as the primary injection vector for the **Dalek Caan UI compo
 /**
  * @fileoverview Example Integration Marker Structure in src/App.tsx
  * @module DalekCaanUIIntegration
+ * @version 3.1.0
  */
+
+import React from 'react';
+import { DalekCaanUIComponent } from './components/DalekCaanUIComponent';
 
 // DALEK_UI_START
 export function RenderDalekUI(): JSX.Element {
