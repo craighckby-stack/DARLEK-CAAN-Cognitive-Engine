@@ -28,7 +28,7 @@ export async function safeApiFetch<T = unknown>(
       status: typeof result?.status === 'number' ? result.status : 500,
       ...(result?.error ? { error: result.error } : {}),
     };
-  } catch (error) {
+  } catch (error: unknown) {
     return {
       success: false,
       data: null,
