@@ -1,16 +1,16 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
-export interface CardProps extends React.ComponentProps<"div"> {
+export interface CardProps extends React.ComponentPropsWithoutRef<"div"> {
   asChild?: boolean
 }
 
-export type CardHeaderProps = React.ComponentProps<"div">
-export type CardTitleProps = React.ComponentProps<"div">
-export type CardDescriptionProps = React.ComponentProps<"div">
-export type CardActionProps = React.ComponentProps<"div">
-export type CardContentProps = React.ComponentProps<"div">
-export type CardFooterProps = React.ComponentProps<"div">
+export type CardHeaderProps = React.ComponentPropsWithoutRef<"div">
+export type CardTitleProps = React.ComponentPropsWithoutRef<"div">
+export type CardDescriptionProps = React.ComponentPropsWithoutRef<"div">
+export type CardActionProps = React.ComponentPropsWithoutRef<"div">
+export type CardContentProps = React.ComponentPropsWithoutRef<"div">
+export type CardFooterProps = React.ComponentPropsWithoutRef<"div">
 
 const Card = React.memo(
   React.forwardRef<HTMLDivElement, CardProps>(
