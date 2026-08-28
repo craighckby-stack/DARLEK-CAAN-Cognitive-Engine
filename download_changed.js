@@ -8,7 +8,9 @@
 'use strict';
 
 const fs = require('node:fs');
+const fsPromises = require('node:fs/promises');
 const https = require('node:https');
+const path = require('node:path');
 
 /**
  * @typedef {Object} RemoteBlob
@@ -18,53 +20,72 @@ const https = require('node:https');
 
 const REPOSITORY_BASE_URL = 'https://raw.githubusercontent.com/craighckby-stack/epistemic_debate_engine/main/';
 const USER_AGENT = 'EMG-Core-v49-Neural-Code-Optimizer';
+const HTTP_TIMEOUT_MS = 15000;
 
 /**
  * Safely loads and parses the remote blobs inventory.
- * @returns {RemoteBlob[]}
+ * @returns {RemoteBlob[]} Array of validated RemoteBlob objects.
  */
 function loadRemoteBlobs() {
   try {
     const rawData = fs.readFileSync('remote_blobs.json', 'utf8');
     const parsed = JSON.parse(rawData);
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    return parsed.filter(
+      (item) => item !== null && typeof item === 'object' && typeof item.path === 'string'
+    );
   } catch (error) {
-    console.error('CRITICAL: Failed to read or parse remote_blobs.json:', error.message);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('CRITICAL: Failed to read or parse remote_blobs.json:', message);
     return [];
   }
 }
 
 /**
- * Fetches remote file content via HTTPS with strict error handling.
- * @param {string} url 
- * @returns {Promise<string>}
+ * Fetches remote file content via HTTPS with strict error handling, memory-efficient buffering, and request timeouts.
+ * @param {string} url - Target URL to fetch content from.
+ * @returns {Promise<string>} Resolved string content from remote response.
  */
 function fetchRemoteContent(url) {
   return new Promise((resolve, reject) => {
-    const req = https.get(url, { headers: { 'User-Agent': USER_AGENT } }, (res) => {
-      if (res.statusCode !== 200) {
-        res.resume();
-        return reject(new Error(`HTTP Status Code: ${res.statusCode}`));
-      }
+    const req = https.get(
+      url,
+      {
+        headers: { 'User-Agent': USER_AGENT },
+        timeout: HTTP_TIMEOUT_MS,
+      },
+      (res) => {
+        if (res.statusCode !== 200) {
+          res.resume();
+          return reject(new Error(`HTTP Status Code: ${res.statusCode}`));
+        }
 
-      let data = '';
-      res.setEncoding('utf8');
-      res.on('data', chunk => {
-        data += chunk;
-      });
-      res.on('end', () => resolve(data));
+        /** @type {Buffer[]} */
+        const chunks = [];
+        res.on('data', (chunk) => chunks.push(chunk));
+        res.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+        res.on('error', (err) => reject(err));
+      }
+    );
+
+    req.on('timeout', () => {
+      req.destroy(new Error(`Request timed out after ${HTTP_TIMEOUT_MS}ms`));
     });
 
-    req.on('error', err => reject(err));
+    req.on('error', (err) => reject(err));
     req.end();
   });
 }
 
 /**
  * Asynchronously processes remote blobs, detects modifications, synchronizes files, and outputs results.
+ * @returns {Promise<void>}
  */
 async function processBlobsSequentially() {
   const remoteBlobs = loadRemoteBlobs();
+  /** @type {RemoteBlob[]} */
   const changed = [];
 
   for (const fileObj of remoteBlobs) {
@@ -77,29 +98,49 @@ async function processBlobsSequentially() {
     }
 
     try {
-      if (fs.existsSync(fileObj.path)) {
-        const localContent = fs.readFileSync(fileObj.path, 'utf8');
+      let fileExists = false;
+      try {
+        await fsPromises.access(fileObj.path, fs.constants.F_OK);
+        fileExists = true;
+      } catch {
+        fileExists = false;
+      }
+
+      if (fileExists) {
+        const localContent = await fsPromises.readFile(fileObj.path, 'utf8');
         const remoteUrl = REPOSITORY_BASE_URL + fileObj.path;
-        
+
         const remoteContent = await fetchRemoteContent(remoteUrl);
 
         if (remoteContent !== localContent) {
           console.log(`Changed: ${fileObj.path}`);
           changed.push(fileObj);
-          fs.writeFileSync(fileObj.path, remoteContent, 'utf8');
+          await fsPromises.writeFile(fileObj.path, remoteContent, 'utf8');
         }
       }
     } catch (error) {
-      console.warn(`Warning: Failed to process path "${fileObj.path}":`, error.message);
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(`Warning: Failed to process path "${fileObj.path}":`, message);
     }
   }
 
   try {
-    fs.writeFileSync('changed_files.json', JSON.stringify(changed, null, 2), 'utf8');
+    await fsPromises.writeFile('changed_files.json', JSON.stringify(changed, null, 2), 'utf8');
     console.log(`Found ${changed.length} changed files.`);
   } catch (error) {
-    console.error('CRITICAL: Failed to write changed_files.json:', error.message);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('CRITICAL: Failed to write changed_files.json:', message);
   }
 }
 
-processBlobsSequentially();
+if (require.main === module) {
+  processBlobsSequentially().catch((err) => {
+    console.error('Unhandled fatal error in processBlobsSequentially:', err);
+  });
+}
+
+module.exports = {
+  loadRemoteBlobs,
+  fetchRemoteContent,
+  processBlobsSequentially,
+};
