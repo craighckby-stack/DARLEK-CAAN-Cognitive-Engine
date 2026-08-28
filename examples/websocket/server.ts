@@ -5,27 +5,16 @@
  * Architecture: Type-safe modular unit with resilient state interfaces.
  */
 
-import { createServer } from 'http'
-import { Server } from 'socket.io'
+import { createServer, Server as HttpServer } from 'node:http'
+import { randomUUID } from 'node:crypto'
+import { Server, Socket } from 'socket.io'
 
-const httpServer = createServer()
-const io = new Server(httpServer, {
-  // DO NOT change the path, it is used by Caddy to forward the request to the correct port
-  path: '/',
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  },
-  pingTimeout: 60000,
-  pingInterval: 25000,
-})
-
-interface User {
+export interface User {
   id: string
   username: string
 }
 
-interface Message {
+export interface Message {
   id: string
   username: string
   content: string
@@ -33,9 +22,43 @@ interface Message {
   type: 'user' | 'system'
 }
 
+export interface ServerToClientEvents {
+  'test-response': (response: { message: string; data: unknown; timestamp: string }) => void
+  'user-joined': (payload: { user: User; message: Message }) => void
+  'users-list': (payload: { users: User[] }) => void
+  'message': (payload: Message) => void
+  'user-left': (payload: { user: User; message: Message }) => void
+}
+
+export interface ClientToServerEvents {
+  'test': (data: unknown) => void
+  'join': (data: { username: string }) => void
+  'message': (data: { content: string; username: string }) => void
+}
+
+export interface InterServerEvents {}
+export interface SocketData {}
+
+const PORT = Number(process.env.PORT) || 3003
+const MAX_USERNAME_LENGTH = 50
+const MAX_CONTENT_LENGTH = 1000
+
+const httpServer: HttpServer = createServer()
+
+const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(httpServer, {
+  // DO NOT change the path, it is used by Caddy to forward the request to the correct port
+  path: '/',
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST']
+  },
+  pingTimeout: 60000,
+  pingInterval: 25000
+})
+
 const users = new Map<string, User>()
 
-const generateMessageId = () => Math.random().toString(36).substr(2, 9)
+const generateMessageId = (): string => randomUUID()
 
 const createSystemMessage = (content: string): Message => ({
   id: generateMessageId(),
@@ -53,93 +76,125 @@ const createUserMessage = (username: string, content: string): Message => ({
   type: 'user'
 })
 
-io.on('connection', (socket) => {
+io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>) => {
   console.log(`User connected: ${socket.id}`)
 
-  // Add test event handler
-  socket.on('test', (data) => {
-    console.log('Received test message:', data)
-    socket.emit('test-response', { 
-      message: 'Server received test message', 
-      data: data,
-      timestamp: new Date().toISOString()
-    })
+  socket.on('test', (data: unknown) => {
+    try {
+      console.log('Received test message:', data)
+      socket.emit('test-response', { 
+        message: 'Server received test message', 
+        data,
+        timestamp: new Date().toISOString()
+      })
+    } catch (error) {
+      console.error(`Error handling 'test' event for socket ${socket.id}:`, error)
+    }
   })
 
   socket.on('join', (data: { username: string }) => {
-    const { username } = data
-    
-    // Create user object
-    const user: User = {
-      id: socket.id,
-      username
+    try {
+      if (!data || typeof data.username !== 'string') {
+        return
+      }
+
+      const username = data.username.trim().slice(0, MAX_USERNAME_LENGTH)
+      if (!username) {
+        return
+      }
+
+      const user: User = {
+        id: socket.id,
+        username
+      }
+
+      users.set(socket.id, user)
+
+      const joinMessage = createSystemMessage(`${username} joined the chat room`)
+      io.emit('user-joined', { user, message: joinMessage })
+
+      const usersList = Array.from(users.values())
+      socket.emit('users-list', { users: usersList })
+
+      console.log(`${username} joined the chat room, current online users: ${users.size}`)
+    } catch (error) {
+      console.error(`Error handling 'join' event for socket ${socket.id}:`, error)
     }
-    
-    // Add to user list
-    users.set(socket.id, user)
-    
-    // Send join message to all users
-    const joinMessage = createSystemMessage(`${username} joined the chat room`)
-    io.emit('user-joined', { user, message: joinMessage })
-    
-    // Send current user list to new user
-    const usersList = Array.from(users.values())
-    socket.emit('users-list', { users: usersList })
-    
-    console.log(`${username} joined the chat room, current online users: ${users.size}`)
   })
 
   socket.on('message', (data: { content: string; username: string }) => {
-    const { content, username } = data
-    const user = users.get(socket.id)
-    
-    if (user && user.username === username) {
-      const message = createUserMessage(username, content)
-      io.emit('message', message)
-      console.log(`${username}: ${content}`)
+    try {
+      if (!data || typeof data.content !== 'string' || typeof data.username !== 'string') {
+        return
+      }
+
+      const content = data.content.trim().slice(0, MAX_CONTENT_LENGTH)
+      const username = data.username.trim()
+
+      if (!content || !username) {
+        return
+      }
+
+      const user = users.get(socket.id)
+
+      if (user && user.username === username) {
+        const message = createUserMessage(username, content)
+        io.emit('message', message)
+        console.log(`${username}: ${content}`)
+      }
+    } catch (error) {
+      console.error(`Error handling 'message' event for socket ${socket.id}:`, error)
     }
   })
 
   socket.on('disconnect', () => {
-    const user = users.get(socket.id)
-    
-    if (user) {
-      // Remove from user list
-      users.delete(socket.id)
-      
-      // Send leave message to all users
-      const leaveMessage = createSystemMessage(`${user.username} left the chat room`)
-      io.emit('user-left', { user: { id: socket.id, username: user.username }, message: leaveMessage })
-      
-      console.log(`${user.username} left the chat room, current online users: ${users.size}`)
-    } else {
-      console.log(`User disconnected: ${socket.id}`)
+    try {
+      const user = users.get(socket.id)
+
+      if (user) {
+        users.delete(socket.id)
+
+        const leaveMessage = createSystemMessage(`${user.username} left the chat room`)
+        io.emit('user-left', { user: { id: socket.id, username: user.username }, message: leaveMessage })
+
+        console.log(`${user.username} left the chat room, current online users: ${users.size}`)
+      } else {
+        console.log(`User disconnected: ${socket.id}`)
+      }
+    } catch (error) {
+      console.error(`Error handling 'disconnect' event for socket ${socket.id}:`, error)
     }
   })
 
-  socket.on('error', (error) => {
+  socket.on('error', (error: Error) => {
     console.error(`Socket error (${socket.id}):`, error)
   })
 })
 
-const PORT = 3003
 httpServer.listen(PORT, () => {
   console.log(`WebSocket server running on port ${PORT}`)
 })
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('Received SIGTERM signal, shutting down server...')
-  httpServer.close(() => {
-    console.log('WebSocket server closed')
-    process.exit(0)
-  })
-})
+let isShuttingDown = false
 
-process.on('SIGINT', () => {
-  console.log('Received SIGINT signal, shutting down server...')
-  httpServer.close(() => {
-    console.log('WebSocket server closed')
-    process.exit(0)
+const handleShutdown = (signal: string) => {
+  if (isShuttingDown) return
+  isShuttingDown = true
+  console.log(`Received ${signal} signal, shutting down server...`)
+
+  io.close(() => {
+    httpServer.close(() => {
+      console.log('WebSocket server closed')
+      process.exit(0)
+    })
   })
-})
+
+  const timer = setTimeout(() => {
+    console.error('Forced shutdown due to connection timeout')
+    process.exit(1)
+  }, 10000)
+  timer.unref()
+}
+
+process.on('SIGTERM', () => handleShutdown('SIGTERM'))
+process.on('SIGINT', () => handleShutdown('SIGINT'))
