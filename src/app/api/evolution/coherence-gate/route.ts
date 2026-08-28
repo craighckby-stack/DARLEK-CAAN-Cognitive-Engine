@@ -25,14 +25,15 @@ interface CoherenceGateBody {
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(): Promise<NextResponse> {
   return NextResponse.json({ status: 'online', service: 'EVOLUTION_COHERENCE_GATE_API' });
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
-    const body: CoherenceGateBody = await safeReqJson(req, {} as CoherenceGateBody);
+    const body = await safeReqJson<CoherenceGateBody>(req, {});
     const riskScore = typeof body.riskScore === 'number' ? body.riskScore : 0;
+    
     const saturation = {
       structuralChange: body.saturation?.structuralChange ?? 0,
       semanticSaturation: body.saturation?.semanticSaturation ?? 0,
@@ -41,16 +42,17 @@ export async function POST(req: NextRequest) {
       capabilityAlignment: body.saturation?.capabilityAlignment ?? 1,
       crossFileImpact: body.saturation?.crossFileImpact ?? 0,
     };
+    
     const affectedFiles = Array.isArray(body.affectedFiles) ? body.affectedFiles : [];
-    const { bypassGate, originalCode, proposedCode, filePath, repoFiles, newFiles } = body;
+    const { bypassGate, originalCode, proposedCode, filePath, repoFiles = [], newFiles = [] } = body;
 
     const failures: string[] = [];
     let saturationWarning = false;
 
     // Rule 0: Deterministic Structural Sanity Check (Non-bypassable)
     if (originalCode && proposedCode && filePath) {
-      const sanity = await mainWorker.validateSanity(originalCode, proposedCode, filePath, repoFiles || [], newFiles || []);
-      if (!sanity.passed) {
+      const sanity = await mainWorker.validateSanity(originalCode, proposedCode, filePath, repoFiles, newFiles);
+      if (!sanity.passed && Array.isArray(sanity.violations)) {
         for (const v of sanity.violations) {
           if (v.severity === 'high') {
             failures.push(`STRUCTURAL SANITY BLOCK: ${v.message}`);
@@ -62,14 +64,13 @@ export async function POST(req: NextRequest) {
     if (bypassGate) {
       return NextResponse.json({
         passed: true,
-        reason:
-          failures.length > 0
-            ? `COHERENCE GATE PASSED (OVERRIDE): Approved by operator with warnings [${failures.join('; ')}].`
-            : 'COHERENCE GATE PASSED: Approved by system operator.',
+        reason: failures.length > 0
+          ? `COHERENCE GATE PASSED (OVERRIDE): Approved by operator with warnings [${failures.join('; ')}].`
+          : 'COHERENCE GATE PASSED: Approved by system operator.',
         riskScore,
         saturationWarning: saturationWarning || failures.length > 0,
         failures: failures.length > 0 ? failures : undefined,
-      });
+      } satisfies CoherenceGateResult & { failures?: string[] });
     }
 
     // Rule 1: Risk score check — block anything above 7
@@ -85,18 +86,21 @@ export async function POST(req: NextRequest) {
         value: saturation.structuralChange,
         threshold: SATURATION_THRESHOLDS.structuralChange.critical,
         max: SATURATION_THRESHOLDS.structuralChange.max,
+        inverted: false,
       },
       {
         name: 'Semantic Saturation',
         value: saturation.semanticSaturation,
         threshold: SATURATION_THRESHOLDS.semanticSaturation.critical,
         max: SATURATION_THRESHOLDS.semanticSaturation.max,
+        inverted: false,
       },
       {
         name: 'Velocity',
         value: saturation.velocity,
         threshold: SATURATION_THRESHOLDS.velocity.critical,
         max: SATURATION_THRESHOLDS.velocity.max,
+        inverted: false,
       },
       {
         name: 'Identity Preservation',
@@ -110,6 +114,7 @@ export async function POST(req: NextRequest) {
         value: saturation.crossFileImpact,
         threshold: SATURATION_THRESHOLDS.crossFileImpact.critical,
         max: SATURATION_THRESHOLDS.crossFileImpact.max,
+        inverted: false,
       },
     ];
 
@@ -138,6 +143,7 @@ export async function POST(req: NextRequest) {
       saturation.identityPreservation <= SATURATION_THRESHOLDS.identityPreservation.warning,
       saturation.crossFileImpact >= SATURATION_THRESHOLDS.crossFileImpact.warning,
     ];
+    
     const warningCount = warningChecks.filter(Boolean).length;
     if (warningCount >= 3) {
       failures.push(`Cumulative stress: ${warningCount}/5 metrics at warning level. System needs rest.`);
@@ -154,7 +160,7 @@ export async function POST(req: NextRequest) {
     };
 
     return NextResponse.json(result);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Coherence gate error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
