@@ -7,9 +7,9 @@
 
 ## 🏗️ Architectural Topology
 
-*   **Sovereign Orchestrator**: High-performance state encapsulation and execution logic controller designed for deterministic output generation.
-*   **Parallel Synchronization**: Concurrent multi-threaded execution engine optimized for rapid, multi-perspective synthesis and latent space exploration.
-*   **Dialectic Debate**: Sequential, state-persistent reasoning cycles engineered for advanced logical conflict resolution and deep-dive verification.
+*   **Sovereign Orchestrator**: High-performance state encapsulation and execution logic controller engineered for deterministic output generation.
+*   **Parallel Synchronization**: Concurrent multi-threaded execution engine optimized for rapid multi-perspective synthesis and latent space exploration.
+*   **Dialectic Debate**: Sequential, state-persistent reasoning cycles designed for advanced logical conflict resolution and deep-dive verification.
 
 ---
 
@@ -30,7 +30,7 @@ graph TD
 ```
 
 1.  **Validation**: Schema-strict verification of incoming evolution parameters to ensure structural integrity.
-2.  **Instantiation**: Low-latency allocation of sovereign Orchestrator resources and runtime contexts.
+2.  **Instantiation**: Low-latency allocation of sovereign orchestrator resources and runtime contexts.
 3.  **Execution**: Triggering of high-fidelity parallel synchronization or dialectic debate processing cycles.
 4.  **Serialization**: Atomic transformation of synthesized neural outputs into actionable JSON payloads.
 
