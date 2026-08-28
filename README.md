@@ -15,7 +15,7 @@ Access the live platform directly in your browser:
 
 ## 💡 Overview
 
-**Git Secret & PII Sanitizer** (powered by the **DARLEK CAAN Cognitive Engine**) is an enterprise-grade security scanner, automated remediation platform, and autonomous code evolution suite designed for GitHub repositories, local file trees, and raw code snippets.
+** DARLEK CAAN Cognitive Engine**) is an enterprise-grade security scanner, automated remediation platform, and autonomous code evolution suite designed for GitHub repositories, local file trees, and raw code snippets.
 
 It combines multi-pattern regex matching, Shannon-entropy detection, and Luhn checksum validation with automated Git history purging (`git filter-repo`) and AI-driven multi-model dialectic debate to identify, isolate, and neutralize sensitive data leaks before or after they reach version control.
 
