@@ -1,25 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFileSync, mkdirSync, existsSync } from 'fs';
+import { promises as fs } from 'fs';
 import { resolve, dirname } from 'path';
 import { safeReqJson } from '@/lib/safe-json';
 import { sanitizeContent } from '@/lib/scanner';
 
 export const dynamic = 'force-dynamic';
-
 export const maxDuration = 300;
-
-export async function GET() {
-  return NextResponse.json({ status: 'online', service: 'GITHUB_BULK_COMMIT_API' });
-}
 
 interface CommittableFile {
   path: string;
   content: string;
 }
 
-export async function POST(req: NextRequest) {
+interface BulkCommitRequestBody {
+  token?: string;
+  owner?: string;
+  repo?: string;
+  branch?: string;
+  files?: CommittableFile[];
+  commitMessage?: string;
+}
+
+export async function GET(): Promise<NextResponse> {
+  return NextResponse.json({ status: 'online', service: 'GITHUB_BULK_COMMIT_API' });
+}
+
+export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
-    const body = await safeReqJson(req, {});
+    const body = (await safeReqJson(req, {})) as BulkCommitRequestBody;
     const { token, owner, repo, branch, files, commitMessage } = body;
 
     if (!token || !owner || !repo || !branch) {
@@ -38,7 +46,7 @@ export async function POST(req: NextRequest) {
 
     // Secret Sanitization Gatekeeper: Redact API keys, tokens, or credentials across all committable files
     const safeFiles: CommittableFile[] = files.map((file: CommittableFile) => {
-      if (!file.content || typeof file.content !== 'string') return file;
+      if (!file || typeof file.content !== 'string') return file;
       const { sanitized, findings } = sanitizeContent(file.content);
       if (findings.length > 0) {
         const safeLogPath = file.path.replace(/error/gi, 'err');
@@ -56,20 +64,18 @@ export async function POST(req: NextRequest) {
       'Content-Type': 'application/json',
     };
 
-    // Verify repo exists, if not create it dynamically since the user might have deleted it
-    const verifyRepoRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
-      headers
-    });
+    // Verify repo exists, if not create it dynamically
+    const verifyRepoRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
 
     if (verifyRepoRes.status === 404) {
-const createRes = await fetch(`https://api.github.com/user/repos`, {
+      const createRes = await fetch(`https://api.github.com/user/repos`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
           name: repo,
           private: false,
-          auto_init: true
-        })
+          auto_init: true,
+        }),
       });
       if (!createRes.ok) {
         const createErr = await createRes.text();
@@ -78,7 +84,7 @@ const createRes = await fetch(`https://api.github.com/user/repos`, {
       }
       
       // Wait for GitHub propagation so ref heads are available
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise((resolveTimer) => setTimeout(resolveTimer, 3000));
     }
 
     // ────────────────────────────────────────────────────────
@@ -88,7 +94,6 @@ const createRes = await fetch(`https://api.github.com/user/repos`, {
     let refRes = await fetch(refUrl, { headers });
 
     if (!refRes.ok) {
-      // Branch not found (404), auto-create branch from default branch
       const repoInfoRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
       if (repoInfoRes.ok) {
         const repoInfo = await repoInfoRes.json();
@@ -136,7 +141,7 @@ const createRes = await fetch(`https://api.github.com/user/repos`, {
     // ────────────────────────────────────────────────────────
     // STEP B: Get base commit's tree SHA
     // ────────────────────────────────────────────────────────
-const commitUrl = `https://api.github.com/repos/${owner}/${repo}/git/commits/${latestCommitSha}`;
+    const commitUrl = `https://api.github.com/repos/${owner}/${repo}/git/commits/${latestCommitSha}`;
     const commitRes = await fetch(commitUrl, { headers });
 
     if (!commitRes.ok) {
@@ -159,23 +164,21 @@ const commitUrl = `https://api.github.com/repos/${owner}/${repo}/git/commits/${l
 
     // ────────────────────────────────────────────────────────
     // STEP C: Create a new tree with modified files
-    // ────────────�����───────────────────────────────────────────
-// To prevent truncation and support large files, write blobs first and reference them by SHA
-    // Write files to local disk workspace if path is within project root
+    // ────────────────────────────────────────────────────────
     try {
       const projectRoot = resolve(process.cwd());
-      for (const file of safeFiles) {
-        if (!file.path || typeof file.content !== 'string') continue;
-        const cleanPath = file.path.replace(/^\/+|\/+$/g, '');
-        const localFilePath = resolve(projectRoot, cleanPath);
-        if (localFilePath.startsWith(projectRoot)) {
-          const parentDir = dirname(localFilePath);
-          if (!existsSync(parentDir)) {
-            mkdirSync(parentDir, { recursive: true });
+      await Promise.all(
+        safeFiles.map(async (file) => {
+          if (!file.path || typeof file.content !== 'string') return;
+          const cleanPath = file.path.replace(/^\/+|\/+$/g, '');
+          const localFilePath = resolve(projectRoot, cleanPath);
+          if (localFilePath.startsWith(projectRoot)) {
+            const parentDir = dirname(localFilePath);
+            await fs.mkdir(parentDir, { recursive: true });
+            await fs.writeFile(localFilePath, file.content, 'utf-8');
           }
-          writeFileSync(localFilePath, file.content, 'utf-8');
-        }
-      }
+        })
+      );
     } catch (diskErr) {
       console.warn('[Bulk Commit] Disk write warning:', diskErr);
     }
@@ -184,7 +187,7 @@ const commitUrl = `https://api.github.com/repos/${owner}/${repo}/git/commits/${l
     const blobUrl = `https://api.github.com/repos/${owner}/${repo}/git/blobs`;
 
     const blobPromises = safeFiles.map(async (file: CommittableFile) => {
-const blobRes = await fetch(blobUrl, {
+      const blobRes = await fetch(blobUrl, {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -206,8 +209,8 @@ const blobRes = await fetch(blobUrl, {
       const cleanPath = file.path.replace(/^\/+|\/+$/g, '');
       return {
         path: cleanPath,
-        mode: '100644',
-        type: 'blob',
+        mode: '100644' as const,
+        type: 'blob' as const,
         sha: blobData.sha,
       };
     });
@@ -215,9 +218,10 @@ const blobRes = await fetch(blobUrl, {
     let treeItems;
     try {
       treeItems = await Promise.all(blobPromises);
-    } catch (blobErr: any) {
+    } catch (blobErr: unknown) {
+      const errorMessage = blobErr instanceof Error ? blobErr.message : 'Failed during file blob generation.';
       return NextResponse.json(
-        { error: blobErr?.message || 'Failed during file blob generation.' },
+        { error: errorMessage },
         { status: 500 }
       );
     }
@@ -252,8 +256,7 @@ const blobRes = await fetch(blobUrl, {
     // ────────────────────────────────────────────────────────
     // STEP D: Create a commit pointing to the new tree and base commit
     // ────────────────────────────────────────────────────────
-const createCommitUrl = `https://api.github.com/repos/${owner}/${repo}/git/commits`;
-    
+    const createCommitUrl = `https://api.github.com/repos/${owner}/${repo}/git/commits`;
     const defaultMsg = `[DARLEK CANN] Bulk Commit: Staged system evolution of ${files.length} file${files.length > 1 ? 's' : ''}`;
     const commitBody = {
       message: commitMessage || defaultMsg,
@@ -288,8 +291,7 @@ const createCommitUrl = `https://api.github.com/repos/${owner}/${repo}/git/commi
     // ────────────────────────────────────────────────────────
     // STEP E: Update branch reference to point to new commit
     // ────────────────────────────────────────────────────────
-const updateRefUrl = `https://api.github.com/repos/${owner}/${repo}/git/refs/heads/${branch}`;
-    
+    const updateRefUrl = `https://api.github.com/repos/${owner}/${repo}/git/refs/heads/${branch}`;
     const updateRefRes = await fetch(updateRefUrl, {
       method: 'PATCH',
       headers,
@@ -313,10 +315,9 @@ const updateRefUrl = `https://api.github.com/repos/${owner}/${repo}/git/refs/hea
       filesCommitted: files.length,
       commitUrl: `https://github.com/${owner}/${repo}/commit/${newCommitSha}`,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Bulk commit API crash:', error);
     const errMsg = error instanceof Error ? error.message : 'Unknown exception';
     return NextResponse.json({ error: errMsg }, { status: 500 });
   }
 }
-
