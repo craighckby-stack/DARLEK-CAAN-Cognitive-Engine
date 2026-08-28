@@ -13,8 +13,8 @@ const SUPPRESSED_ERROR_PATTERNS = [
 const SUPPRESSED_ERROR_NAMES = new Set(['ChunkLoadError']);
 
 interface ErrorObject {
-  message?: unknown;
-  name?: unknown;
+  readonly message?: unknown;
+  readonly name?: unknown;
 }
 
 export default function HmrErrorHandler(): null {
@@ -37,17 +37,12 @@ export default function HmrErrorHandler(): null {
         }
       }
 
-      const isSuppressedName = SUPPRESSED_ERROR_NAMES.has(name);
-      const isSuppressedMessage = SUPPRESSED_ERROR_PATTERNS.some((pattern) => 
-        message.includes(pattern)
-      );
-
-      if (isSuppressedName || isSuppressedMessage) {
+      if (SUPPRESSED_ERROR_NAMES.has(name) || SUPPRESSED_ERROR_PATTERNS.some((pattern) => message.includes(pattern))) {
         event.preventDefault();
       }
     };
 
-    window.addEventListener('unhandledrejection', handleRejection);
+    window.addEventListener('unhandledrejection', handleRejection, { passive: true });
     
     return () => {
       window.removeEventListener('unhandledrejection', handleRejection);
