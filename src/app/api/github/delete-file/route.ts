@@ -56,7 +56,7 @@ async function getFileSha(
 
     if (res.ok) {
       const data = (await res.json()) as GitHubContentResponse;
-      return data.sha || null;
+      return data.sha ?? null;
     }
     return null;
   } catch {
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    let finalSha = sha || null;
+    let finalSha = sha ?? null;
     if (!finalSha) {
       const fetchedSha = await getFileSha(token, owner, repo, branch, filePath);
       if (fetchedSha) {
