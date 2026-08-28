@@ -8,7 +8,10 @@
     ],
     "allowJs": true,
     "skipLibCheck": true,
-    "strict": false,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
@@ -38,6 +41,8 @@
   ],
   "exclude": [
     "node_modules",
-    "examples"
+    "examples",
+    "dist",
+    ".next"
   ]
 }
