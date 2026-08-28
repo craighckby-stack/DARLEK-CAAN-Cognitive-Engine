@@ -4,15 +4,21 @@
   "private": true,
   "engines": {
     "node": ">=20.0.0",
-    "npm": ">=10.0.0"
+    "npm": ">=10.0.0",
+    "pnpm": ">=9.0.0"
   },
+  "packageManager": "pnpm@9.15.4",
   "scripts": {
     "build": "prisma generate && next build",
     "dev": "next dev -p 3000",
-    "lint": "eslint . --max-warnings=0",
+    "lint": "next lint && eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "start": "node server.js",
-    "clean": "rm -rf .next node_modules/.cache"
+    "clean": "rm -rf .next node_modules/.cache tsconfig.tsbuildinfo",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate deploy",
+    "prepare": "prisma generate"
   },
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.5",
