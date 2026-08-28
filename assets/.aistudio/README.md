@@ -1,11 +1,13 @@
 # AI Studio Configuration & Governance
 
 ## Overview
+
 This directory serves as the centralized control plane for the **DARLEK CANN v3.0** evolution engine. It governs environment-specific configurations, manages agent state persistence, and enforces strict security protocols across the repository.
 
 ---
 
 ## Architectural Blueprints
+
 - **State Management**: Agent memory dumps are isolated within `*.memory.json` files to prevent state corruption during Continuous Integration and Continuous Deployment (CI/CD) pipelines.
 - **Security & Compliance**: Sensitive environment variables and cryptographic keys are strictly excluded via `.gitignore` configurations to maintain full compliance with `psr-governance` standards.
 - **Ecosystem Integration**: This studio configuration interfaces seamlessly with `darlek-cann-v3` and `unitary-core` subsystems to facilitate high-performance, multi-dimensional analysis.
