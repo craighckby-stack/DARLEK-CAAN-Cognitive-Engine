@@ -11,12 +11,12 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 
-const commitSha = '71f4f383afa014a1255d977791d6531a2033e323';
-const url = `https://raw.githubusercontent.com/craighckby-stack/DARLEK_CAAN_ENGINE/${commitSha}/src/app/page.tsx`;
-const targetPath = 'src/app/page.tsx';
-const minLineCountThreshold = 1000;
+const COMMIT_SHA = '71f4f383afa014a1255d977791d6531a2033e323';
+const TARGET_URL = `https://raw.githubusercontent.com/craighckby-stack/DARLEK_CAAN_ENGINE/${COMMIT_SHA}/src/app/page.tsx`;
+const TARGET_PATH = 'src/app/page.tsx';
+const MIN_LINE_COUNT_THRESHOLD = 1000;
 
-console.log(`Downloading page.tsx from commit ${commitSha}...`);
+console.log(`Downloading page.tsx from commit ${COMMIT_SHA}...`);
 
 /**
  * Performs an HTTPS GET request wrapped in a Promise interface with memory-efficient chunk buffering and status checks.
@@ -27,7 +27,7 @@ function fetchContent(requestUrl) {
   return new Promise((resolve, reject) => {
     const options = {
       headers: {
-        'User-Agent': 'node.js'
+        'User-Agent': 'DARLEK-CANN-Optimizer/4.9'
       }
     };
 
@@ -69,22 +69,22 @@ function fetchContent(requestUrl) {
  */
 async function executeDownloadPipeline() {
   try {
-    const data = await fetchContent(url);
+    const data = await fetchContent(TARGET_URL);
     const lines = data.split('\n');
 
     console.log(`Downloaded ${lines.length} lines. First 5 lines:`);
     console.log(lines.slice(0, 5).join('\n'));
 
-    if (lines.length > minLineCountThreshold) {
-      const targetDirectory = path.dirname(targetPath);
+    if (lines.length > MIN_LINE_COUNT_THRESHOLD) {
+      const targetDirectory = path.dirname(TARGET_PATH);
       if (!fs.existsSync(targetDirectory)) {
         fs.mkdirSync(targetDirectory, { recursive: true });
       }
 
-      fs.writeFileSync(targetPath, data, 'utf8');
-      console.log("Successfully restored src/app/page.tsx from commit 71f4f383!");
+      fs.writeFileSync(TARGET_PATH, data, 'utf8');
+      console.log(`Successfully restored ${TARGET_PATH} from commit ${COMMIT_SHA.slice(0, 8)}!`);
     } else {
-      console.log("Warning: Downloaded file has less than 1000 lines, did not overwrite local file.");
+      console.log(`Warning: Downloaded file has less than ${MIN_LINE_COUNT_THRESHOLD} lines, did not overwrite local file.`);
     }
   } catch (err) {
     const errorMessage = err && typeof err === 'object' && 'message' in err ? err.message : String(err);
