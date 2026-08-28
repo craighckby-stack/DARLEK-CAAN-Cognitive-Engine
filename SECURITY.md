@@ -18,7 +18,7 @@ All automated evolution and mutation histories (`.evolution.history`) are explic
 
 ### Secrets Management
 - Credentials and sensitive configurations are managed exclusively via `.env.local` patterns.
-- **CRICITAL:** Never commit `.vault` or `.key` cryptographic assets to the repository under any circumstances.
+- **CRITICAL:** Never commit `.vault` or `.key` cryptographic assets to the repository under any circumstances.
 
 ---
 
