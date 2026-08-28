@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "EMG Core v49 Neural Substrate Firebase Blueprint",
   "description": "Optimized, type-safe, and resilient schema definition for distributed autonomous agents and substrate state.",
-  "entities": {
+  "definitions": {
     "AgentState": {
       "title": "Agent State",
       "description": "Represents the current state and telemetry of an agent in the substrate with strict bounds.",
@@ -151,17 +151,28 @@
       "required": ["timestamp", "agentId", "action", "preStateHash", "allowedByCommitGate"]
     }
   },
+  "entities": {
+    "AgentState": {
+      "$ref": "#/definitions/AgentState"
+    },
+    "WorldState": {
+      "$ref": "#/definitions/WorldState"
+    },
+    "AuditLog": {
+      "$ref": "#/definitions/AuditLog"
+    }
+  },
   "firestore": {
     "/agents/{agentId}": {
-      "schema": { "$ref": "#/entities/AgentState" },
+      "schema": { "$ref": "#/definitions/AgentState" },
       "description": "Individual agent telemetry collection path with strict validation rules."
     },
     "/world/current": {
-      "schema": { "$ref": "#/entities/WorldState" },
+      "schema": { "$ref": "#/definitions/WorldState" },
       "description": "The primary singleton shared substrate document."
     },
     "/audit_logs/{logId}": {
-      "schema": { "$ref": "#/entities/AuditLog" },
+      "schema": { "$ref": "#/definitions/AuditLog" },
       "description": "Append-only immutable history collection of agent interactions."
     }
   }
