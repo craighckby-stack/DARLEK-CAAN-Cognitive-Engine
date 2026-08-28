@@ -7,14 +7,22 @@ import { safeResponseJson, safeReqJson } from '@/lib/safe-json';
 
 export const dynamic = 'force-dynamic';
 
+interface GitHubHeaders extends Record<string, string> {
+  'Authorization': string;
+  'Accept': string;
+  'Content-Type': string;
+}
+
+const getGitHubHeaders = (token: string): GitHubHeaders => ({
+  'Authorization': `Bearer ${token}`,
+  'Accept': 'application/vnd.github.v3+json',
+  'Content-Type': 'application/json',
+});
+
 // Helper to ensure target repository exists on GitHub
 async function ensureRepoExists(token: string, owner: string, repo: string): Promise<boolean> {
   try {
-    const headers = {
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/vnd.github.v3+json',
-      'Content-Type': 'application/json',
-    };
+    const headers = getGitHubHeaders(token);
     const res = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
     if (res.ok) return true;
     if (res.status === 404) {
@@ -48,7 +56,7 @@ async function getFileSha(token: string, owner: string, repo: string, branch: st
     });
     if (res.ok) {
       const data = await safeResponseJson(res);
-      return (data as Record<string, any>)?.sha || null;
+      return (data as Record<string, unknown>)?.sha as string || null;
     }
     return null;
   } catch {
@@ -59,11 +67,7 @@ async function getFileSha(token: string, owner: string, repo: string, branch: st
 // Helper to ensure target branch exists on GitHub, creating it from default branch if needed
 async function ensureBranchExists(token: string, owner: string, repo: string, branch: string): Promise<boolean> {
   try {
-    const headers = {
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/vnd.github.v3+json',
-      'Content-Type': 'application/json',
-    };
+    const headers = getGitHubHeaders(token);
 
     const refUrl = `https://api.github.com/repos/${owner}/${repo}/git/ref/heads/${encodeURIComponent(branch)}`;
     const refRes = await fetch(refUrl, { headers });
@@ -74,14 +78,15 @@ async function ensureBranchExists(token: string, owner: string, repo: string, br
     if (!repoRes.ok) return false;
 
     const repoData = await safeResponseJson(repoRes);
-    const defaultBranch = (repoData as Record<string, any>)?.default_branch || 'main';
+    const defaultBranch = (repoData as Record<string, unknown>)?.default_branch as string || 'main';
 
     const defRefRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/ref/heads/${encodeURIComponent(defaultBranch)}`, { headers });
     if (!defRefRes.ok) return false;
 
     const defRefData = await safeResponseJson(defRefRes);
-    const defaultSha = (defRefData as Record<string, any>)?.object?.sha;
-    if (!defaultSha) return false;
+    const defaultSha = (defRefData as Record<string, unknown>)?.object as Record<string, unknown> | undefined;
+    const shaValue = defaultSha?.sha as string | undefined;
+    if (!shaValue) return false;
 
     // Create branch
     const createRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/refs`, {
@@ -89,7 +94,7 @@ async function ensureBranchExists(token: string, owner: string, repo: string, br
       headers,
       body: JSON.stringify({
         ref: `refs/heads/${branch}`,
-        sha: defaultSha,
+        sha: shaValue,
       }),
     });
 
@@ -160,13 +165,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       bodyPayload.sha = finalSha;
     }
 
+    const headers = getGitHubHeaders(token);
+
     let res = await fetch(url, {
       method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(bodyPayload),
     });
 
@@ -182,11 +185,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       }
       res = await fetch(url, {
         method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/vnd.github.v3+json',
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(bodyPayload),
       });
     }
@@ -197,20 +196,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       try {
         const jsonErr = JSON.parse(errText);
         parsedErr = jsonErr.message || jsonErr.error || errText;
-      } catch {}
+      } catch {
+        // Fallback to raw text if JSON parsing fails
+      }
       return NextResponse.json(
         { error: `GitHub API error: ${parsedErr}` },
         { status: res.status }
       );
     }
 
-    const data = (await safeResponseJson(res)) as Record<string, any>;
+    const data = (await safeResponseJson(res)) as Record<string, unknown>;
+    const commit = data?.commit as Record<string, unknown> | undefined;
+    const contentObj = data?.content as Record<string, unknown> | undefined;
 
     return NextResponse.json({
       success: true,
-      commitSha: data?.commit?.sha || '',
-      contentSha: data?.content?.sha || '',
-      commitUrl: data?.commit?.html_url || '',
+      commitSha: (commit?.sha as string) || '',
+      contentSha: (contentObj?.sha as string) || '',
+      commitUrl: (commit?.html_url as string) || '',
     });
   } catch (error) {
     console.error('Write file error:', error);
