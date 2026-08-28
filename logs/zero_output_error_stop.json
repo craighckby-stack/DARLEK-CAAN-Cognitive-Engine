@@ -1,44 +1,54 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "ZeroOutputErrorStop",
+  "description": "Comprehensive sovereign type-safe schema optimized for circuit breaker failure state validation.",
   "type": "object",
   "properties": {
     "status": {
       "type": "string",
-      "enum": ["ZERO_OUTPUT_COMMITTED_ERROR"]
+      "enum": ["ZERO_OUTPUT_COMMITTED_ERROR"],
+      "description": "Critical system execution status indicator."
     },
     "errorCode": {
       "type": "string",
-      "enum": ["ERR_ZERO_OUTPUT_CIRCUIT_BREAKER"]
+      "enum": ["ERR_ZERO_OUTPUT_CIRCUIT_BREAKER"],
+      "description": "Standardized machine-readable error classification code."
     },
     "source": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "description": "Originating component or execution context identifier."
     },
     "payloadBytes": {
       "type": "integer",
       "minimum": 0,
-      "maximum": 0
+      "maximum": 0,
+      "description": "Strictly bound payload byte size confirming zero output condition."
     },
     "cycle": {
       "type": "integer",
-      "minimum": 0
+      "minimum": 0,
+      "description": "Execution cycle counter."
     },
     "timestamp": {
       "type": "string",
-      "format": "date-time"
+      "format": "date-time",
+      "description": "ISO-8601 high-precision event logging timestamp."
     },
     "systemHalted": {
       "type": "boolean",
-      "enum": [true]
+      "enum": [true],
+      "description": "Hard-stop verification flag."
     },
     "haltReason": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "description": "Human-readable diagnostic trace of the trip event."
     },
     "repository": {
       "type": "string",
-      "pattern": "^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+@[a-zA-Z0-9_.-]+$"
+      "pattern": "^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+@[a-zA-Z0-9_.-]+$",
+      "description": "Target repository coordinates and reference."
     }
   },
   "required": [
