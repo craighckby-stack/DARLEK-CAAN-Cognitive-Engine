@@ -1,13 +1,11 @@
-export interface Task {
-  id: string;
-  priority: number;
-  payload: Record<string, unknown>;
+export interface Task<TPayload = Record<string, unknown>> {
+  readonly id: string;
+  readonly priority: number;
+  readonly payload: TPayload;
 }
 
-export interface Result {
-  success: boolean;
-  data?: unknown;
-  error?: string;
-}
+export type Result<TData = unknown, TError = string> = 
+  | { readonly success: true; readonly data: TData; readonly error?: never }
+  | { readonly success: false; readonly data?: never; readonly error: TError };
 
 export type Unsubscribe = () => void;
