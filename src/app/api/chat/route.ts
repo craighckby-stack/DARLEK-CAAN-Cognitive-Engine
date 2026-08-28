@@ -7,6 +7,16 @@ import { safeReqJson, safeResponseJson } from '@/lib/safe-json';
 
 export const dynamic = 'force-dynamic';
 
+interface RepoTreeItem {
+  path: string;
+  size?: number;
+  type?: string;
+}
+
+interface TreeApiResponse {
+  tree?: RepoTreeItem[];
+}
+
 export async function GET() {
   return NextResponse.json({ status: 'online', service: 'DALEK_CHAT_API' });
 }
@@ -41,11 +51,11 @@ async function fetchGithubRepoTree(token: string, owner: string, repo: string, b
       },
     });
     if (res.ok) {
-      const data = await safeResponseJson(res, {});
+      const data = (await safeResponseJson(res, {})) as TreeApiResponse;
       if (Array.isArray(data.tree)) {
         return data.tree
-          .filter((item: any) => item.type === 'blob')
-          .map((item: any) => ({
+          .filter((item): item is RepoTreeItem & { type: string } => item.type === 'blob' && typeof item.path === 'string')
+          .map((item) => ({
             path: item.path,
             size: item.size || 0,
           }));
@@ -59,7 +69,7 @@ async function fetchGithubRepoTree(token: string, owner: string, repo: string, b
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await safeReqJson(req, {});
+    const body = await safeReqJson<Record<string, any>>(req, {});
     const { message, history, systemState, scannedFiles } = body;
 
     if (!message || typeof message !== 'string') {
@@ -104,7 +114,7 @@ export async function POST(req: NextRequest) {
 
     if (token && owner && repo && branch) {
       if (isReadmeOrAnalysis) {
-let filesList: Array<{ path: string; size: number }> = [];
+        let filesList: Array<{ path: string; size: number }> = [];
 
         if (scannedFiles && Array.isArray(scannedFiles) && scannedFiles.length > 0) {
           filesList = scannedFiles.map((f: any) => ({ path: f.path, size: f.size || 0 }));
@@ -114,7 +124,6 @@ let filesList: Array<{ path: string; size: number }> = [];
 
         fetchedTreeCount = filesList.length;
 
-        // Filter out non-essential paths (node_modules, next build folders, hidden files, logs, config binary)
         const filteredFiles = filesList.filter((f) => {
           const excludePatterns = [
             'node_modules/', '.git/', 'dist/', 'build/', '.next/',
@@ -124,7 +133,6 @@ let filesList: Array<{ path: string; size: number }> = [];
           return !excludePatterns.some(p => f.path.includes(p));
         });
 
-        // Select crucial repository files
         const criticalCandidates = [
           'package.json',
           'prisma/schema.prisma',
@@ -142,7 +150,6 @@ let filesList: Array<{ path: string; size: number }> = [];
           'README.md',
         ];
 
-        // Add other non-binary, non-excluded components or API endpoints to get a comprehensive picture
         const otherRepresentativeFiles = filteredFiles
           .filter(f => {
             const pathLower = f.path.toLowerCase();
@@ -157,14 +164,14 @@ let filesList: Array<{ path: string; size: number }> = [];
             const isCritical = criticalCandidates.includes(f.path);
             return isCode && !isCritical;
           })
-          .slice(0, 10) // Select up to 10 matching representative source files
+          .slice(0, 10)
           .map(f => f.path);
 
         const filesToRead = [
           ...criticalCandidates.filter(p => filteredFiles.some(f => f.path === p)),
           ...otherRepresentativeFiles
-        ].slice(0, 15); // cap at maximum 15 files to be absolutely safe with rate limits and token windows
-// Fetch file content in parallel
+        ].slice(0, 15);
+
         const fileContents: Record<string, string> = {};
         await Promise.all(
           filesToRead.map(async (path) => {
@@ -177,15 +184,13 @@ let filesList: Array<{ path: string; size: number }> = [];
 
         fetchedFilesCount = Object.keys(fileContents).length;
 
-        // Construct directory / file tree breakdown
         const fileTreeStr = filteredFiles
           .map(f => `- ${f.path} (${(f.size / 1024).toFixed(1)} KB)`)
           .join('\n');
 
-        // Construct file content dump
         let contentsSection = '';
         for (const [path, content] of Object.entries(fileContents)) {
-          contentsSection += `\n--- FILE: ${path} ---\n${content.slice(0, 4500)}\n`; // truncate long files at 4500 chars to avoid model context overflow
+          contentsSection += `\n--- FILE: ${path} ---\n${content.slice(0, 4500)}\n`;
         }
 
         systemContext = `
@@ -205,8 +210,7 @@ ${contentsSection}
 ===================================================
 `;
       } else {
-        // Automatically check & fetch README.md for every chat query to keep DARLEK CANN fully instruction-aware!
-const readmeContent = await fetchGithubFile(token, owner, repo, branch, 'README.md');
+        const readmeContent = await fetchGithubFile(token, owner, repo, branch, 'README.md');
         if (readmeContent) {
           fetchedFilesCount = 1;
           systemContext = `
@@ -228,13 +232,11 @@ State: ${state.setupComplete ? 'OPERATIONAL' : 'SETUP'} | Cycle: ${state.evoluti
 
     const enhancedSystemPrompt = `${DALEK_CAAN_SYSTEM_PROMPT}\n\n${contextInfo}${systemContext ? `\n\n${systemContext}` : ''}`;
 
-    const userGeminiKey = (body as unknown as Record<string, unknown>).apiKeys
-      ? ((body as unknown as Record<string, Record<string, string>>).apiKeys?.gemini)
+    const userGeminiKey = body.apiKeys
+      ? (body.apiKeys?.gemini as string | undefined)
       : undefined;
     const geminiKey = userGeminiKey || getDefaultGeminiKey();
 
-    // Unified LLM call: Gemini → SDK → Dalek Brain (local)
-    // We increase maxTokens to 4096 to allow detailed, comprehensive README and full-scale architectural writeups.
     const result = await callLlm({
       systemPrompt: enhancedSystemPrompt,
       userPrompt: processedMessage,
@@ -243,7 +245,6 @@ State: ${state.setupComplete ? 'OPERATIONAL' : 'SETUP'} | Cycle: ${state.evoluti
       temperature: 0.7,
     });
 
-    // Final fallback: Dalek Brain chat
     const content = result.text || dalekBrainChat(enhancedSystemPrompt, processedMessage, history || []) || 'Processing error. Try again.';
 
     return NextResponse.json({
@@ -262,4 +263,3 @@ State: ${state.setupComplete ? 'OPERATIONAL' : 'SETUP'} | Cycle: ${state.evoluti
     );
   }
 }
-
