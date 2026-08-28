@@ -1,38 +1,143 @@
-const https = require('https');
-const fs = require('fs');
-const path = require('path');
+/**
+ * @file restore_repo_fast.js
+ * @version 49.0.0
+ * @author EMG Core v49 Neural Code and Documentation Optimizer Engine
+ * @description High-performance, memory-efficient, sovereign repository restoration engine with concurrency throttling and robust error handling.
+ */
 
-const owner = 'craighckby-stack';
-const repo = 'DARLEK_CAAN_ENGINE';
-const branch = 'main';
+'use strict';
 
-https.get(`https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`, { headers: { 'User-Agent': 'node.js' } }, (res) => {
-  let data = '';
-  res.on('data', chunk => data += chunk);
-  res.on('end', () => {
-    const tree = JSON.parse(data).tree;
-    if (!tree) { console.error("No tree found"); return; }
-    
-    // We only restore src/ branch because package.json might have changed
-    const srcFiles = tree.filter(f => f.type === 'blob' && f.path.startsWith('src/'));
-    console.log("Restoring " + srcFiles.length + " files from " + repo);
-    
-    const promises = srcFiles.map(file => {
-      return new Promise(resolve => {
-        const dir = path.dirname(file.path);
-        fs.mkdirSync(dir, { recursive: true });
+const https = require('node:https');
+const fs = require('node:fs');
+const path = require('node:path');
 
-        https.get(`https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${file.path}`, { headers: { 'User-Agent': 'node.js' } }, (fileRes) => {
-           let content = '';
-           fileRes.on('data', c => content += c);
-           fileRes.on('end', () => {
-              fs.writeFileSync(file.path, content);
-              resolve();
-           });
-        }).on('error', () => resolve());
-      });
-    });
+const OWNER = 'craighckby-stack';
+const REPO = 'DARLEK_CAAN_ENGINE';
+const BRANCH = 'main';
+const MAX_CONCURRENT_REQUESTS = 16;
 
-    Promise.all(promises).then(() => console.log("ALL RESTORED!"));
+/**
+ * Performs an HTTPS GET request returning a promise resolving to the response body string.
+ * @param {string} url - Target URL
+ * @returns {Promise<string>} Response body
+ */
+function fetchUrl(url) {
+  return new Promise((resolve, reject) => {
+    const req = https.get(
+      url,
+      {
+        headers: {
+          'User-Agent': 'EMG-Core-Neural-Optimizer/49.0',
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      },
+      (res) => {
+        if (res.statusCode && res.statusCode >= 400) {
+          res.resume();
+          return reject(new Error(`HTTP status code ${res.statusCode} for ${url}`));
+        }
+
+        // Use Buffer chunks to avoid string concatenation overhead and memory bloat
+        const chunks = [];
+        res.on('data', (chunk) => chunks.push(chunk));
+        res.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+      }
+    );
+
+    req.on('error', (err) => reject(err));
+    req.end();
   });
-});
+}
+
+/**
+ * Restores repository files matching target constraints with concurrency limiting.
+ * @returns {Promise<void>}
+ */
+async function restoreRepository() {
+  const treeUrl = `https://api.github.com/repos/${OWNER}/${REPO}/git/trees/${BRANCH}?recursive=1`;
+  
+  console.log(`[EMG-v49] Fetching repository tree from ${REPO}...`);
+  
+  let rawTreeData;
+  try {
+    rawTreeData = await fetchUrl(treeUrl);
+  } catch (err) {
+    console.error(`[EMG-v49] Critical Error: Failed to fetch repository tree: ${err.message}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  let parsedTree;
+  try {
+    parsedTree = JSON.parse(rawTreeData);
+  } catch (err) {
+    console.error(`[EMG-v49] Critical Error: Failed to parse repository tree JSON: ${err.message}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const tree = parsedTree.tree;
+  if (!Array.isArray(tree)) {
+    console.error('[EMG-v49] Critical Error: Invalid repository tree structure received.');
+    process.exitCode = 1;
+    return;
+  }
+
+  const srcFiles = tree.filter((f) => f.type === 'blob' && typeof f.path === 'string' && f.path.startsWith('src/'));
+  console.log(`[EMG-v49] Restoring ${srcFiles.length} files from ${REPO}...`);
+
+  let index = 0;
+  let restoredCount = 0;
+  let failedCount = 0;
+
+  async function worker() {
+    while (true) {
+      const currentIndex = index++;
+      if (currentIndex >= srcFiles.length) {
+        return;
+      }
+
+      const file = srcFiles[currentIndex];
+      const filePath = path.normalize(file.path);
+      
+      // Prevent path traversal vulnerabilities
+      if (filePath.startsWith('..') || path.isAbsolute(filePath)) {
+        console.warn(`[EMG-v49] Skipped unsafe path: ${file.path}`);
+        failedCount++;
+        continue;
+      }
+
+      const fileUrl = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${file.path}`;
+
+      try {
+        const content = await fetchUrl(fileUrl);
+        const dir = path.dirname(filePath);
+        
+        fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(filePath, content, 'utf8');
+        restoredCount++;
+      } catch (err) {
+        console.warn(`[EMG-v49] Warning: Failed to restore ${file.path}: ${err.message}`);
+        failedCount++;
+      }
+    }
+  }
+
+  const workers = Array.from(
+    { length: Math.min(MAX_CONCURRENT_REQUESTS, srcFiles.length) },
+    () => worker()
+  );
+
+  await Promise.all(workers);
+
+  console.log(`[EMG-v49] ALL RESTORED! Successfully restored: ${restoredCount}, Failed: ${failedCount}`);
+}
+
+if (require.main === module) {
+  restoreRepository().catch((err) => {
+    console.error(`[EMG-v49] Fatal Engine Exception: ${err.message}`);
+    process.exit(1);
+  });
+}
+
+module.exports = { restoreRepository };
