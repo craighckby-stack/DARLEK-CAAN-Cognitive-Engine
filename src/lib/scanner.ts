@@ -1,5 +1,6 @@
 // Safe Luhn Check algorithm for credit cards
 export function luhnCheck(numStr: string): boolean {
+  if (typeof numStr !== 'string') return false;
   const sanitized = numStr.replace(/[\s-]/g, '');
   if (!/^\d{13,19}$/.test(sanitized)) return false;
   let sum = 0;
@@ -17,6 +18,7 @@ export function luhnCheck(numStr: string): boolean {
 }
 
 export function isSkippableFile(filePath: string): boolean {
+  if (typeof filePath !== 'string') return false;
   const p = filePath.toLowerCase();
   const excludedDirs = ['node_modules/', '.next/', 'dist/', 'build/', '.git/', '__pycache__/', '.turbo/', 'coverage/'];
   if (excludedDirs.some(dir => p.includes(dir))) return true;
@@ -113,6 +115,7 @@ export interface Finding {
 
 // Shannon entropy calculation
 export function calculateEntropy(str: string): number {
+  if (typeof str !== 'string') return 0;
   const len = str.length;
   if (len === 0) return 0;
   const frequencies = new Map<string, number>();
@@ -129,13 +132,17 @@ export function calculateEntropy(str: string): number {
 }
 
 export function getSeverity(confidence: string): SeverityLevel {
-  if (confidence === 'high') return 'Critical';
-  if (confidence === 'medium') return 'High';
-  return 'Low';
+  switch (confidence) {
+    case 'high': return 'Critical';
+    case 'medium': return 'High';
+    default: return 'Low';
+  }
 }
 
 export function sanitizeContent(content: string): { sanitized: string; findings: Finding[] } {
-  if (!content) return { sanitized: '', findings: [] };
+  if (typeof content !== 'string' || content.length === 0) {
+    return { sanitized: '', findings: [] };
+  }
 
   const findings: Finding[] = [];
   const lines = content.split('\n');
