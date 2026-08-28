@@ -7,7 +7,7 @@ import { type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import { toggleVariants } from "@/components/ui/toggle"
 
-interface ToggleGroupContextValue extends VariantProps<typeof toggleVariants> {}
+export interface ToggleGroupContextValue extends VariantProps<typeof toggleVariants> {}
 
 const ToggleGroupContext = React.createContext<ToggleGroupContextValue>({
   size: "default",
@@ -47,6 +47,7 @@ const ToggleGroup = React.memo(function ToggleGroup({
     </ToggleGroupPrimitive.Root>
   )
 })
+ToggleGroup.displayName = "ToggleGroup"
 
 export interface ToggleGroupItemProps
   extends React.ComponentProps<typeof ToggleGroupPrimitive.Item>,
@@ -61,8 +62,8 @@ const ToggleGroupItem = React.memo(function ToggleGroupItem({
 }: ToggleGroupItemProps) {
   const context = React.useContext(ToggleGroupContext)
 
-  const resolvedVariant = context.variant || variant
-  const resolvedSize = context.size || size
+  const resolvedVariant = variant ?? context.variant ?? "default"
+  const resolvedSize = size ?? context.size ?? "default"
 
   const computedClassName = React.useMemo(
     () =>
@@ -89,5 +90,6 @@ const ToggleGroupItem = React.memo(function ToggleGroupItem({
     </ToggleGroupPrimitive.Item>
   )
 })
+ToggleGroupItem.displayName = "ToggleGroupItem"
 
 export { ToggleGroup, ToggleGroupItem }
