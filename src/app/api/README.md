@@ -16,12 +16,15 @@ High-performance ingestion module optimized for real-time system diagnostics and
 - **Output**: Real-time system health metrics, node performance indicators, and active swarm status.
 
 ```typescript
-// Example GET Request with diagnostic context headers
+/**
+ * Example GET Request with diagnostic context headers
+ * Retrieves real-time telemetry data from the ingestion layer.
+ */
 fetch('/api', {
   method: 'GET',
   headers: {
-    'X-Agent-Context': 'diagnostic-node-01'
-  }
+    'X-Agent-Context': 'diagnostic-node-01',
+  },
 })
   .then((res) => res.json())
   .then((data) => console.log('Telemetry Data:', data))
@@ -33,7 +36,10 @@ fetch('/api', {
 - **Input**: Agent-orchestration payloads formulated for collective code refactoring and mutation.
 
 ```typescript
-// Example POST Request Payload for swarm mutation
+/**
+ * Example POST Request Payload for swarm mutation
+ * Submits structured synchronization instructions for autonomous code evolution.
+ */
 interface SwarmPayload {
   action: 'REFRACTOR_MUTATE';
   target: string;
