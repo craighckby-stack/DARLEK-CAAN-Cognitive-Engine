@@ -1,19 +1,24 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { COLORS } from '@/lib/constants';
 import { Activity } from 'lucide-react';
-
 import { safeResponseJson } from '@/lib/safe-json';
 
-interface MutationRecord {
+export interface MutationRecord {
   id: string;
   filePath: string;
   riskScore: number;
-  status: string;
-  commitSha: string;
+  status: 'applied' | 'rejected' | 'approved' | 'pending' | 'failed' | string;
+  commitSha?: string;
   createdAt: string;
-  provider: string;
+  provider?: string;
+}
+
+interface MutationApiResponse {
+  success?: boolean;
+  mutations?: MutationRecord[];
+  error?: string;
 }
 
 interface MutationHistoryPanelProps {
@@ -23,67 +28,103 @@ interface MutationHistoryPanelProps {
 
 export default function MutationHistoryPanel({ sessionId, refreshTrigger }: MutationHistoryPanelProps) {
   const [mutations, setMutations] = useState<MutationRecord[]>([]);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState<boolean>(false);
   const fetchedRef = useRef<string | null>(null);
+  const lastRefreshTriggerRef = useRef<number | undefined>(refreshTrigger);
 
   useEffect(() => {
     if (!sessionId) return;
-    // Re-fetch when refreshTrigger changes (new mutation applied/rejected)
-    if (fetchedRef.current === sessionId && refreshTrigger === undefined) return;
+    
+    // Fetch if session changed or refreshTrigger changed
+    const hasTriggerChanged = refreshTrigger !== lastRefreshTriggerRef.current;
+    if (fetchedRef.current === sessionId && !hasTriggerChanged) return;
+    
     fetchedRef.current = sessionId;
+    lastRefreshTriggerRef.current = refreshTrigger;
 
     let cancelled = false;
-    fetch('/api/brain', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'get-mutation-history', sessionId, limit: 20 }),
-    })
-      .then((res) => safeResponseJson(res, {}))
-      .then((data: any) => {
-        if (!cancelled && data.success) setMutations(data.mutations || []);
-      })
-      .catch(() => {});
+    
+    const fetchHistory = async () => {
+      try {
+        const res = await fetch('/api/brain', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'get-mutation-history', sessionId, limit: 20 }),
+        });
+        const data = (await safeResponseJson(res, {})) as MutationApiResponse;
+        if (!cancelled && data && data.success && Array.isArray(data.mutations)) {
+          setMutations(data.mutations);
+        }
+      } catch {
+        // Suppress network/parsing errors gracefully in production monitoring panel
+      }
+    };
 
-    return () => { cancelled = true; };
+    fetchHistory();
+
+    return () => {
+      cancelled = true;
+    };
   }, [sessionId, refreshTrigger]);
 
-  if (!sessionId || mutations.length === 0) return null;
+  const toggleExpanded = useCallback(() => {
+    setExpanded((prev) => !prev);
+  }, []);
 
-  const displayedMutations = expanded ? mutations : mutations.slice(0, 3);
-  const applied = mutations.filter((m) => m.status === 'applied').length;
-  const rejected = mutations.filter((m) => m.status === 'rejected').length;
-  const pending = mutations.filter((m) => m.status === 'pending').length;
+  const stats = useMemo(() => {
+    let applied = 0;
+    let rejected = 0;
+    let pending = 0;
 
-  const statusColor = (status: string) => {
+    for (let i = 0; i < mutations.length; i++) {
+      const status = mutations[i].status;
+      if (status === 'applied') applied++;
+      else if (status === 'rejected' || status === 'failed') rejected++;
+      else if (status === 'pending' || status === 'approved') pending++;
+    }
+
+    return { applied, rejected, pending };
+  }, [mutations]);
+
+  const displayedMutations = useMemo(() => {
+    return expanded ? mutations : mutations.slice(0, 3);
+  }, [mutations, expanded]);
+
+  const getStatusColor = useCallback((status: string) => {
     switch (status) {
       case 'applied': return COLORS.green;
-      case 'rejected': return COLORS.dalekRed;
+      case 'rejected': case 'failed': return COLORS.dalekRed;
       case 'approved': return COLORS.cyan;
       case 'pending': return COLORS.gold;
-      case 'failed': return COLORS.dalekRed;
       default: return COLORS.textMuted;
     }
-  };
+  }, []);
 
-  const riskColor = (risk: number) => {
+  const getRiskColor = useCallback((risk: number) => {
     if (risk <= 3) return COLORS.cyan;
     if (risk <= 6) return COLORS.gold;
     return COLORS.dalekRed;
-  };
+  }, []);
 
-  const formatDate = (dateStr: string) => {
+  const formatDate = useCallback((dateStr: string) => {
     try {
       return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     } catch {
       return '';
     }
-  };
+  }, []);
+
+  if (!sessionId || mutations.length === 0) return null;
 
   return (
     <div className="dalek-panel rounded-lg p-4 space-y-3">
       <div
-        className="dalek-panel-header py-2 px-1 flex items-center justify-between cursor-pointer"
-        onClick={() => setExpanded(!expanded)}
+        className="dalek-panel-header py-2 px-1 flex items-center justify-between cursor-pointer select-none"
+        onClick={toggleExpanded}
+        role="button"
+        tabIndex={0}
+        aria-expanded={expanded}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleExpanded(); }}
       >
         <div className="flex items-center gap-2">
           <Activity size={14} style={{ color: COLORS.cyan }} />
@@ -91,7 +132,7 @@ export default function MutationHistoryPanel({ sessionId, refreshTrigger }: Muta
         </div>
         <div className="flex items-center gap-2">
           <span style={{ fontSize: '8px', color: COLORS.textMuted, fontFamily: 'var(--font-orbitron), sans-serif' }}>
-            {applied} applied / {rejected} rejected / {pending} pending
+            {stats.applied} applied / {stats.rejected} rejected / {stats.pending} pending
           </span>
           <span style={{ fontSize: '8px', color: COLORS.textDim }}>
             {expanded ? '\u25B2' : '\u25BC'}
@@ -100,63 +141,68 @@ export default function MutationHistoryPanel({ sessionId, refreshTrigger }: Muta
       </div>
 
       <div className="space-y-1.5">
-        {displayedMutations.map((m) => (
-          <div
-            key={m.id}
-            className="px-3 py-2 rounded"
-            style={{ background: '#080808', border: `1px solid ${statusColor(m.status)}15` }}
-          >
-            <div className="flex items-center gap-2">
-              <span
-                style={{
-                  fontSize: '7px',
-                  fontFamily: 'var(--font-orbitron), sans-serif',
-                  fontWeight: 700,
-                  color: statusColor(m.status),
-                  letterSpacing: '0.05em',
-                }}
-              >
-                {m.status.toUpperCase().slice(0, 4)}
-              </span>
-              <span
-                style={{
-                  fontSize: '9px',
-                  color: COLORS.textDim,
-                  fontFamily: 'var(--font-share-tech-mono), monospace',
-                  flex: 1,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {m.filePath.split('/').pop()}
-              </span>
-              <span
-                style={{
-                  fontSize: '8px',
-                  color: riskColor(m.riskScore),
-                  fontWeight: 600,
-                }}
-              >
-                {m.riskScore}/10
-              </span>
-              <span style={{ fontSize: '7px', color: '#444' }}>
-                {formatDate(m.createdAt)}
-              </span>
-            </div>
-            {m.commitSha && (
-              <div style={{ fontSize: '7px', color: '#333', marginTop: '2px', paddingLeft: '2px' }}>
-                commit: {m.commitSha.slice(0, 7)}
-                {m.provider && ` via ${m.provider}`}
+        {displayedMutations.map((m) => {
+          const statusCol = getStatusColor(m.status);
+          const fileName = m.filePath ? m.filePath.split('/').pop() : 'unknown';
+          return (
+            <div
+              key={m.id}
+              className="px-3 py-2 rounded transition-colors"
+              style={{ background: '#080808', border: `1px solid ${statusCol}15` }}
+            >
+              <div className="flex items-center gap-2">
+                <span
+                  style={{
+                    fontSize: '7px',
+                    fontFamily: 'var(--font-orbitron), sans-serif',
+                    fontWeight: 700,
+                    color: statusCol,
+                    letterSpacing: '0.05em',
+                  }}
+                >
+                  {m.status ? m.status.toUpperCase().slice(0, 4) : 'UNK'}
+                </span>
+                <span
+                  style={{
+                    fontSize: '9px',
+                    color: COLORS.textDim,
+                    fontFamily: 'var(--font-share-tech-mono), monospace',
+                    flex: 1,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                  title={m.filePath}
+                >
+                  {fileName}
+                </span>
+                <span
+                  style={{
+                    fontSize: '8px',
+                    color: getRiskColor(m.riskScore),
+                    fontWeight: 600,
+                  }}
+                >
+                  {m.riskScore}/10
+                </span>
+                <span style={{ fontSize: '7px', color: '#444' }}>
+                  {formatDate(m.createdAt)}
+                </span>
               </div>
-            )}
-          </div>
-        ))}
+              {m.commitSha && (
+                <div style={{ fontSize: '7px', color: '#333', marginTop: '2px', paddingLeft: '2px' }}>
+                  commit: {m.commitSha.slice(0, 7)}
+                  {m.provider && ` via ${m.provider}`}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {mutations.length > 3 && (
         <button
-          onClick={() => setExpanded(!expanded)}
+          onClick={toggleExpanded}
           style={{
             fontSize: '8px',
             color: COLORS.textMuted,
@@ -169,6 +215,7 @@ export default function MutationHistoryPanel({ sessionId, refreshTrigger }: Muta
             textAlign: 'center',
             padding: '4px',
           }}
+          type="button"
         >
           {expanded ? '\u25B2 COLLAPSE' : `\u25BC SHOW ALL (${mutations.length})`}
         </button>
