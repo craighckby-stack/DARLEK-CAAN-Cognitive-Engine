@@ -3,42 +3,54 @@ import type { HealthCheckResult, SaturationMetrics } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json().catch(() => ({}));
-    const mutations = Array.isArray(body.mutations) ? body.mutations : [];
-    
-    // Calculate saturation metrics based on REAL evolution state
-    const mutationCount = mutations.length;
-    const pendingMutations = mutations.filter((m: any) => m.status === 'pending').length;
-    const appliedMutations = mutations.filter((m: any) => m.status === 'applied').length;
-    const rejectedMutations = mutations.filter((m: any) => m.status === 'rejected').length;
+interface MutationInput {
+  status?: 'pending' | 'applied' | 'rejected' | string;
+  affectedFiles?: unknown[];
+}
 
-    const structuralChange = Math.min(5, 0.5 + (appliedMutations * 0.4));
-    const semanticSaturation = Math.min(1.0, 0.05 + (mutationCount * 0.02) + (pendingMutations * 0.05));
-    const velocity = Math.min(5, 1.0 + (appliedMutations * 0.3) + (rejectedMutations * 0.1));
-    const identityPreservation = Math.max(0.1, 1.0 - (appliedMutations * 0.05));
-    const capabilityAlignment = Math.min(5, 1.5 + (appliedMutations * 0.5));
-    
-    // Calculate cross file impact from the mutations
+interface RequestBody {
+  mutations?: MutationInput[];
+}
+
+export async function POST(req: NextRequest): Promise<NextResponse> {
+  try {
+    const body = (await req.json().catch(() => ({}))) as RequestBody;
+    const mutations = Array.isArray(body.mutations) ? body.mutations : [];
+
+    let pendingMutations = 0;
+    let appliedMutations = 0;
+    let rejectedMutations = 0;
     let totalAffectedFiles = 0;
-    mutations.forEach((m: any) => {
+
+    for (let i = 0; i < mutations.length; i++) {
+      const m = mutations[i];
+      if (m.status === 'pending') pendingMutations++;
+      else if (m.status === 'applied') appliedMutations++;
+      else if (m.status === 'rejected') rejectedMutations++;
+
       if (Array.isArray(m.affectedFiles)) {
         totalAffectedFiles += m.affectedFiles.length;
       }
-    });
-    const crossFileImpact = Math.min(5, 0.3 + (totalAffectedFiles * 0.2));
+    }
+
+    const mutationCount = mutations.length;
+
+    const structuralChange = Math.min(5, 0.5 + appliedMutations * 0.4);
+    const semanticSaturation = Math.min(1.0, 0.05 + mutationCount * 0.02 + pendingMutations * 0.05);
+    const velocity = Math.min(5, 1.0 + appliedMutations * 0.3 + rejectedMutations * 0.1);
+    const identityPreservation = Math.max(0.1, 1.0 - appliedMutations * 0.05);
+    const capabilityAlignment = Math.min(5, 1.5 + appliedMutations * 0.5);
+    const crossFileImpact = Math.min(5, 0.3 + totalAffectedFiles * 0.2);
 
     const metrics: SaturationMetrics = {
-      structuralChange: parseFloat(structuralChange.toFixed(2)),
-      semanticSaturation: parseFloat(semanticSaturation.toFixed(3)),
-      velocity: parseFloat(velocity.toFixed(2)),
-      identityPreservation: parseFloat(identityPreservation.toFixed(2)),
-      capabilityAlignment: parseFloat(capabilityAlignment.toFixed(2)),
-      crossFileImpact: parseFloat(crossFileImpact.toFixed(2)),
+      structuralChange: Number(structuralChange.toFixed(2)),
+      semanticSaturation: Number(semanticSaturation.toFixed(3)),
+      velocity: Number(velocity.toFixed(2)),
+      identityPreservation: Number(identityPreservation.toFixed(2)),
+      capabilityAlignment: Number(capabilityAlignment.toFixed(2)),
+      crossFileImpact: Number(crossFileImpact.toFixed(2)),
     };
 
-    // Calculate overall health
     let warningCount = 0;
     let criticalCount = 0;
 
@@ -83,4 +95,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-
