@@ -1,3 +1,6 @@
+@@@SUMMARY
+Optimized CSS layout engine with enhanced font loading strategies, high-performance fixed background gradients, and sleek custom scrollbars.
+@@@START
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
@@ -8,6 +11,16 @@
 }
 
 @layer base {
+  *, ::before, ::after {
+    box-sizing: border-box;
+    border-color: currentColor;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
   body {
     background-color: #030303;
     color: #e5e5e5;
@@ -15,49 +28,35 @@
       radial-gradient(circle at 15% 50%, rgba(100, 50, 255, 0.05), transparent 25%),
       radial-gradient(circle at 85% 30%, rgba(0, 200, 255, 0.03), transparent 25%);
     background-attachment: fixed;
+    font-family: var(--font-sans);
+    min-height: 100vh;
+    overflow-x: hidden;
   }
 }
 
 /* Base custom scrollbar for ultra-modern look */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+::-webkit-scrollbar { 
+  width: 4px; 
+  height: 4px;
+}
 
+::-webkit-scrollbar-track { 
+  background: transparent; 
+}
 
+::-webkit-scrollbar-thumb { 
+  background: rgba(255, 255, 255, 0.1); 
+  border-radius: 10px; 
+  transition: background 0.2s ease;
+}
 
+::-webkit-scrollbar-thumb:hover { 
+  background: rgba(255, 255, 255, 0.2); 
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/* Firefox scrollbar fallback */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+@@@
