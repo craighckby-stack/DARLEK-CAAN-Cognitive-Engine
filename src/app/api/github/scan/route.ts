@@ -4,68 +4,125 @@ import { safeReqJson } from '@/lib/safe-json';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+interface GitHubTreeItem {
+  path: string;
+  mode?: string;
+  type: string;
+  sha: string;
+  size?: number;
+  url?: string;
+}
+
+interface GitHubTreeResponse {
+  sha?: string;
+  url?: string;
+  tree?: GitHubTreeItem[];
+  truncated?: boolean;
+}
+
+const EXCLUDED_DIRS = new Set([
+  'node_modules/',
+  '.git/',
+  'dist/',
+  'build/',
+  '.next/',
+  '__pycache__/',
+  '.svn/',
+]);
+
+const EXCLUDED_FILES = new Set([
+  '.env',
+  '.env.local',
+  'package-lock.json',
+  'yarn.lock',
+  '.DS_Store',
+]);
+
+export async function GET(): Promise<NextResponse> {
   return NextResponse.json({ status: 'online', service: 'GITHUB_SCAN_API' });
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
-    const body: ScanRepoBody = await safeReqJson(req, {} as ScanRepoBody);
+    const body = await safeReqJson<ScanRepoBody>(req, {} as ScanRepoBody);
     const { token, owner, repo, branch } = body;
 
-    const url = `https://api.github.com/repos/${owner}/${repo}/git/trees/${encodeURIComponent(branch)}?recursive=1`;
+    if (!owner || !repo || !branch) {
+      return NextResponse.json(
+        { error: 'Missing required parameters: owner, repo, and branch are mandatory.' },
+        { status: 400 }
+      );
+    }
+
+    const encodedBranch = encodeURIComponent(branch);
+    const url = `https://api.github.com/repos/${owner}/${repo}/git/trees/${encodedBranch}?recursive=1`;
 
     const res = await fetch(url, {
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/vnd.github.v3+json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        Accept: 'application/vnd.github.v3+json',
         'User-Agent': 'DARLEK-CAAN-Security-Applet',
       },
     });
 
     if (!res.ok) {
-      const err = await res.text();
+      const errText = await res.text();
       return NextResponse.json(
-        { error: `GitHub API error: ${err}` },
+        { error: `GitHub API error: ${errText || res.statusText}` },
         { status: res.status }
       );
     }
 
-    const data = await res.json();
+    const data: GitHubTreeResponse = await res.json();
 
-    if (!data.tree) {
-      return NextResponse.json({ error: 'No tree data returned. Check the branch name.' }, { status: 400 });
+    if (!Array.isArray(data.tree)) {
+      return NextResponse.json(
+        { error: 'No tree data returned. Check the branch name or repository permissions.' },
+        { status: 400 }
+      );
     }
 
-    const files: GitHubFile[] = data.tree
-      .filter((item: { type: string; path: string }) => item.type === 'blob')
-      .filter((item: { path: string }) => {
-        // Precise directory and file level exclusions to prevent false-positives
-        // (such as falsely excluding .env.example or other custom files with matching substrings)
-        const excludeDirs = ['node_modules/', '.git/', 'dist/', 'build/', '.next/', '__pycache__/', '.svn/'];
-        const excludeFiles = ['.env', '.env.local', 'package-lock.json', 'yarn.lock', '.DS_Store'];
+    const allBlobs = data.tree.filter((item): item is GitHubTreeItem => item.type === 'blob');
+    const repoTotal = allBlobs.length;
 
-        const inExcludedDir = excludeDirs.some(dir => item.path.includes(dir));
-        
-        const pathParts = item.path.split('/');
-        const fileName = pathParts[pathParts.length - 1];
-        const isExcludedFile = excludeFiles.includes(fileName);
+    const files: GitHubFile[] = [];
+    for (let i = 0; i < repoTotal; i++) {
+      const item = allBlobs[i];
+      const path = item.path;
 
-        return !inExcludedDir && !isExcludedFile;
-      })
-      .map((item: { path: string; size: number; type: string; sha: string }) => ({
+      let inExcludedDir = false;
+      for (const dir of EXCLUDED_DIRS) {
+        if (path.includes(dir)) {
+          inExcludedDir = true;
+          break;
+        }
+      }
+
+      if (inExcludedDir) {
+        continue;
+      }
+
+      const lastSlashIdx = path.lastIndexOf('/');
+      const fileName = lastSlashIdx === -1 ? path : path.substring(lastSlashIdx + 1);
+
+      if (EXCLUDED_FILES.has(fileName)) {
+        continue;
+      }
+
+      files.push({
         path: item.path,
-        size: item.size,
+        size: item.size ?? 0,
         type: item.type,
         sha: item.sha,
-      }));
+      });
+    }
 
     return NextResponse.json({
       files,
       total: files.length,
-      repoTotal: data.tree.filter((item: { type: string }) => item.type === 'blob').length,
+      repoTotal,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Scan repo error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
