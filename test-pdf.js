@@ -1,6 +1,6 @@
 /**
  * @file test-pdf.js
- * @version 2.0.0
+ * @version 2.1.0
  * @author EMG Core v49 Neural Code and Documentation Optimizer Engine
  * @description Comprehensive sovereign overhaul for robust PDF parsing validation and memory-efficient execution.
  */
@@ -18,24 +18,25 @@ const pdfParse = require('pdf-parse');
  * 
  * @async
  * @function executePdfDiagnostic
- * @param {Buffer|string} [pdfSource] - Optional source buffer or path indicator for testing.
+ * @param {Buffer|string|null} [pdfSource=null] - Optional source buffer or path indicator for testing.
  * @returns {Promise<void>}
  */
 async function executePdfDiagnostic(pdfSource = null) {
     try {
-        if (!pdfParse || typeof pdfParse !== 'function') {
+        if (typeof pdfParse !== 'function') {
             throw new TypeError('CRITICAL: "pdf-parse" module failed to initialize or export a valid function.');
         }
 
         // Diagnostic logging adhering to secure execution parameters
         console.info('[EMG-CORE-49] PDF Parser module successfully loaded and verified.');
         
-        if (pdfSource) {
+        if (pdfSource !== null && pdfSource !== undefined) {
             const data = await pdfParse(pdfSource);
             console.debug(`[EMG-CORE-49] Parsed PDF successfully. Page count: ${data.numpages}`);
         }
     } catch (error) {
-        console.error(`[EMG-CORE-49] Execution Error: ${error instanceof Error ? error.message : String(error)}`);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error(`[EMG-CORE-49] Execution Error: ${errorMessage}`);
         process.exitCode = 1;
     }
 }
