@@ -14,14 +14,26 @@ export interface GitHubHeaders extends Readonly<Record<string, string>> {
   readonly 'Content-Type': 'application/json';
 }
 
+const HEADER_CACHE = new Map<string, GitHubHeaders>();
+
 export const DEFAULT_HEADERS = (token: string): GitHubHeaders => {
-  if (!token || typeof token !== 'string') {
-    throw new TypeError('A valid string token is required to construct GitHub API headers.');
+  if (typeof token !== 'string' || token.trim() === '') {
+    throw new TypeError('A valid, non-empty string token is required to construct GitHub API headers.');
   }
 
-  return {
+  const cached = HEADER_CACHE.get(token);
+  if (cached) {
+    return cached;
+  }
+
+  const headers: GitHubHeaders = {
     Authorization: `Bearer ${token}`,
     Accept: 'application/vnd.github.v3+json',
     'Content-Type': 'application/json',
   };
+
+  Object.freeze(headers);
+  HEADER_CACHE.set(token, headers);
+
+  return headers;
 };
