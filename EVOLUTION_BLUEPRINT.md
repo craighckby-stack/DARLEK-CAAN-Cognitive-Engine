@@ -16,6 +16,7 @@
 /**
  * @file updateModule.js
  * @description Core injection routine ensuring atomic and transactional safety.
+ * @module DarlekCann/Core
  */
 
 const fs = require('node:fs');
@@ -28,6 +29,7 @@ const path = require('node:path');
  * @param {string} payload - The code or content block to inject.
  * @param {Object} markers - Start and end regex markers for injection boundaries.
  * @returns {boolean} Returns true upon successful execution.
+ * @throws {Error} Throws an error if the target file cannot be read or written.
  */
 function injectAtomicModule(targetPath, payload, markers) {
     // Ensure transactional safety via backup creation
