@@ -33,7 +33,27 @@ interface UserRepoItem {
   language?: string;
 }
 
-// Detect if file content is encrypted, binary, or non-code
+interface GitTreeItem {
+  type: string;
+  path: string;
+}
+
+interface SanityViolation {
+  severity: string;
+  message: string;
+}
+
+interface ParsedMutationResponse {
+  analysis?: string;
+  riskScore?: number;
+  affectedFiles?: string[];
+  newFiles?: NewFilePayload[];
+  proposedCode?: string;
+}
+
+/**
+ * Detects if file content is encrypted, binary, or non-code using pattern and entropy checks.
+ */
 function isNonCodeContent(content: string): NonCodeResult {
   if (content.includes('"iv"') && content.includes('"data"') && content.includes('AES')) {
     return { isNonCode: true, reason: 'File appears to be encrypted (AES) data, not source code' };
@@ -178,11 +198,6 @@ async function fetchAIProjectSiphon(token?: string): Promise<string> {
       throw new Error('Invalid tree format');
     }
 
-    interface GitTreeItem {
-      type: string;
-      path: string;
-    }
-
     const codeFiles = treeData.tree.filter((f: GitTreeItem) => 
       f.type === 'blob' && 
       /\.(ts|tsx|js|jsx|py|go|rs|json)$/.test(f.path) &&
@@ -227,7 +242,14 @@ export async function GET(): Promise<NextResponse> {
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
-    const body: ProposeBody & { sessionId?: string; userReposContext?: UserRepoItem[]; isArchitecturalGenesis?: boolean; hallucinationLevel?: number; repoFiles?: string[] } = await safeReqJson(req, {} as ProposeBody);
+    const body: ProposeBody & { 
+      sessionId?: string; 
+      userReposContext?: UserRepoItem[]; 
+      isArchitecturalGenesis?: boolean; 
+      hallucinationLevel?: number; 
+      repoFiles?: string[] 
+    } = await safeReqJson(req, {} as ProposeBody);
+    
     const { fileContent, filePath, apiKeys, rejectionMemory } = body;
     const sessionId = body.sessionId;
 
@@ -378,7 +400,7 @@ ${fileContent.slice(0, 35000)}
 
     console.log(`[Propose] Mutation analysis completed using: ${result.provider}`);
 
-    let parsed: { analysis?: string; riskScore?: number; affectedFiles?: string[]; newFiles?: NewFilePayload[]; proposedCode?: string } | null = null;
+    let parsed: ParsedMutationResponse | null = null;
     const rawText = result.text.trim();
 
     let proposedCode = '';
@@ -406,7 +428,9 @@ ${fileContent.slice(0, 35000)}
     if (!parsed) {
       try {
         const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) parsed = JSON.parse(jsonMatch[0].replace(/[\u0000-\u001F\u007F-\u009F]/g, ' '));
+        if (jsonMatch) {
+          parsed = JSON.parse(jsonMatch[0].replace(/[\u0000-\u001F\u007F-\u009F]/g, ' '));
+        }
       } catch {
         // Ignore fallback JSON extraction failures
       }
@@ -442,10 +466,6 @@ ${fileContent.slice(0, 35000)}
 
     if (!sanityCheck.passed) {
       finalRiskScore = Math.max(finalRiskScore, 9);
-      interface SanityViolation {
-        severity: string;
-        message: string;
-      }
       const violationMsgs = sanityCheck.violations.map((v: SanityViolation) => `[${v.severity.toUpperCase()}] ${v.message}`).join('\n');
       finalAnalysis = `⚠️ STRUCTURAL SANITY GUARD WARNING:\n${violationMsgs}\n\nORIGINAL ANALYSIS:\n${finalAnalysis}`;
     }
