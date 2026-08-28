@@ -4,11 +4,12 @@ const { GoogleGenAI } = require('@google/genai');
 /**
  * Initializes and validates the Google GenAI client instance.
  * @throws {Error} If GEMINI_API_KEY is missing from the environment.
+ * @returns {GoogleGenAI} The initialized GoogleGenAI client instance.
  */
 function createGenAIClient() {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error('CRITICAL: GEMINI_API_KEY environment variable is not defined.');
+  if (!apiKey || typeof apiKey !== 'string' || apiKey.trim() === '') {
+    throw new Error('CRITICAL: GEMINI_API_KEY environment variable is missing, null, or malformed.');
   }
   return new GoogleGenAI({ apiKey });
 }
@@ -24,7 +25,8 @@ async function testGeminiConnection() {
   try {
     ai = createGenAIClient();
   } catch (initError) {
-    console.error('ERROR [Initialization Failed]:', initError.message);
+    const message = initError instanceof Error ? initError.message : String(initError);
+    console.error('ERROR [Initialization Failed]:', message);
     process.exitCode = 1;
     return;
   }
