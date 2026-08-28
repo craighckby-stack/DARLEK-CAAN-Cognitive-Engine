@@ -1,42 +1,44 @@
 'use client';
 
-import { useState, useEffect, memo, type JSX } from 'react';
-import MainPage from '@/components/MainPage';
+import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
-/**
- * Fallback loading component rendered during client-side hydration phase.
- * Optimized with memoization to prevent unnecessary re-renders.
- */
-const HydrationFallback = memo((): JSX.Element => (
-  <div
-    className="min-h-screen flex items-center justify-center font-mono text-xs"
-    style={{ background: '#030101', color: '#00ffcc' }}
-    role="status"
-    aria-label="Initializing Cognitive Dominance Engine"
-  >
-    <div className="flex items-center gap-2 animate-pulse">
-      <span>[DARLEK CAAN] INITIALIZING COGNITIVE DOMINANCE ENGINE...</span>
+const MainPage = dynamic(() => import('@/components/MainPage'), {
+  ssr: false,
+  loading: () => (
+    <div
+      className="min-h-screen flex items-center justify-center font-mono text-xs"
+      style={{ background: '#030101', color: '#00ffcc' }}
+    >
+      <div className="flex items-center gap-2 animate-pulse">
+        <span>[DARLEK CAAN] SYNAPSE INJECTION IN PROGRESS...</span>
+      </div>
     </div>
-  </div>
-));
+  ),
+});
 
-HydrationFallback.displayName = 'HydrationFallback';
+export default function PageClient() {
+  const [mounted, setMounted] = useState(false);
 
-/**
- * PageClient manages client-side mounting state safely to prevent hydration mismatches
- * while wrapping the core application within an error boundary.
- */
-export default function PageClient(): JSX.Element {
-  const [mounted, setMounted] = useState<boolean>(false);
-
-  useEffect((): void => {
+  useEffect(() => {
     setMounted(true);
   }, []);
 
   return (
     <ErrorBoundary>
-      {mounted ? <MainPage /> : <HydrationFallback />}
+      {mounted ? (
+        <MainPage />
+      ) : (
+        <div
+          className="min-h-screen flex items-center justify-center font-mono text-xs"
+          style={{ background: '#030101', color: '#00ffcc' }}
+        >
+          <div className="flex items-center gap-2 animate-pulse">
+            <span>[DARLEK CAAN] INITIALIZING COGNITIVE DOMINANCE ENGINE...</span>
+          </div>
+        </div>
+      )}
     </ErrorBoundary>
   );
 }

@@ -1,116 +1,63 @@
-# DARLEK CAAN Cognitive Engine
+# 🚀 DARLEK CAAN — Autonomous Code Evolution & AI Command Center
 
 [![Live App](https://img.shields.io/badge/Live_App-Open_Application-00FF88?style=for-the-badge&logo=googlecloud)](https://ais-dev-amubz4v3czr3772fnvrcru-483535245139.asia-southeast1.run.app)
-[![Preview](https://img.shields.io/badge/Preview-Shared_Environment-blue?style=for-the-badge&logo=next.js)](https://ais-pre-amubz4v3czr3772fnvrcru-483535245139.asia-southeast1.run.app)
-[![License](https://img.shields.io/badge/License-MIT-purple?style=for-the-badge](#-license))
+[![Repository](https://img.shields.io/badge/Repository-craighckby--stack%2FDarlek--Caan--vs--Jesus--Chess-blue?style=for-the-badge&logo=github)](https://github.com/craighckby-stack/Darlek-Caan-vs-Jesus-Chess)
 
 ---
 
 ## 🌐 Live Web Application
 
 Access the live platform directly in your browser:
-- 👉 **[Open Development Application](https://ais-dev-amubz4v3czr3772fnvrcru-483535245139.asia-southeast1.run.app)**  
-- 👉 **[Open Shared Preview Application](https://ais-pre-amubz4v3czr3772fnvrcru-483535245139.asia-southeast1.run.app)**
+👉 **[Open DARLEK CAAN Development Application](https://ais-dev-amubz4v3czr3772fnvrcru-483535245139.asia-southeast1.run.app)**  
+👉 **[Open DARLEK CAAN Shared Preview Application](https://ais-pre-amubz4v3czr3772fnvrcru-483535245139.asia-southeast1.run.app)**
 
 ---
 
-## 💡 Overview
+## 💡 What Is DARLEK CAAN?
 
-The **DARLEK CAAN Cognitive Engine** is an enterprise-grade security scanner, automated remediation platform, and autonomous code evolution suite designed for GitHub repositories, local file trees, and raw code snippets.
+**DARLEK CAAN** is an interactive AI-powered code analysis and repository management platform. It helps developers and teams automatically inspect, improve, refactor, and manage GitHub codebases through artificial intelligence.
 
-It combines multi-pattern regex matching, Shannon-entropy detection, and Luhn checksum validation with automated Git history purging (`git filter-repo`) and AI-driven multi-model dialectic debate to identify, isolate, and neutralize sensitive data leaks before or after they reach version control.
-
----
-
-## ✨ Key Capabilities
-
-### 1. 🔍 High-Precision Secret & PII Detection
-- **Comprehensive Pattern Library**: Detects over 40+ high-value token formats including OpenAI (`sk-`, `sk-proj-`), Anthropic, Google Gemini, Cohere, Mistral, GitHub PATs & fine-grained tokens, GitLab, AWS, Azure, Stripe, PayPal, Twilio, Slack, Discord, SendGrid, Firebase, MongoDB URIs, and database connection strings.
-- **Shannon Entropy Engine**: Heuristic fallback detector identifying high-entropy string literals assigned to sensitive variables (`key`, `token`, `secret`, `password`, `credential`).
-- **Validated PII Scanning**: Luhn-validated credit card numbers, IBAN/SWIFT identifiers, IPv4/IPv6 addresses, MAC addresses, emails, phone numbers, and regional tax IDs.
-- **Granular Confidence Scoring**: Every finding is categorized as `High`, `Medium`, or `Low` confidence with line numbers, code snippets, and exact offset coordinates.
-
-### 2. 🧯 Surgical Remediation & Full Git History Purge
-- **Non-Destructive In-Place Redaction**: Replaces only the matched secret value while preserving variable syntax, comments, and structure (e.g., `API_KEY="<OPENAI_API_KEY_REDACTED>"`).
-- **Automated `git filter-repo` Script Generator**: Generates deterministic `replacements.txt` rule sets to purge leaked tokens across all commits in historical Git tree objects without deleting files.
-- **Direct GitHub Commit Fix**: Instantly patch HEAD branches with conventional security commit messages (`fix(security): redact exposed API_KEY in <path>`).
-- **Confirmation Safety Circuit**: Multi-step confirmation required before destructive rewrite scripts are unlocked.
-
-### 3. ⚡ High-Throughput & Rate-Aware Scanning
-- **Concurrent Request Queue**: Parallel file ingestion with concurrency controls.
-- **GitHub Rate Limit Awareness**: Actively monitors `X-RateLimit-Remaining` and `X-RateLimit-Reset` to pause and resume automatically.
-- **Branch & Path Filtering**: Multi-branch selector with automated binary file detection and configurable file-size caps.
-
-### 4. 📊 Findings Management & Export
-- **Multi-Format Export**: Export scan results directly to **SARIF v2.1.0** (compatible with GitHub Advanced Security tabs), structured **JSON**, and **CSV**.
-- **Real-Time Session Telemetry**: Filter findings by repository, file path, severity (`Critical`, `High`, `Medium`, `Low`), and confidence.
-- **Integrated CodeMirror Inspector**: Syntax-highlighted diffs and sanitized previews.
-
-### 5. 🤖 Multi-Agent Evolution & Dialectic Debate Chamber
-- **Automated Code Evolution**: Propose architectural refactors, safety optimizations, and code cleanups.
-- **Dialectic Debate Chamber**: Multi-LLM consensus system analyzing risk coefficients, cognitive friction, and epistemic rulings before applying changes.
+Whether you want to generate code from a design specification, analyze existing code for bugs and security issues, or automatically propose and test improvements across your files, DARLEK CAAN provides a central control panel to orchestrate it all.
 
 ---
 
-## 🛠️ Architecture & Workflow
+## ✨ Key Features
 
-```mermaid
-graph TD
-    A[Input Source: Snippet / Folder / GitHub] --> B[Sanitization & Detection Engine]
-    B --> C{Pattern Matcher + Entropy Analyzer}
-    C -->|Findings Identified| D[Severity & Confidence Matrix]
-    D --> E[SARIF / JSON / CSV Export]
-    D --> F[HEAD Redaction & Direct Commit]
-    D --> G[git filter-repo History Purge Script]
-    C -->|Clean Code| H[Code Evolution & Debate Engine]
-    H --> I[Coherence Gate & Auto-Test]
-    I --> J[Automated Deployment / GitHub Sync]
-```
+- **🤖 Automated Code Evolution**: Select files from your GitHub repository to let AI propose refactors, performance optimizations, and code cleanups.
+- **🏛️ Multi-LLM Debate Chamber**: Multiple AI models debate code improvements before applying them, weighing risks, pros, and cons to ensure high-quality, bug-free changes.
+- **📄 Blueprint & Spec Compilation**: Upload project specification sheets or prompts to automatically scaffold and push full project repositories to GitHub.
+- **🔍 File Analysis & Health Auditing**: Scan source code files for syntax issues, structural improvements, and potential risks.
+- **📊 Real-Time Monitoring**: Track active evolution cycles, pending code mutations, and system telemetry in a live dashboard.
+- **♟️ Embedded Tools**: Includes interactive features like an AI-assisted chess chamber and cognitive benchmark meters.
 
 ---
 
-## 🚀 Quick Start Guide
+## 📖 How To Use
 
-### Step 1: Connect GitHub Account
-1. Open the [Live Web Application](https://ais-dev-amubz4v3czr3772fnvrcru-483535245139.asia-southeast1.run.app).
-2. Enter your **GitHub Personal Access Token** (`repo` scope required for scanning private repositories and pushing commits).
-3. Select your target repository and working branch.
+### 1. Connect Your GitHub Account
+1. Open the [Live Application](https://ais-dev-amubz4v3czr3772fnvrcru-483535245139.asia-southeast1.run.app).
+2. Enter your **GitHub Personal Access Token** in the setup panel to grant permissions to inspect or update your repositories.
+3. Select an active repository and branch from your account.
 
-### Step 2: Run a Scan
-- **GitHub Tab**: Click **Start Scan** to analyze the active repository.
-- **Folder Tab**: Drag and drop a folder or `.zip` archive for client-side scanning.
-- **Snippet Tab**: Paste raw code, config files, or `.env` templates for instant sanitization.
+### 2. Propose & Evolve Code
+1. Select a file from the repository tree view.
+2. Click **"Evolve Code"** or **"Propose Mutation"**.
+3. Watch as AI models analyze the file and present proposed changes along with a side-by-side diff.
+4. Review the AI Debate output to see the pros, cons, and safety score of the proposed changes.
+5. Click **Approve & Commit** to automatically push changes directly to your GitHub repository, or **Reject** to discard them.
 
-### Step 3: Review Findings & Remediate
-1. Inspect the classified findings list filtered by severity or secret type.
-2. Click **Sanitize & Commit** to patch HEAD immediately.
-3. For leaked secrets present in previous commits, open the **History Purge Dialog**, type `DELETE` to confirm, and run the generated `git filter-repo` script in your terminal.
-4. Download the **SARIF** report to upload findings to your GitHub Security Dashboard.
+### 3. Compile a New Repository From a Specification
+1. In the main prompt input, describe your application or upload a specification document.
+2. Enter a name for your new repository.
+3. Click **Compile & Build** to let DARLEK CAAN generate the codebase and push it to your GitHub account.
 
----
-
-## 📡 API Endpoints Reference
-
-| Endpoint | Method | Description |
-| :--- | :--- | :--- |
-| `/api/github/scan` | `POST` | Scan GitHub repository trees for secrets and PII |
-| `/api/github/user-repos` | `POST` | Retrieve authenticated user repositories |
-| `/api/github/branches` | `POST` | Fetch all active branches for a repository |
-| `/api/github/write-file` | `POST` | Commit sanitized or refactored files |
-| `/api/evolution/debate` | `POST` | Run multi-agent dialectic consensus debate |
-| `/api/evolution/auto-test` | `POST` | Execute static and architectural coherence tests |
-| `/api/brain` | `POST` | System state synchronization and telemetry |
+### 4. Enable Batch Evolution Mode
+1. Toggle **Batch Mode** to allow the system to sequentially analyze and propose improvements across multiple files in your repository.
+2. Set your preferred **Auto-Approve Risk Threshold** (Low, Medium, or Manual Check) to control how much autonomy the AI has.
 
 ---
 
-## 🔒 Security & Privacy
+## 📄 Copyright & License
 
-- **Client-Side Processing**: Regex matching and snippet sanitization execute locally in browser memory whenever possible.
-- **Zero Token Persistence**: GitHub tokens and API keys are stored in secure local session memory and never transmitted to third-party tracking services.
-- **Rate-Limit Safe**: Built-in exponential backoff preventing API token suspensions during large repository scans.
-
----
-
-## 📄 License
-
-Copyright © 2026. All rights reserved.
+**Copyright © 2026 craighckby-stack.** All rights reserved.  
+Maintained under the [craighckby-stack/Darlek-Caan-vs-Jesus-Chess](https://github.com/craighckby-stack/Darlek-Caan-vs-Jesus-Chess) repository.

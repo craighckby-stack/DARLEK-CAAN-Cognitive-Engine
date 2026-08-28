@@ -1,26 +1,59 @@
 # DARLEK CANN v3.0: ARCHITECTURAL BLUEPRINT
 
 ## 1. System Overview
-This repository serves as the core evolution engine for the `DARLEK CANN / OMEGA-CORE` system. It integrates multi-tier Large Language Model (LLM) fallbacks, agent swarm orchestration, and quantum-state memory persistence to drive high-performance autonomous execution.
-
----
+This repository serves as the core evolution engine for the DARLEK CANN/OMEGA-CORE system. It integrates multi-tier LLM fallbacks, agent swarm orchestration, and quantum-state memory persistence.
 
 ## 2. Integration Schema
-The system architecture is divided into three primary modules:
-
-*   **`unitary-core`**: Handles quantum data processing, high-dimensional tensor calculations, and multi-dimensional analysis.
-*   **`SN (OMEGA)`**: Provides the emergent general intelligence architecture and continuous cognitive reasoning loops.
-*   **`psr-governance`**: Enforces strict protocol compliance, ensuring self-modifying code remains production-ready and secure.
-
----
+- **unitary-core**: Handles quantum data processing and multi-dimensional analysis.
+- **SN (OMEGA)**: Provides the emergent general intelligence architecture.
+- **psr-governance**: Ensures self-modifying code remains production-ready and secure.
 
 ## 3. Security Protocols
-*   **Credential Isolation**: All cryptographic keys, authentication tokens, and vault configurations are strictly excluded via `.gitignore` to prevent unauthorized access.
-*   **Memory Management**: Agent memory dumps (`*.memory.json`) are maintained as local-only artifacts and excluded from version control to prevent state leakage and data exposure.
+- All cryptographic keys and vault files are strictly ignored via `.gitignore`.
+- Agent memory dumps (`*.memory.json`) are local-only and excluded from version control to prevent state leakage.
 
----
+## 4. Workflow
+1. **Orchestration**: Agent Orchestra manages task distribution.
+2. **Evolution**: Self-refactoring loops (sovereign-kernel) trigger on logic drift.
+3. **Persistence**: State is cached in local `*.buffer` files for rapid recovery.
 
-## 4. Operational Workflow
-1.  **Orchestration**: The Agent Orchestra manages dynamic task distribution and load balancing across distributed worker nodes.
-2.  **Evolution**: Self-refactoring execution loops (`sovereign-kernel`) automatically trigger upon detecting performance bottlenecks or logical drift.
-3.  **Persistence**: System states are cached securely in localized buffer files (e.g., `*.buffer`) to enable rapid recovery following execution interruptions.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

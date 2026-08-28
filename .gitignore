@@ -2,12 +2,12 @@
 node_modules/
 
 # Next.js build output
-# .next/
-# out/
+.next/
+out/
 
 # Production build output
-# dist/
-# build/
+dist/
+build/
 
 # Environment variables
 .env

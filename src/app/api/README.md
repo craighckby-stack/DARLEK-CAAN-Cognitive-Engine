@@ -1,75 +1,11 @@
-# DARLEK CANN v3.0 | API Ingress Layer
+# API Gateway Documentation
 
-## 🗲 Omega-Emergent Architecture
+## Overview
+This module serves as the primary gateway for the DARLEK CANN v3.0 system. It implements the OMEGA-Emergent architecture, providing real-time system diagnostics and agent orchestration hooks.
 
-High-performance ingestion module optimized for real-time system diagnostics and agentic swarm orchestration. This layer serves as the primary bridge between the `sovereign-kernel` and the `unitary-core` repositories for autonomous code evolution.
+## Endpoints
+- `GET /api`: Returns system health, performance metrics, and node status.
+- `POST /api`: Accepts agent-orchestration payloads for swarm synchronization.
 
-## ⚙ Core Protocols
-
-- **Validation**: Mandatory execution against `ReadFileSchema` to ensure strict payload compliance.
-- **Latency Protection**: Strict 15-second execution TTL enforced for all asynchronous fetch operations.
-- **Transformation**: Optimized Base64 decoding paired with automated metadata extraction pipelines.
-- **Versioning**: SHA-based tracking implemented for immutable state integrity and auditability.
-
-## ⬢ Endpoints
-
-### `GET /api`
-
-- **Function**: Telemetry Ingestion.
-- **Output**: Real-time system health metrics, node performance indicators, and active swarm status.
-
-```typescript
-/**
- * Example GET Request with diagnostic context headers.
- * Retrieves real-time telemetry data from the ingestion layer.
- */
-fetch('/api', {
-  method: 'GET',
-  headers: {
-    'X-Agent-Context': 'diagnostic-node-01',
-  },
-})
-  .then((res) => res.json())
-  .then((data) => console.log('Telemetry Data:', data))
-  .catch((error) => console.error('Telemetry Error:', error));
-```
-
-### `POST /api`
-
-- **Function**: Swarm Synchronization.
-- **Input**: Agent-orchestration payloads formulated for collective code refactoring and mutation.
-
-```typescript
-/**
- * Example POST Request Payload for swarm mutation.
- * Submits structured synchronization instructions for autonomous code evolution.
- */
-interface SwarmPayload {
-  action: 'REFRACTOR_MUTATE';
-  target: string;
-  schemaVersion: string;
-}
-
-const payload: SwarmPayload = {
-  action: 'REFRACTOR_MUTATE',
-  target: 'sovereign-kernel',
-  schemaVersion: 'v3.0',
-};
-
-fetch('/api', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'X-Agent-Context': 'swarm-leader-alpha',
-  },
-  body: JSON.stringify(payload),
-})
-  .then((res) => res.json())
-  .then((data) => console.log('Synchronization Success:', data))
-  .catch((error) => console.error('Synchronization Error:', error));
-```
-
-## ⚔ Integration Requirements
-
-- **Headers**: The `X-Agent-Context` header is **MANDATORY** for all incoming requests. Failure to provide valid context results in immediate request termination.
-- **Interface**: Direct GitHub REST API v3 integration utilized for granular, file-level mutation and comprehensive state analysis.
+## Integration
+This system is designed to interface with the `sovereign-kernel` and `unitary-core` repositories. Ensure all incoming requests include the `X-Agent-Context` header for proper routing.
