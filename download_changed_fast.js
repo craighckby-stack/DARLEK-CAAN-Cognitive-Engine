@@ -3,32 +3,74 @@
  * File: download_changed_fast.js
  * Role: Core system component participating in autonomous cognitive evolution cycles.
  * Architecture: Type-safe modular unit with resilient state interfaces.
+ * Optimized by EMG Core v49 Neural Code and Documentation Optimizer Engine.
  */
+
+'use strict';
 
 const fs = require('fs');
 const https = require('https');
 
-const remoteBlobs = JSON.parse(fs.readFileSync('remote_blobs.json', 'utf8'));
-let changed = [];
+const REMOTE_BLOBS_PATH = 'remote_blobs.json';
+const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/craighckby-stack/epistemic_debate_engine/main/';
+const USER_AGENT = 'EMG-Neural-Code-Optimizer-v49';
 
-const promises = remoteBlobs.filter(f => f.path.startsWith('src/') && fs.existsSync(f.path)).map(fileObj => {
-  return new Promise((resolve) => {
-    const localContent = fs.readFileSync(fileObj.path, 'utf8');
-    https.get('https://raw.githubusercontent.com/craighckby-stack/epistemic_debate_engine/main/' + fileObj.path, { headers: { 'User-Agent': 'node.js' } }, (res) => {
+function fetchRemoteContent(url) {
+  return new Promise((resolve, reject) => {
+    const req = https.get(url, { headers: { 'User-Agent': USER_AGENT } }, (res) => {
+      if (res.statusCode !== 200) {
+        res.resume();
+        return reject(new Error(`Failed to fetch ${url}, status code: ${res.statusCode}`));
+      }
       let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        if (data !== localContent) {
-           console.log("Changed: " + fileObj.path);
-           changed.push(fileObj);
-           fs.writeFileSync(fileObj.path, data);
-        }
-        resolve();
+      res.on('data', (chunk) => {
+        data += chunk;
       });
-    }).on('error', () => resolve());
-  });
-});
+      res.on('end', () => {
+        resolve(data);
+      });
+    });
 
-Promise.all(promises).then(() => {
-   console.log(`Found and updated ${changed.length} changed files.`);
-});
+    req.on('error', (err) => {
+      reject(err);
+    });
+  });
+}
+
+async function main() {
+  let remoteBlobs;
+  try {
+    const rawMeta = fs.readFileSync(REMOTE_BLOBS_PATH, 'utf8');
+    remoteBlobs = JSON.parse(rawMeta);
+  } catch (err) {
+    console.error(`Error reading or parsing ${REMOTE_BLOBS_PATH}:`, err.message);
+    process.exit(1);
+  }
+
+  const changed = [];
+
+  const candidateFiles = remoteBlobs.filter(
+    (f) => typeof f.path === 'string' && f.path.startsWith('src/') && fs.existsSync(f.path)
+  );
+
+  const promises = candidateFiles.map(async (fileObj) => {
+    try {
+      const localContent = fs.readFileSync(fileObj.path, 'utf8');
+      const remoteUrl = GITHUB_RAW_BASE + fileObj.path;
+      const remoteContent = await fetchRemoteContent(remoteUrl);
+
+      if (remoteContent !== localContent) {
+        console.log(`Changed: ${fileObj.path}`);
+        changed.push(fileObj);
+        fs.writeFileSync(fileObj.path, remoteContent, 'utf8');
+      }
+    } catch (err) {
+      // Gracefully handle network or file system anomalies per original contract
+    }
+  });
+
+  await Promise.all(promises);
+  console.log(`Found and updated ${changed.length} changed files.`);
+}
+
+main();
