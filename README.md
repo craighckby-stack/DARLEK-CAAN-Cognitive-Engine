@@ -1,4 +1,4 @@
-emg fixed it woot.
+emg fixed it woot. and now I fcd it
 
 https://ai.studio/apps/28b5e1aa-99d6-4c55-90cc-34608023c592
 
