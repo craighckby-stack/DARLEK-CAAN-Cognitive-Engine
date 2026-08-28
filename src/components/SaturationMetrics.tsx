@@ -6,7 +6,7 @@ import { COLORS, SATURATION_THRESHOLDS } from '@/lib/constants';
 import { BarChart3 } from 'lucide-react';
 
 export interface SaturationMetricsPanelProps {
-  metrics: SaturationMetrics;
+  readonly metrics: SaturationMetrics;
 }
 
 interface MetricConfig {
