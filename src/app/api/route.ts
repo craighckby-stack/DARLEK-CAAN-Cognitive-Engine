@@ -1,7 +1,43 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-export async function GET() {
-  return NextResponse.json({ message: "Hello, world!" });
+interface ApiResponse {
+  readonly success: boolean;
+  readonly message: string;
+  readonly timestamp: string;
+}
+
+export async function GET(_request: NextRequest): Promise<NextResponse<ApiResponse>> {
+  try {
+    const responsePayload: ApiResponse = {
+      success: true,
+      message: "Hello, world!",
+      timestamp: new Date().toISOString(),
+    };
+
+    return NextResponse.json(responsePayload, {
+      status: 200,
+      headers: {
+        "Cache-Control": "no-store, max-age=0",
+        "Content-Type": "application/json; charset=utf-8",
+      },
+    });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Internal Server Error";
+    
+    const errorPayload: ApiResponse = {
+      success: false,
+      message: errorMessage,
+      timestamp: new Date().toISOString(),
+    };
+
+    return NextResponse.json(errorPayload, {
+      status: 500,
+      headers: {
+        "Cache-Control": "no-store, max-age=0",
+        "Content-Type": "application/json; charset=utf-8",
+      },
+    });
+  }
 }
