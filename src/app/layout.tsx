@@ -1,4 +1,4 @@
-import type { Metadata, Viewport } from "node_modules/next";
+import type { Metadata, Viewport } from "next";
 import type { JSX, ReactNode } from "react";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
