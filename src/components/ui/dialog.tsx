@@ -11,47 +11,46 @@ export interface DialogContentProps
   showCloseButton?: boolean
 }
 
-const Dialog = React.memo(
-  function Dialog({
-    ...props
-  }: React.ComponentProps<typeof DialogPrimitive.Root>) {
+export type DialogProps = React.ComponentProps<typeof DialogPrimitive.Root>
+export type DialogTriggerProps = React.ComponentProps<typeof DialogPrimitive.Trigger>
+export type DialogPortalProps = React.ComponentProps<typeof DialogPrimitive.Portal>
+export type DialogCloseProps = React.ComponentProps<typeof DialogPrimitive.Close>
+export type DialogOverlayProps = React.ComponentProps<typeof DialogPrimitive.Overlay>
+export type DialogHeaderProps = React.ComponentProps<"div">
+export type DialogFooterProps = React.ComponentProps<"div">
+export type DialogTitleProps = React.ComponentProps<typeof DialogPrimitive.Title>
+export type DialogDescriptionProps = React.ComponentProps<typeof DialogPrimitive.Description>
+
+const Dialog = React.memo<React.FC<DialogProps>>(
+  function Dialog(props) {
     return <DialogPrimitive.Root data-slot="dialog" {...props} />
   }
 )
 Dialog.displayName = "Dialog"
 
-const DialogTrigger = React.memo(
-  function DialogTrigger({
-    ...props
-  }: React.ComponentProps<typeof DialogPrimitive.Trigger>) {
+const DialogTrigger = React.memo<React.FC<DialogTriggerProps>>(
+  function DialogTrigger(props) {
     return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
   }
 )
 DialogTrigger.displayName = "DialogTrigger"
 
-const DialogPortal = React.memo(
-  function DialogPortal({
-    ...props
-  }: React.ComponentProps<typeof DialogPrimitive.Portal>) {
+const DialogPortal = React.memo<React.FC<DialogPortalProps>>(
+  function DialogPortal(props) {
     return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />
   }
 )
 DialogPortal.displayName = "DialogPortal"
 
-const DialogClose = React.memo(
-  function DialogClose({
-    ...props
-  }: React.ComponentProps<typeof DialogPrimitive.Close>) {
+const DialogClose = React.memo<React.FC<DialogCloseProps>>(
+  function DialogClose(props) {
     return <DialogPrimitive.Close data-slot="dialog-close" {...props} />
   }
 )
 DialogClose.displayName = "DialogClose"
 
-const DialogOverlay = React.memo(
-  function DialogOverlay({
-    className,
-    ...props
-  }: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
+const DialogOverlay = React.memo<React.FC<DialogOverlayProps>>(
+  function DialogOverlay({ className, ...props }) {
     return (
       <DialogPrimitive.Overlay
         data-slot="dialog-overlay"
@@ -66,13 +65,13 @@ const DialogOverlay = React.memo(
 )
 DialogOverlay.displayName = "DialogOverlay"
 
-const DialogContent = React.memo(
+const DialogContent = React.memo<React.FC<DialogContentProps>>(
   function DialogContent({
     className,
     children,
     showCloseButton = true,
     ...props
-  }: DialogContentProps) {
+  }) {
     return (
       <DialogPortal data-slot="dialog-portal">
         <DialogOverlay />
@@ -101,8 +100,8 @@ const DialogContent = React.memo(
 )
 DialogContent.displayName = "DialogContent"
 
-const DialogHeader = React.memo(
-  function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
+const DialogHeader = React.memo<React.FC<DialogHeaderProps>>(
+  function DialogHeader({ className, ...props }) {
     return (
       <div
         data-slot="dialog-header"
@@ -114,8 +113,8 @@ const DialogHeader = React.memo(
 )
 DialogHeader.displayName = "DialogHeader"
 
-const DialogFooter = React.memo(
-  function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
+const DialogFooter = React.memo<React.FC<DialogFooterProps>>(
+  function DialogFooter({ className, ...props }) {
     return (
       <div
         data-slot="dialog-footer"
@@ -130,11 +129,8 @@ const DialogFooter = React.memo(
 )
 DialogFooter.displayName = "DialogFooter"
 
-const DialogTitle = React.memo(
-  function DialogTitle({
-    className,
-    ...props
-  }: React.ComponentProps<typeof DialogPrimitive.Title>) {
+const DialogTitle = React.memo<React.FC<DialogTitleProps>>(
+  function DialogTitle({ className, ...props }) {
     return (
       <DialogPrimitive.Title
         data-slot="dialog-title"
@@ -146,11 +142,8 @@ const DialogTitle = React.memo(
 )
 DialogTitle.displayName = "DialogTitle"
 
-const DialogDescription = React.memo(
-  function DialogDescription({
-    className,
-    ...props
-  }: React.ComponentProps<typeof DialogPrimitive.Description>) {
+const DialogDescription = React.memo<React.FC<DialogDescriptionProps>>(
+  function DialogDescription({ className, ...props }) {
     return (
       <DialogPrimitive.Description
         data-slot="dialog-description"
