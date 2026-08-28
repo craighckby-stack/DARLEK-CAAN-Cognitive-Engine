@@ -7,8 +7,8 @@
 
 'use strict';
 
-const fs = require('node:fs');
-const path = require('node:path');
+import fs from 'node:fs';
+import path from 'node:path';
 
 /**
  * Target path relative to the process execution root directory.
@@ -17,16 +17,20 @@ const path = require('node:path');
 const TARGET_FILE_PATH = 'src/app/api/evolution/propose/route.ts';
 
 /**
- * Normalizes code content by escaping triple backtick code fences.
+ * Normalizes code content by escaping markdown code fences safely and efficiently.
  * @param {string} content - Raw source code string.
  * @returns {string} Sanitized source code string.
  */
 function sanitizeFences(content) {
+  if (typeof content !== 'string') {
+    throw new TypeError('Expected content to be a string.');
+  }
+
   return content
-    .replace(/```json/g, '\\`\\`\\`json')
-    .replace(/```tsx/g, '\\`\\`\\`tsx')
-    .replace(/}\n```/g, '}\n\\`\\`\\`')
-    .replace(/TRUNCATIONS\n```/g, 'TRUNCATIONS\n\\`\\`\\`');
+    .replaceAll('```json', '\\`\\`\\`json')
+    .replaceAll('```tsx', '\\`\\`\\`tsx')
+    .replaceAll('}\n```', '}\n\\`\\`\\`')
+    .replaceAll('TRUNCATIONS\n```', 'TRUNCATIONS\n\\`\\`\\`');
 }
 
 /**
@@ -36,6 +40,10 @@ function sanitizeFences(content) {
  * @returns {boolean} True if file was modified and updated; false otherwise.
  */
 function processRouteFile(relativePath) {
+  if (typeof relativePath !== 'string' || relativePath.trim() === '') {
+    throw new TypeError('Expected a valid relative path string.');
+  }
+
   const absolutePath = path.resolve(process.cwd(), relativePath);
 
   try {
