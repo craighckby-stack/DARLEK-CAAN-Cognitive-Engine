@@ -43,7 +43,7 @@ It combines multi-pattern regex matching, Shannon-entropy detection, and Luhn ch
 
 ### 4. 📊 Findings Management & Export
 - **Multi-Format Export**: Export scan results directly to **SARIF v2.1.0** (compatible with GitHub Advanced Security tabs), structured **JSON**, and **CSV**.
-- **Real-Time Session Telemetry**: Filter findings by repository, file path, severity (Critical/High/Medium/Low), and confidence.
+- **Real-Time Session Telemetry**: Filter findings by repository, file path, severity (`Critical`, `High`, `Medium`, `Low`), and confidence.
 - **Integrated CodeMirror Inspector**: Syntax-highlighted diffs and sanitized previews.
 
 ### 5. 🤖 Multi-Agent Evolution & Dialectic Debate Chamber
