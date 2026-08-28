@@ -1,12 +1,14 @@
-export interface QuantumNode {
-  id: string;
-  state: 'STABLE' | 'MUTATING' | 'CRITICAL';
-  execute: (input: any) => Promise<any>;
-  teardown: () => void;
+export type QuantumNodeState = 'STABLE' | 'MUTATING' | 'CRITICAL';
+
+export interface QuantumNode<TInput = unknown, TOutput = unknown> {
+  readonly id: string;
+  readonly state: QuantumNodeState;
+  execute(input: TInput): Promise<TOutput>;
+  teardown(): void;
 }
 
-export type EvolutionResult = {
-  success: boolean;
-  logs: string[];
-  timestamp: string;
-};
+export interface EvolutionResult {
+  readonly success: boolean;
+  readonly logs: readonly string[];
+  readonly timestamp: string;
+}
