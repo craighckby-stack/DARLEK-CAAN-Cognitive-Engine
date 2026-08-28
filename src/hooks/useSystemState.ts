@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 
-export type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'error' | string;
+export type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'error' | (string & {});
 
 export interface SystemState {
   setupComplete: boolean;
   connectionStatus: ConnectionStatus;
   [key: string]: unknown;
 }
+
+type StateUpdater = SystemState | ((prevState: SystemState) => SystemState);
 
 const STORAGE_KEY = 'darlek_cann_state';
 
@@ -18,33 +20,33 @@ export const useSystemState = () => {
 
   useEffect(() => {
     let isMounted = true;
-    const saved = localStorage.getItem(STORAGE_KEY);
-    
-    if (saved) {
-      try {
+    let timer: NodeJS.Timeout | undefined;
+
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved !== null) {
         const parsed = JSON.parse(saved) as unknown;
         if (parsed !== null && typeof parsed === 'object') {
-          const timer = setTimeout(() => {
+          timer = setTimeout(() => {
             if (isMounted) {
               setSystemState((prev) => ({ ...prev, ...(parsed as SystemState) }));
             }
           }, 0);
-          return () => {
-            isMounted = false;
-            clearTimeout(timer);
-          };
         }
-      } catch (e) {
-        console.error('Failed to parse darlek_cann_state:', e);
       }
+    } catch (e) {
+      console.error('Failed to parse darlek_cann_state:', e);
     }
-    
+
     return () => {
       isMounted = false;
+      if (timer !== undefined) {
+        clearTimeout(timer);
+      }
     };
   }, []);
 
-  const persist = useCallback((newState: SystemState | ((prevState: SystemState) => SystemState)) => {
+  const persist = useCallback((newState: StateUpdater) => {
     setSystemState((prevState) => {
       const resolvedState = typeof newState === 'function' ? newState(prevState) : newState;
       try {
@@ -56,7 +58,7 @@ export const useSystemState = () => {
     });
   }, []);
 
-  const updateState = useCallback((newState: SystemState | ((prevState: SystemState) => SystemState)) => {
+  const updateState = useCallback((newState: StateUpdater) => {
     setSystemState(newState);
   }, []);
 
