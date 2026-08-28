@@ -7,51 +7,77 @@
 
 'use strict';
 
-const https = require('https');
+const https = require('node:https');
+
+/**
+ * Operational constants for the network transaction.
+ */
+const SIPHON_ENDPOINT = 'https://raw.githubusercontent.com/craighckby-stack/epistemic_debate_engine/main/src/utils/siphon.ts';
+const TIMEOUT_MS = 10000;
+const REQUEST_HEADERS = Object.freeze({
+  'User-Agent': 'EMG-Core-Neural-Optimizer/4.9',
+  'Accept': 'text/plain,application/typescript'
+});
 
 /**
  * Fetches the remote siphon utility script with robust error handling and stream management.
- * @returns {Promise<void>}
+ * @returns {Promise<void>} Resolves when the payload is successfully outputted to stdout.
  */
-function fetchSiphon() {
-  return new Promise((resolve, reject) => {
-    const url = 'https://raw.githubusercontent.com/craighckby-stack/epistemic_debate_engine/main/src/utils/siphon.ts';
-    const options = {
-      headers: {
-        'User-Agent': 'EMG-Core-Neural-Optimizer/4.9',
-        'Accept': 'text/plain,application/typescript'
-      },
-      timeout: 10000
-    };
+async function fetchSiphon() {
+  if (typeof globalThis.fetch === 'function') {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort(new Error('Network operation timed out.'));
+    }, TIMEOUT_MS);
 
-    const req = https.get(url, options, (res) => {
-      if (res.statusCode !== 200) {
-        res.resume(); // Consume response data to free up memory
-        return reject(new Error(`HTTP Operation Failed: Status Code ${res.statusCode}`));
+    try {
+      const response = await globalThis.fetch(SIPHON_ENDPOINT, {
+        headers: REQUEST_HEADERS,
+        signal: controller.signal
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP Operation Failed: Status Code ${response.status}`);
       }
 
-      // Use an array to buffer chunks efficiently before joining, avoiding O(N^2) string concatenation
-      const chunks = [];
-      res.on('data', (chunk) => {
-        chunks.push(chunk);
-      });
+      const text = await response.text();
+      process.stdout.write(text + (text.endsWith('\n') ? '' : '\n'));
+    } finally {
+      clearTimeout(timeoutId);
+    }
+    return;
+  }
 
-      res.on('end', () => {
-        try {
-          const data = Buffer.concat(chunks).toString('utf8');
-          process.stdout.write(data + '\n');
-          resolve();
-        } catch (err) {
-          reject(err);
+  return new Promise((resolve, reject) => {
+    const req = https.get(
+      SIPHON_ENDPOINT,
+      { headers: REQUEST_HEADERS, timeout: TIMEOUT_MS },
+      (res) => {
+        const { statusCode } = res;
+
+        if (statusCode !== 200) {
+          res.resume();
+          return reject(new Error(`HTTP Operation Failed: Status Code ${statusCode}`));
         }
-      });
-    });
 
-    req.on('error', (err) => {
-      reject(err);
-    });
+        const chunks = [];
+        res.on('data', (chunk) => chunks.push(chunk));
+        res.on('end', () => {
+          try {
+            const data = Buffer.concat(chunks).toString('utf8');
+            process.stdout.write(data + (data.endsWith('\n') ? '' : '\n'));
+            resolve();
+          } catch (err) {
+            reject(err);
+          }
+        });
 
-    req.setTimeout(10000, () => {
+        res.on('error', reject);
+      }
+    );
+
+    req.on('error', reject);
+    req.on('timeout', () => {
       req.destroy(new Error('Network operation timed out.'));
     });
   });
@@ -62,3 +88,5 @@ fetchSiphon().catch((err) => {
   console.error(`[EMG-CRITICAL-ERROR]: ${err.message}`);
   process.exitCode = 1;
 });
+
+module.exports = { fetchSiphon };
