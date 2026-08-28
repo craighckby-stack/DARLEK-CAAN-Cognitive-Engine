@@ -43,7 +43,17 @@ export function isSkippableFile(filePath: string): boolean {
   return false;
 }
 
-export const SENSITIVE_PATTERNS = [
+export type ConfidenceLevel = 'high' | 'medium' | 'low';
+export type SeverityLevel = 'Critical' | 'High' | 'Medium' | 'Low';
+
+export interface SensitivePattern {
+  name: string;
+  regex: RegExp;
+  confidence: ConfidenceLevel;
+  validate?: (val: string) => boolean;
+}
+
+export const SENSITIVE_PATTERNS: readonly SensitivePattern[] = [
   // AI Providers
   { name: 'OpenAI API Key', regex: /(?:sk-[a-zA-Z0-9]{20,48}|sk-proj-[a-zA-Z0-9]{20,48})/g, confidence: 'high' },
   { name: 'Anthropic API Key', regex: /sk-ant-api03-[a-zA-Z0-9\-_]{93}AA/g, confidence: 'high' },
@@ -90,12 +100,12 @@ export const SENSITIVE_PATTERNS = [
   { name: 'IP Address', regex: /\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/g, confidence: 'low' },
   { name: 'MAC Address', regex: /\b(?:[0-9A-Fa-f]{2}[:-]){5}(?:[0-9A-Fa-f]{2})\b/g, confidence: 'low' },
   { name: 'IBAN', regex: /\b[A-Z]{2}\d{2}[A-Z0-9]{4}\d{7}([A-Z0-9]?){0,16}\b/g, confidence: 'low' },
-];
+] as const;
 
 export interface Finding {
   type: string;
-  confidence: 'high' | 'medium' | 'low';
-  severity: 'Critical' | 'High' | 'Medium' | 'Low';
+  confidence: ConfidenceLevel;
+  severity: SeverityLevel;
   lineNum: number;
   snippet: string;
   match: string;
@@ -105,20 +115,20 @@ export interface Finding {
 export function calculateEntropy(str: string): number {
   const len = str.length;
   if (len === 0) return 0;
-  const frequencies: Record<string, number> = {};
+  const frequencies = new Map<string, number>();
   for (let i = 0; i < len; i++) {
     const char = str[i];
-    frequencies[char] = (frequencies[char] || 0) + 1;
+    frequencies.set(char, (frequencies.get(char) || 0) + 1);
   }
   let entropy = 0;
-  for (const char in frequencies) {
-    const p = frequencies[char] / len;
+  for (const count of frequencies.values()) {
+    const p = count / len;
     entropy -= p * Math.log2(p);
   }
   return entropy;
 }
 
-export function getSeverity(confidence: string): 'Critical' | 'High' | 'Medium' | 'Low' {
+export function getSeverity(confidence: string): SeverityLevel {
   if (confidence === 'high') return 'Critical';
   if (confidence === 'medium') return 'High';
   return 'Low';
@@ -130,6 +140,7 @@ export function sanitizeContent(content: string): { sanitized: string; findings:
   const findings: Finding[] = [];
   const lines = content.split('\n');
   const sanitizedLines: string[] = [];
+  const varRegex = /[a-zA-Z0-9_\-]*(?:key|token|secret|password|credential|auth|hash|sha|md5)[a-zA-Z0-9_\-]*\s*[:=]\s*(['"])([^'"]+)\1/gi;
 
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i];
@@ -137,6 +148,7 @@ export function sanitizeContent(content: string): { sanitized: string; findings:
     // Safety safeguard: if a line is abnormally long (> 3000 chars, e.g. minified line),
     // only scan bounded chunks to prevent CPU freezing/catastrophic backtracking
     const scanLine = line.length > 3000 ? line.substring(0, 3000) : line;
+    const currentLineNum = i + 1;
 
     // Pattern matches
     for (const pattern of SENSITIVE_PATTERNS) {
@@ -153,7 +165,7 @@ export function sanitizeContent(content: string): { sanitized: string; findings:
         }
 
         // Avoid duplicate findings on same line
-        const exists = findings.some(f => f.lineNum === i + 1 && f.match === matchedValue);
+        const exists = findings.some(f => f.lineNum === currentLineNum && f.match === matchedValue);
         if (!exists) {
           const matchIdx = match.index;
           const snippetStart = Math.max(0, matchIdx - 20);
@@ -161,9 +173,9 @@ export function sanitizeContent(content: string): { sanitized: string; findings:
           
           findings.push({
             type: pattern.name,
-            confidence: pattern.confidence as 'high' | 'medium' | 'low',
+            confidence: pattern.confidence,
             severity: getSeverity(pattern.confidence),
-            lineNum: i + 1,
+            lineNum: currentLineNum,
             snippet: line.substring(snippetStart, snippetEnd).trim(),
             match: matchedValue
           });
@@ -175,18 +187,18 @@ export function sanitizeContent(content: string): { sanitized: string; findings:
     }
     
     // High Entropy detector for variable assignments
-    const varRegex = /[a-zA-Z0-9_\-]*(?:key|token|secret|password|credential|auth|hash|sha|md5)[a-zA-Z0-9_\-]*\s*[:=]\s*(['"])([^'"]+)\1/gi;
+    varRegex.lastIndex = 0;
     let varMatch: RegExpExecArray | null;
     while ((varMatch = varRegex.exec(scanLine)) !== null) {
       const val = varMatch[2];
       if (val && val.length > 18 && calculateEntropy(val) > 4.2) {
-        const alreadyFound = findings.some(f => f.lineNum === i + 1 && f.match === val);
+        const alreadyFound = findings.some(f => f.lineNum === currentLineNum && f.match === val);
         if (!alreadyFound) {
           findings.push({
             type: 'High Entropy Secret',
             confidence: 'medium',
             severity: 'High',
-            lineNum: i + 1,
+            lineNum: currentLineNum,
             snippet: line.substring(0, Math.min(line.length, 70)).trim(),
             match: val
           });
