@@ -1,6 +1,6 @@
 /**
  * @file patch_prompt.js
- * @version v49.0.0-sovereign
+ * @version v49.1.0-sovereign
  * @description Sovereign Neural Code Optimizer Engine - Comprehensive overhaul
  * for strict type-safety, robust error-handling, memory efficiency, and atomic file operations.
  */
@@ -39,16 +39,18 @@ function applySovereignPatch(targetPath, patches) {
 
   // Iterate and apply patches sequentially with safety validations
   for (let i = 0; i < patches.length; i++) {
-    const { searchValue, replaceValue } = patches[i];
+    const patch = patches[i];
     
-    if (searchValue === undefined || replaceValue === undefined) {
+    if (!patch || typeof patch !== 'object' || patch.searchValue === undefined || patch.replaceValue === undefined) {
       throw new Error(`EMG_CORE_ERR: Malformed patch object at index ${i}.`);
     }
+
+    const { searchValue, replaceValue } = patch;
 
     // Perform replacement
     const updatedCode = code.replace(searchValue, replaceValue);
     
-    if (updatedCode === code && searchValue instanceof RegExp === false) {
+    if (updatedCode === code && !(searchValue instanceof RegExp)) {
       // Optional logging for diagnostic traceability in high-assurance environments
       process.stderr.write(`EMG_CORE_WARN: Patch string at index ${i} resulted in zero mutations.\n`);
     }
