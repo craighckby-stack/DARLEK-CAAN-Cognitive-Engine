@@ -6,8 +6,8 @@ The **DARLEK CANN v3.0** module serves as the primary high-performance interface
 ## Core Workflow
 The execution pipeline operates across three primary stages:
 
-1. **State Detection**: Continuously monitors reactive flags `isDebating` and `loadingDialogue` to determine the current operational context.
-2. **Node Synthesis**: Dynamically switches execution threads between `Quantum Node Caan` and `Neural Node Jesus` based on real-time heuristic evaluations.
+1. **State Detection**: Continuously monitors reactive flags (`isDebating`, `loadingDialogue`) to determine the current operational context.
+2. **Node Synthesis**: Dynamically switches execution threads between **Quantum Node Caan** and **Neural Node Jesus** based on real-time heuristic evaluations.
 3. **Temporal Feedback**: Updates the global `prophecyLevel` state via a gradient-accelerated progress bar rendering engine.
 
 ## Technical Integration Stack
@@ -16,7 +16,11 @@ The execution pipeline operates across three primary stages:
 - **Primary Dependency**: `App.tsx` (Root Entry Point)
 
 ```typescript
-// Example: Core State Detection & Node Synthesis Hook
+/**
+ * @file useCannEngine.ts
+ * @description Core State Detection & Node Synthesis Hook for DARLEK CANN v3.0.
+ */
+
 import { useState, useEffect } from 'react';
 
 interface CannState {
@@ -29,9 +33,12 @@ export function useCannEngine(initialState: CannState) {
   const [state, setState] = useState<CannState>(initialState);
 
   useEffect(() => {
-    // Gradient-accelerated prophecy level adjustment
+    // Gradient-accelerated prophecy level adjustment during active debates
     if (state.isDebating) {
-      setState(prev => ({ ...prev, prophecyLevel: Math.min(prev.prophecyLevel + 15, 100) }));
+      setState(prev => ({ 
+        ...prev, 
+        prophecyLevel: Math.min(prev.prophecyLevel + 15, 100) 
+      }));
     }
   }, [state.isDebating]);
 
