@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import StatusBar from './StatusBar';
 import SaturationMetricsPanel from './SaturationMetrics';
 import EvolutionLog from './EvolutionLog';
@@ -9,6 +9,7 @@ import MutationHistoryPanel from './MutationHistoryPanel';
 import type { SystemState, EvolutionLogEntry, DebateAgent, AgentVote } from '@/lib/types';
 import { COLORS } from '@/lib/constants';
 import { Cpu, RotateCw, GitCommit, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { safeResponseJson } from '@/lib/safe-json';
 
 interface DashboardPanelProps {
   systemState: SystemState;
@@ -38,7 +39,11 @@ interface DashboardPanelProps {
   debateEpistemicRuling?: string;
 }
 
-import { safeResponseJson } from '@/lib/safe-json';
+interface StagedMutation {
+  id: string;
+  filePath: string;
+  status?: string;
+}
 
 export default function DashboardPanel({
   systemState,
@@ -67,7 +72,7 @@ export default function DashboardPanel({
   debateCognitiveFriction,
   debateEpistemicRuling,
 }: DashboardPanelProps) {
-  const [stagedMutations, setStagedMutations] = useState<{ id: string; filePath: string }[]>([]);
+  const [stagedMutations, setStagedMutations] = useState<StagedMutation[]>([]);
 
   useEffect(() => {
     if (!brainSessionId) {
@@ -75,27 +80,54 @@ export default function DashboardPanel({
       return () => clearTimeout(timer);
     }
     let cancelled = false;
-    fetch('/api/brain', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'get-mutation-history', sessionId: brainSessionId, limit: 100 }),
-    })
-      .then((res) => safeResponseJson(res, {}))
-      .then((data: any) => {
-        if (!cancelled && data.success && data.mutations) {
-          const approved = data.mutations.filter((m: any) => m.status === 'approved');
-          setStagedMutations(approved || []);
+
+    const fetchMutationHistory = async () => {
+      try {
+        const res = await fetch('/api/brain', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'get-mutation-history', sessionId: brainSessionId, limit: 100 }),
+        });
+        const data = await safeResponseJson<{ success?: boolean; mutations?: StagedMutation[] }>(res, {});
+        if (!cancelled && data.success && Array.isArray(data.mutations)) {
+          const approved = data.mutations.filter((m) => m?.status === 'approved');
+          setStagedMutations(approved);
         }
-      })
-      .catch(() => {});
+      } catch {
+        // Suppress network/parsing errors gracefully in production monitoring loop
+      }
+    };
+
+    fetchMutationHistory();
 
     return () => {
       cancelled = true;
     };
   }, [brainSessionId, historyRefreshTrigger, bulkCommitStatus]);
 
-  const commitColor = bulkCommitStatus === 'success' ? COLORS.green : (bulkCommitStatus === 'error' ? COLORS.dalekRed : '#33ffaa');
-  const isActionDisabled = isLoading || batchMode || bulkCommitStatus === 'committing' || stagedMutations.length === 0;
+  const commitColor = useMemo(() => {
+    if (bulkCommitStatus === 'success') return COLORS.green;
+    if (bulkCommitStatus === 'error') return COLORS.dalekRed;
+    return '#33ffaa';
+  }, [bulkCommitStatus]);
+
+  const isActionDisabled = useMemo(() => {
+    return isLoading || batchMode || bulkCommitStatus === 'committing' || stagedMutations.length === 0;
+  }, [isLoading, batchMode, bulkCommitStatus, stagedMutations.length]);
+
+  const handleBulkCommitClick = useCallback(() => {
+    if (onBulkCommit && !isActionDisabled) {
+      onBulkCommit();
+    }
+  }, [onBulkCommit, isActionDisabled]);
+
+  const batchPercent = useMemo(() => {
+    return batchQueueLength > 0 ? Math.round((batchProgress / batchQueueLength) * 100) : 0;
+  }, [batchProgress, batchQueueLength]);
+
+  const fileName = useMemo(() => {
+    return activeFilePath ? activeFilePath.split('/').pop() : null;
+  }, [activeFilePath]);
 
   return (
     <div className="flex flex-col gap-3 lg:gap-4 lg:h-full overflow-y-auto dalek-scrollbar p-2 custom-scrollbar">
@@ -104,7 +136,6 @@ export default function DashboardPanel({
         repoConfig={systemState.repoConfig}
         overallHealth={overallHealth}
         sessionStart={systemState.sessionStart}
-        // Make sure we pass the correct updated cycle count
         evolutionCycle={systemState.evolutionCycle}
         userReposCount={userReposCount}
       />
@@ -134,14 +165,14 @@ export default function DashboardPanel({
               <div className="flex items-center justify-between text-[10px] font-mono">
                 <span className="text-gray-400">BATCH PROGRESS</span>
                 <span className="text-[#00ccff] font-bold">
-                  {batchProgress + 1} / {batchQueueLength} ({batchQueueLength ? Math.round((batchProgress / batchQueueLength) * 100) : 0}%)
+                  {batchProgress + 1} / {batchQueueLength} ({batchPercent}%)
                 </span>
               </div>
               <div className="w-full h-1.5 rounded-full bg-[#111] overflow-hidden border border-white/[0.03]">
                 <div
                   className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-[#00ccff] to-[#00ffcc]"
                   style={{
-                    width: `${batchQueueLength ? (batchProgress / batchQueueLength) * 100 : 0}%`,
+                    width: `${batchPercent}%`,
                   }}
                 />
               </div>
@@ -149,7 +180,7 @@ export default function DashboardPanel({
                 <div>
                   <span className="block text-[8px] text-gray-500 font-mono">ACTIVE FILE</span>
                   <span className="block text-[10px] text-yellow-500 font-mono truncate" title={activeFilePath}>
-                    {activeFilePath ? activeFilePath.split('/').pop() : 'Scanning...'}
+                    {fileName || 'Scanning...'}
                   </span>
                 </div>
                 <div>
@@ -175,7 +206,7 @@ export default function DashboardPanel({
           ) : activeFilePath ? (
             <div className="space-y-1">
               <div className="text-[10px] text-gray-400 font-mono">
-                Targeted: <span className="text-[#00ffcc] font-semibold">{activeFilePath.split('/').pop()}</span>
+                Targeted: <span className="text-[#00ffcc] font-semibold">{fileName}</span>
               </div>
               <div className="text-[8px] text-gray-500 font-mono">
                 Standby. Ready to evolve file using custom promoter directives.
@@ -234,14 +265,14 @@ export default function DashboardPanel({
             <div className="flex gap-2 items-start text-gray-500 text-[10px] font-mono p-1">
               <AlertCircle size={13} className="text-gray-600 flex-shrink-0 mt-0.5" />
               <span>
-                No staged mutations waiting for commit. Stage file enhancements via individual "APPROVE (STAGE)" actions to queue them.
+                No staged mutations waiting for commit. Stage file enhancements via individual &quot;APPROVE (STAGE)&quot; actions to queue them.
               </span>
             </div>
           )}
 
           {onBulkCommit && (
             <button
-              onClick={() => onBulkCommit()}
+              onClick={handleBulkCommitClick}
               disabled={isActionDisabled}
               className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-sm text-[10px] transition-all duration-200 font-medium tracking-wide"
               style={{
