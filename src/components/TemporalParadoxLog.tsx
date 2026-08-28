@@ -3,19 +3,19 @@ import { motion, AnimatePresence } from 'motion/react';
 import { AlertTriangle, Clock, RefreshCw, ChevronDown, ChevronRight } from 'lucide-react';
 import type { EvolutionLogEntry } from '@/lib/types';
 
-interface RejectionItem {
+export interface RejectionItem {
   id?: string;
   timestamp: string | Date;
   filePath: string;
   reason: string;
 }
 
-interface TemporalParadoxLogProps {
+export interface TemporalParadoxLogProps {
   logEntries?: EvolutionLogEntry[];
   rejectionMemory?: RejectionItem[];
 }
 
-interface ParadoxEntry {
+export interface ParadoxEntry {
   id: string;
   time: string;
   description: string;
@@ -44,13 +44,15 @@ export default function TemporalParadoxLog({ logEntries, rejectionMemory }: Temp
   const updateRealParadoxes = useCallback(() => {
     const realList: ParadoxEntry[] = [];
 
-    // 1. Parse rejection memory with memoized or cached fallback
     let rejections: RejectionItem[] = rejectionMemory ?? [];
     if (rejections.length === 0) {
       try {
         const savedRejection = localStorage.getItem(STORAGE_KEYS.REJECTION_MEMORY);
         if (savedRejection) {
-          rejections = JSON.parse(savedRejection);
+          const parsed = JSON.parse(savedRejection);
+          if (Array.isArray(parsed)) {
+            rejections = parsed;
+          }
         }
       } catch {
         // Silently fail storage retrieval failures
@@ -58,21 +60,24 @@ export default function TemporalParadoxLog({ logEntries, rejectionMemory }: Temp
     }
 
     for (const [index, r] of rejections.entries()) {
+      if (!r) continue;
       realList.push({
         id: `rej-${r.id ?? index}`,
         time: formatTimeString(r.timestamp),
-        description: `Mutation rejected for ${r.filePath}: ${r.reason}`,
+        description: `Mutation rejected for ${r.filePath ?? 'unknown'}: ${r.reason ?? 'No reason specified'}`,
         type: 'REJECTION',
       });
     }
 
-    // 2. Parse log entries for REJECTED / ERROR / WARNING entries
     let logs: EvolutionLogEntry[] = logEntries ?? [];
     if (logs.length === 0) {
       try {
         const savedLogs = localStorage.getItem(STORAGE_KEYS.LOG_ENTRIES);
         if (savedLogs) {
-          logs = JSON.parse(savedLogs);
+          const parsed = JSON.parse(savedLogs);
+          if (Array.isArray(parsed)) {
+            logs = parsed;
+          }
         }
       } catch {
         // Silently fail storage retrieval failures
@@ -80,18 +85,21 @@ export default function TemporalParadoxLog({ logEntries, rejectionMemory }: Temp
     }
 
     for (const entry of logs) {
+      if (!entry) continue;
       if (
         entry.type === 'ERROR' ||
         entry.type === 'WARNING' ||
-        entry.description.includes('REJECTED') ||
-        entry.description.includes('AST') ||
-        entry.description.includes('Coherence Gate')
+        (entry.description && (
+          entry.description.includes('REJECTED') ||
+          entry.description.includes('AST') ||
+          entry.description.includes('Coherence Gate')
+        ))
       ) {
         realList.push({
-          id: `log-${entry.id}`,
+          id: `log-${entry.id ?? Math.random().toString(36).substring(2, 9)}`,
           time: formatTimeString(entry.timestamp),
-          description: entry.description,
-          type: entry.type,
+          description: entry.description ?? 'No description provided',
+          type: entry.type ?? 'UNKNOWN',
         });
       }
     }
