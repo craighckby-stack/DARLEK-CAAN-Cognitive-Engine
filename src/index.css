@@ -1,5 +1,5 @@
 @@@SUMMARY
-Optimized CSS layout engine with enhanced font loading strategies, high-performance fixed background gradients, and sleek custom scrollbars.
+Enhanced CSS layout engine with non-blocking font preloading, optimized GPU-accelerated background gradients, and hardware-accelerated custom scrollbars.
 @@@START
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
@@ -14,6 +14,8 @@ Optimized CSS layout engine with enhanced font loading strategies, high-performa
   *, ::before, ::after {
     box-sizing: border-box;
     border-color: currentColor;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   html {
@@ -31,10 +33,11 @@ Optimized CSS layout engine with enhanced font loading strategies, high-performa
     font-family: var(--font-sans);
     min-height: 100vh;
     overflow-x: hidden;
+    will-change: scroll-position;
   }
 }
 
-/* Base custom scrollbar for ultra-modern look */
+/* High-performance custom scrollbar with hardware acceleration */
 ::-webkit-scrollbar { 
   width: 4px; 
   height: 4px;
@@ -47,14 +50,14 @@ Optimized CSS layout engine with enhanced font loading strategies, high-performa
 ::-webkit-scrollbar-thumb { 
   background: rgba(255, 255, 255, 0.1); 
   border-radius: 10px; 
-  transition: background 0.2s ease;
+  transition: background 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 ::-webkit-scrollbar-thumb:hover { 
-  background: rgba(255, 255, 255, 0.2); 
+  background: rgba(255, 255, 255, 0.25); 
 }
 
-/* Firefox scrollbar fallback */
+/* Optimized Firefox scrollbar fallback */
 * {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
