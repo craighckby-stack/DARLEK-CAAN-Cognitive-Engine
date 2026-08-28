@@ -45,7 +45,8 @@ function patchLogging() {
         fs.writeFileSync(targetFile, updatedCode, 'utf8');
         console.log(`[EMG-v49] Successfully patched target file: ${targetFile}`);
     } catch (error) {
-        console.error(`[EMG-v49] Critical execution failure during patching of ${targetFile}:`, error.message);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error(`[EMG-v49] Critical execution failure during patching of ${targetFile}:`, errorMessage);
         process.exitCode = 1;
         throw error;
     }
