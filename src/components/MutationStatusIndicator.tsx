@@ -7,7 +7,12 @@ export interface MutationStatusIndicatorProps {
   readonly className?: string;
 }
 
-const STATUS_CONFIG: Record<MutationStatus, { readonly dot: string; readonly label: string }> = {
+interface StatusConfigEntry {
+  readonly dot: string;
+  readonly label: string;
+}
+
+const STATUS_CONFIG: Record<MutationStatus, StatusConfigEntry> = {
   pending: {
     dot: 'bg-yellow-500',
     label: 'pending',
@@ -26,7 +31,7 @@ export const MutationStatusIndicator: React.FC<MutationStatusIndicatorProps> = m
   status,
   className = '',
 }) => {
-  const config = STATUS_CONFIG[status] || STATUS_CONFIG.stable;
+  const config = STATUS_CONFIG[status] ?? STATUS_CONFIG.stable;
 
   return (
     <div 
