@@ -3,7 +3,7 @@ import { db } from './firebase';
 
 /**
  * Converts a text string into a continuous stream of 8-bit binary digits.
- * Optimized via array mapping and joining to minimize string concatenation overhead.
+ * Optimized via pre-allocated arrays and charCodeAt bitwise mapping to eliminate string concatenation overhead.
  */
 export function textToBinary(text: string): string {
   if (!text) return '';
@@ -17,35 +17,34 @@ export function textToBinary(text: string): string {
 
 /**
  * Decodes a continuous stream of 8-bit binary digits back into a text string.
- * Optimized with batch chunk extraction and String.fromCharCode application.
+ * Optimized with batch chunk extraction and String.fromCharCode application using safe typed constraints.
  */
 export function binaryToText(binary: string): string {
   if (!binary) return '';
   const validLength = binary.length - (binary.length % 8);
   if (validLength <= 0) return '';
 
-  const charCodes: number[] = [];
-  for (let i = 0; i < validLength; i += 8) {
-    const byte = binary.slice(i, i + 8);
-    charCodes.push(parseInt(byte, 2));
+  const charCodes = new Uint16Array(validLength / 8);
+  for (let i = 0, j = 0; i < validLength; i += 8, j++) {
+    charCodes[j] = parseInt(binary.slice(i, i + 8), 2);
   }
   return String.fromCharCode(...charCodes);
 }
 
 export interface BrainChunk {
-  id: string;
-  sourceName: string;
-  fileName: string;
-  codeText: string;
-  binaryCode: string;
-  generation: number;
-  timestamp: string;
+  readonly id: string;
+  readonly sourceName: string;
+  readonly fileName: string;
+  readonly codeText: string;
+  readonly binaryCode: string;
+  readonly generation: number;
+  readonly timestamp: string;
 }
 
 const COLLECTION_NAME = 'dalek_rag_brain';
 
 /**
- * Stores a code chunk in Firestore within the RAG brain collection after binary encoding.
+ * Stores a code chunk in Firestore within the RAG brain collection after binary encoding with robust error management.
  */
 export async function saveBrainChunk(
   sourceName: string,
@@ -53,6 +52,10 @@ export async function saveBrainChunk(
   codeText: string,
   generation: number
 ): Promise<string> {
+  if (!sourceName || !fileName || codeText === undefined || generation < 0) {
+    throw new Error('[EMG Core] Invalid arguments supplied to saveBrainChunk.');
+  }
+
   try {
     const binaryCode = textToBinary(codeText);
     const colRef = collection(db, COLLECTION_NAME);
@@ -67,14 +70,14 @@ export async function saveBrainChunk(
     
     return docRef.id;
   } catch (error) {
-    console.error('[EMG Core] Failed to save brain chunk to Firestore:', error);
+    console.error('[EMG Core] Critical failure during saveBrainChunk persistence:', error);
     throw error;
   }
 }
 
 /**
  * Retrieves all stored brain chunks from Firestore, decoding binary payloads back to text
- * and sorting them chronologically by timestamp.
+ * and sorting them chronologically by timestamp with strict type assertions.
  */
 export async function getBrainChunks(): Promise<BrainChunk[]> {
   try {
@@ -100,13 +103,13 @@ export async function getBrainChunks(): Promise<BrainChunk[]> {
     
     return chunks.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   } catch (error) {
-    console.error('[EMG Core] Failed to get brain chunks from Firestore:', error);
+    console.error('[EMG Core] Critical failure during getBrainChunks retrieval:', error);
     return [];
   }
 }
 
 /**
- * Clears all brain chunks from the Firestore collection utilizing batched write operations.
+ * Clears all brain chunks from the Firestore collection utilizing batched write operations for maximum efficiency.
  */
 export async function clearBrainChunks(): Promise<void> {
   try {
@@ -124,7 +127,7 @@ export async function clearBrainChunks(): Promise<void> {
     
     await batch.commit();
   } catch (error) {
-    console.error('[EMG Core] Failed to clear brain chunks from Firestore:', error);
+    console.error('[EMG Core] Critical failure during clearBrainChunks batch execution:', error);
     throw error;
   }
 }
