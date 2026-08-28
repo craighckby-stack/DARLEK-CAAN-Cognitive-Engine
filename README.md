@@ -1,5 +1,4 @@
-currently debugging
-
+# DARLEK CAAN Cognitive Engine
 
 [![Live App](https://img.shields.io/badge/Live_App-Open_Application-00FF88?style=for-the-badge&logo=googlecloud)](https://ais-dev-amubz4v3czr3772fnvrcru-483535245139.asia-southeast1.run.app)
 [![Preview](https://img.shields.io/badge/Preview-Shared_Environment-blue?style=for-the-badge&logo=next.js)](https://ais-pre-amubz4v3czr3772fnvrcru-483535245139.asia-southeast1.run.app)
@@ -17,7 +16,7 @@ Access the live platform directly in your browser:
 
 ## 💡 Overview
 
-** DARLEK CAAN Cognitive Engine**) is an enterprise-grade security scanner, automated remediation platform, and autonomous code evolution suite designed for GitHub repositories, local file trees, and raw code snippets.
+The **DARLEK CAAN Cognitive Engine** is an enterprise-grade security scanner, automated remediation platform, and autonomous code evolution suite designed for GitHub repositories, local file trees, and raw code snippets.
 
 It combines multi-pattern regex matching, Shannon-entropy detection, and Luhn checksum validation with automated Git history purging (`git filter-repo`) and AI-driven multi-model dialectic debate to identify, isolate, and neutralize sensitive data leaks before or after they reach version control.
 
