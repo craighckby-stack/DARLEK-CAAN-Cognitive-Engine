@@ -25,7 +25,7 @@ export interface StructuralSanityResult {
   violations: StructuralSanityViolation[];
 }
 
-const COMMON_PYTHON_BUILTINS = new Set([
+const COMMON_PYTHON_BUILTINS: ReadonlySet<string> = new Set([
   'os', 'sys', 'math', 'json', 'time', 're', 'random', 'datetime', 'typing',
   'collections', 'itertools', 'functools', 'pathlib', 'logging', 'asyncio',
   'requests', 'numpy', 'pandas', 'pytest', 'unittest', 'flask', 'fastapi',
@@ -33,47 +33,59 @@ const COMMON_PYTHON_BUILTINS = new Set([
   'abc', 'enum', 'dataclasses', 'copy', 'io', 'socket', 'threading', 'multiprocessing'
 ]);
 
-const COMMON_JS_BUILTINS = new Set([
+const COMMON_JS_BUILTINS: ReadonlySet<string> = new Set([
   'react', 'react-dom', 'next', 'lucide-react', 'motion', 'framer-motion',
   'clsx', 'tailwind-merge', 'zod', 'axios', 'lodash', 'recharts', 'd3',
   'fs', 'path', 'os', 'crypto', 'util', 'stream', 'http', 'https', 'events',
   'buffer', 'url', 'querystring', 'child_process'
 ]);
 
+const RESERVED_KEYWORDS: ReadonlySet<string> = new Set([
+  'if', 'else', 'for', 'while', 'switch', 'catch', 'constructor',
+  'return', 'type', 'interface', 'import', 'export', 'class', 'from', 'as', 'new', 'yield', 'await'
+]);
+
+// Pre-compiled regular expressions for optimal regex performance
+const PY_DEF_REGEX = /def\s+([a-zA-Z_]\w*)\s*\(/g;
+const JS_FN_REGEXES = [
+  /(?:export\s+)?(?:async\s+)?function\s+([a-zA-Z_]\w*)/g,
+  /(?:export\s+)?(?:const|let|var)\s+([a-zA-Z_]\w*)\s*=\s*(?:async\s*)?(?:<[^>]*>)?\s*(?:\([^)]*\)|[a-zA-Z_]\w*)\s*(?::\s*[^=]+)?\s*=>/g,
+  /(?:public|private|protected|static|async|\s)+\s+([a-zA-Z_]\w*)\s*(?:<[^>]*>)?\s*\(/g,
+];
+
+const PY_IMPORT_REGEXES = [
+  /from\s+([a-zA-Z0-9_.]+)\s+import/g,
+  /import\s+([a-zA-Z0-9_.]+)/g,
+];
+
+const JS_IMPORT_REGEX = /(?:from|import)\s+['"]([^'"]+)['"]/g;
+
 /**
- * Programmatically extracts function names from Python or JS/TS code.
+ * Programmatically extracts function names from Python or JS/TS code with high efficiency.
  */
 export function extractFunctionNames(code: string, isPython: boolean): string[] {
   const functions = new Set<string>();
 
+  if (!code || typeof code !== 'string') {
+    return [];
+  }
+
   if (isPython) {
-    // Python def function_name(...)
-    const defRegex = /def\s+([a-zA-Z_]\w*)\s*\(/g;
-    let match;
-    while ((match = defRegex.exec(code)) !== null) {
+    PY_DEF_REGEX.lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = PY_DEF_REGEX.exec(code)) !== null) {
       const fnName = match[1];
-      if (!fnName.startsWith('__') || fnName === '__init__') {
+      if (fnName && (!fnName.startsWith('__') || fnName === '__init__')) {
         functions.add(fnName);
       }
     }
   } else {
-    // JS/TS function declarations & arrow functions & class methods
-    const fnRegexes = [
-      /(?:export\s+)?(?:async\s+)?function\s+([a-zA-Z_]\w*)/g,
-      /(?:export\s+)?(?:const|let|var)\s+([a-zA-Z_]\w*)\s*=\s*(?:async\s*)?(?:<[^>]*>)?\s*(?:\([^)]*\)|[a-zA-Z_]\w*)\s*(?::\s*[^=]+)?\s*=>/g,
-      /(?:public|private|protected|static|async|\s)+\s+([a-zA-Z_]\w*)\s*(?:<[^>]*>)?\s*\(/g,
-    ];
-
-    const reservedKeywords = new Set([
-      'if', 'else', 'for', 'while', 'switch', 'catch', 'constructor',
-      'return', 'type', 'interface', 'import', 'export', 'class', 'from', 'as', 'new', 'yield', 'await'
-    ]);
-
-    for (const regex of fnRegexes) {
-      let match;
+    for (const regex of JS_FN_REGEXES) {
+      regex.lastIndex = 0;
+      let match: RegExpExecArray | null;
       while ((match = regex.exec(code)) !== null) {
         const fnName = match[1];
-        if (fnName && !reservedKeywords.has(fnName) && fnName.length > 1) {
+        if (fnName && !RESERVED_KEYWORDS.has(fnName) && fnName.length > 1) {
           functions.add(fnName);
         }
       }
@@ -89,21 +101,17 @@ export function extractFunctionNames(code: string, isPython: boolean): string[] 
 export function extractLocalImports(code: string, isPython: boolean): string[] {
   const localImports = new Set<string>();
 
-  if (isPython) {
-    // from src.utils.math_engine import ...
-    // import src.utils.telemetry_bridge
-    // from .relative import ...
-    const pythonImportRegexes = [
-      /from\s+([a-zA-Z0-9_.]+)\s+import/g,
-      /import\s+([a-zA-Z0-9_.]+)/g,
-    ];
+  if (!code || typeof code !== 'string') {
+    return [];
+  }
 
-    for (const regex of pythonImportRegexes) {
-      let match;
+  if (isPython) {
+    for (const regex of PY_IMPORT_REGEXES) {
+      regex.lastIndex = 0;
+      let match: RegExpExecArray | null;
       while ((match = regex.exec(code)) !== null) {
         const mod = match[1].trim();
-        const topMod = mod.split('.')[0];
-        // If it starts with local package names like src, lib, app, or relative dot, or is not in builtins
+        const topMod = mod.split('.')[0] || '';
         if (
           mod.startsWith('.') ||
           mod.startsWith('src.') ||
@@ -116,10 +124,9 @@ export function extractLocalImports(code: string, isPython: boolean): string[] {
       }
     }
   } else {
-    // JS/TS imports
-    const jsImportRegex = /(?:from|import)\s+['"]([^'"]+)['"]/g;
-    let match;
-    while ((match = jsImportRegex.exec(code)) !== null) {
+    JS_IMPORT_REGEX.lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = JS_IMPORT_REGEX.exec(code)) !== null) {
       const impPath = match[1].trim();
       if (
         impPath.startsWith('.') ||
@@ -137,8 +144,6 @@ export function extractLocalImports(code: string, isPython: boolean): string[] {
 
 /**
  * Normalizes import path into candidate file paths.
- * e.g., 'src.utils.math_engine' -> ['src/utils/math_engine.py', 'src/utils/math_engine/index.py', 'src/utils/math_engine']
- * e.g., '@/components/Header' -> ['src/components/Header.tsx', 'src/components/Header.ts', 'src/components/Header/index.tsx']
  */
 function getCandidateFilePaths(impPath: string, isPython: boolean): string[] {
   const candidates: string[] = [impPath];
@@ -178,18 +183,19 @@ export function validateStructuralSanity(
   repoFiles: string[] = [],
   newFiles: Array<{ path: string; content?: string }> = []
 ): StructuralSanityResult {
+  const safeOriginal = originalCode ?? '';
+  const safeProposed = proposedCode ?? '';
   const isPython = filePath.endsWith('.py');
   const violations: StructuralSanityViolation[] = [];
   let score = 100;
 
   // 1. FUNCTION DELETION / SCRUBBING CHECK
-  const origFuncs = extractFunctionNames(originalCode, isPython);
-  const propFuncs = extractFunctionNames(proposedCode, isPython);
-  const deletedFunctions = origFuncs.filter((f) => !propFuncs.includes(f));
+  const origFuncs = extractFunctionNames(safeOriginal, isPython);
+  const propFuncs = new Set(extractFunctionNames(safeProposed, isPython));
+  const deletedFunctions = origFuncs.filter((f) => !propFuncs.has(f));
 
   if (origFuncs.length >= 3 && deletedFunctions.length > 0) {
     const scrubRatio = deletedFunctions.length / origFuncs.length;
-    // If deleted >= 3 functions AND deleted > 40% of all functions
     if (deletedFunctions.length >= 3 && scrubRatio > 0.4) {
       score -= Math.min(50, Math.round(scrubRatio * 100));
       violations.push({
@@ -210,22 +216,22 @@ export function validateStructuralSanity(
   }
 
   // 2. HALLUCINATED IMPORT CHECK
-  const localImports = extractLocalImports(proposedCode, isPython);
+  const localImports = extractLocalImports(safeProposed, isPython);
   const hallucinatedImports: string[] = [];
 
-  // Combine repoFiles + newFiles paths
   const knownFiles = new Set<string>([
     ...repoFiles.map((f) => f.toLowerCase()),
     ...newFiles.map((f) => f.path.toLowerCase()),
     filePath.toLowerCase(),
   ]);
 
-  if (knownFiles.size >= 5) {
+  if (knownFiles.size >= 5 && localImports.length > 0) {
+    const knownFilesArray = Array.from(knownFiles);
     for (const imp of localImports) {
       const candidatePaths = getCandidateFilePaths(imp, isPython);
       const exists = candidatePaths.some((cand) => {
         const lowerCand = cand.toLowerCase();
-        return Array.from(knownFiles).some(
+        return knownFilesArray.some(
           (kf) => kf === lowerCand || kf.endsWith(`/${lowerCand}`) || kf.endsWith(lowerCand) || lowerCand.endsWith(kf)
         );
       });
@@ -255,20 +261,22 @@ export function validateStructuralSanity(
   }
 
   // 3. MASSIVE CODE ERASURE CHECK
-  if (originalCode.trim().length > 250 && proposedCode.trim().length < originalCode.trim().length * 0.35) {
+  const origTrimmedLen = safeOriginal.trim().length;
+  const propTrimmedLen = safeProposed.trim().length;
+  if (origTrimmedLen > 250 && propTrimmedLen < origTrimmedLen * 0.35) {
     score -= 40;
     violations.push({
       category: 'MASSIVE_ERASURE',
       test: 'Code Size & Coverage Check',
-      message: `MASSIVE CODE ERASURE: Proposed code is ${Math.round((proposedCode.length / originalCode.length) * 100)}% of original length (${originalCode.length} chars -> ${proposedCode.length} chars). Logic was likely scrubbed.`,
+      message: `MASSIVE CODE ERASURE: Proposed code is ${Math.round((safeProposed.length / (safeOriginal.length || 1)) * 100)}% of original length (${safeOriginal.length} chars -> ${safeProposed.length} chars). Logic was likely scrubbed.`,
       severity: 'high',
     });
   }
 
   // 4. CLASS CONVERSION / DUMMY DELEGATION CHECK
   if (isPython) {
-    const origClassCount = (originalCode.match(/class\s+/g) || []).length;
-    const propClassCount = (proposedCode.match(/class\s+/g) || []).length;
+    const origClassCount = (safeOriginal.match(/class\s+/g) || []).length;
+    const propClassCount = (safeProposed.match(/class\s+/g) || []).length;
     if (origClassCount === 0 && propClassCount > 0 && deletedFunctions.length >= 3) {
       score -= 30;
       violations.push({
@@ -281,23 +289,24 @@ export function validateStructuralSanity(
   }
 
   // 5. AST DIFF GATE (DETERMINISTIC AST & BRANDING INJECTION CHECK)
-  const astDiff = runAstDiffGate(originalCode, proposedCode, filePath);
-  for (const astViolation of astDiff.violations) {
-    // Avoid duplicating function scrub message if already flagged
-    if (astViolation.code === 'AST_SYMBOL_DROPPED' && violations.some((v) => v.category === 'FUNCTION_SCRUB')) {
-      continue;
+  const astDiff = runAstDiffGate(safeOriginal, safeProposed, filePath);
+  if (astDiff && astDiff.violations) {
+    for (const astViolation of astDiff.violations) {
+      if (astViolation.code === 'AST_SYMBOL_DROPPED' && violations.some((v) => v.category === 'FUNCTION_SCRUB')) {
+        continue;
+      }
+
+      const cat: StructuralSanityViolation['category'] =
+        astViolation.code === 'BRANDING_INJECTION' ? 'BRANDING_INJECTION' : 'AST_DIFF_VIOLATION';
+
+      score -= astViolation.severity === 'high' ? 30 : 15;
+      violations.push({
+        category: cat,
+        test: `AST Diff Gate (${astViolation.code})`,
+        message: astViolation.message,
+        severity: astViolation.severity,
+      });
     }
-
-    const cat: StructuralSanityViolation['category'] =
-      astViolation.code === 'BRANDING_INJECTION' ? 'BRANDING_INJECTION' : 'AST_DIFF_VIOLATION';
-
-    score -= astViolation.severity === 'high' ? 30 : 15;
-    violations.push({
-      category: cat,
-      test: `AST Diff Gate (${astViolation.code})`,
-      message: astViolation.message,
-      severity: astViolation.severity,
-    });
   }
 
   score = Math.max(0, score);
