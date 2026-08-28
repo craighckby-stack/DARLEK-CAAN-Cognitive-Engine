@@ -4,7 +4,7 @@
 
 - **Atomic Injection**: Utilizes marker-based regular expressions to guarantee idempotent updates and prevent state corruption during file mutations.
 - **Transactional Safety**: Automatically provisions isolated backups within the `.evolve_backups/` directory prior to executing any write operations.
-- **Integration Layer**: Incorporates siphoned UI patterns and design tokens derived from legacy systems `darlek-cann-v3` and `SN: OMEGA`.
+- **Integration Layer**: Incorporates siphoned user interface (UI) patterns and design tokens derived from legacy systems `darlek-cann-v3` and `SN: OMEGA`.
 
 ## Workflow Execution Pipeline
 
