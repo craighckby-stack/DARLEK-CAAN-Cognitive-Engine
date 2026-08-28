@@ -1,55 +1,40 @@
 # System Architecture: DARLEK CANN v3.0
 
 ## Overview
-This module serves as the primary interface for the Quantum Dialogue Engine. It integrates real-time debate logic with temporal prophecy tracking.
+The **DARLEK CANN v3.0** module serves as the primary high-performance interface for the Quantum Dialogue Engine. It seamlessly integrates real-time debate logic with advanced temporal prophecy tracking.
 
-## Workflow
-1. **State Detection**: Monitors `isDebating` and `loadingDialogue`.
-2. **Node Synthesis**: Switches between `Quantum Node Caan` and `Neural Node Jesus`.
-3. **Temporal Feedback**: Updates the `prophecyLevel` via a gradient-accelerated progress bar.
+## Core Workflow
+The execution pipeline operates across three primary stages:
 
-## Integration
-- **UI**: Tailwind CSS / Framer Motion
-- **Logic**: Next.js / TypeScript
-- **Dependency**: `App.tsx` (Main Entry)
+1. **State Detection**: Continuously monitors reactive flags `isDebating` and `loadingDialogue` to determine the current operational context.
+2. **Node Synthesis**: Dynamically switches execution threads between `Quantum Node Caan` and `Neural Node Jesus` based on real-time heuristic evaluations.
+3. **Temporal Feedback**: Updates the global `prophecyLevel` state via a gradient-accelerated progress bar rendering engine.
 
+## Technical Integration Stack
+- **User Interface**: Tailwind CSS, Framer Motion
+- **Core Logic**: Next.js (App Router), TypeScript
+- **Primary Dependency**: `App.tsx` (Root Entry Point)
 
+```typescript
+// Example: Core State Detection & Node Synthesis Hook
+import { useState, useEffect } from 'react';
 
+interface CannState {
+  isDebating: boolean;
+  loadingDialogue: boolean;
+  prophecyLevel: number;
+}
 
+export function useCannEngine(initialState: CannState) {
+  const [state, setState] = useState<CannState>(initialState);
 
+  useEffect(() => {
+    // Gradient-accelerated prophecy level adjustment
+    if (state.isDebating) {
+      setState(prev => ({ ...prev, prophecyLevel: Math.min(prev.prophecyLevel + 15, 100) }));
+    }
+  }, [state.isDebating]);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  return { state, setState };
+}
+```
