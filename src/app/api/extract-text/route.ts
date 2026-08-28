@@ -3,17 +3,31 @@ import mammoth from 'mammoth';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
-  return NextResponse.json({ status: 'online', service: 'EXTRACT_TEXT_API' });
+interface SuccessResponse {
+  success: true;
+  text: string;
+  status?: string;
+  service?: string;
 }
 
-export async function POST(req: NextRequest) {
+interface ErrorResponse {
+  success: false;
+  error: string;
+}
+
+type ApiResponse = SuccessResponse | ErrorResponse;
+
+export async function GET(): Promise<NextResponse<ApiResponse>> {
+  return NextResponse.json({ status: 'online', service: 'EXTRACT_TEXT_API', success: true, text: '' });
+}
+
+export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse>> {
   try {
     const contentType = req.headers.get('content-type') || '';
 
     if (contentType.includes('application/json')) {
       const body = await req.json().catch(() => ({}));
-      if (body.text) {
+      if (typeof body?.text === 'string' && body.text.length > 0) {
         return NextResponse.json({ text: body.text, success: true });
       }
       return NextResponse.json({ error: 'No text provided', success: false }, { status: 400 });
@@ -21,16 +35,16 @@ export async function POST(req: NextRequest) {
 
     if (!contentType.includes('multipart/form-data') && !contentType.includes('application/x-www-form-urlencoded')) {
       const rawText = await req.text().catch(() => '');
-      if (rawText) {
+      if (typeof rawText === 'string' && rawText.length > 0) {
         return NextResponse.json({ text: rawText, success: true });
       }
       return NextResponse.json({ error: 'No file or text payload provided', success: false }, { status: 400 });
     }
 
     const formData = await req.formData();
-    const file = formData.get('file') as File | null;
-    
-    if (!file) {
+    const file = formData.get('file');
+
+    if (!(file instanceof File)) {
       return NextResponse.json({ error: 'No file provided in form data', success: false }, { status: 400 });
     }
 
@@ -41,16 +55,17 @@ export async function POST(req: NextRequest) {
 
     if (mimeType === 'application/pdf' || fileName.endsWith('.pdf')) {
       try {
-        const pdfParse = require('pdf-parse');
+        const pdfParse = (await import('pdf-parse')).default;
         const pdfData = await pdfParse(buffer);
         text = pdfData.text;
-      } catch (pdfErr: any) {
-        console.warn('pdf-parse fallback active:', pdfErr?.message);
+      } catch (pdfErr: unknown) {
+        const errorMessage = pdfErr instanceof Error ? pdfErr.message : String(pdfErr);
+        console.warn('pdf-parse fallback active:', errorMessage);
         const rawString = buffer.toString('binary');
         const textMatches = rawString.match(/[\x20-\x7E\t\r\n]{4,}/g);
         if (textMatches) {
           text = textMatches
-            .filter(line => !line.startsWith('%PDF') && !line.includes('/Type') && !line.includes('/Filter') && !line.includes('endobj') && !line.includes('stream'))
+            .filter((line: string) => !line.startsWith('%PDF') && !line.includes('/Type') && !line.includes('/Filter') && !line.includes('endobj') && !line.includes('stream'))
             .join('\n');
         } else {
           text = '[PDF Text Extraction Complete]';
@@ -71,8 +86,9 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ text: text || '', success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMsg = error instanceof Error ? error.message : 'Extraction failed';
     console.error('Extraction error:', error);
-    return NextResponse.json({ error: error.message || 'Extraction failed', success: false }, { status: 400 });
+    return NextResponse.json({ error: errorMsg, success: false }, { status: 400 });
   }
 }
