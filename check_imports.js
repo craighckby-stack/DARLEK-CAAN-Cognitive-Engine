@@ -1,7 +1,7 @@
 /**
  * @file check_imports.js
  * @description Comprehensive optimized script to audit project imports against package.json dependencies.
- * @version 4.9.0-SOVEREIGN
+ * @version 4.9.1-SOVEREIGN-OPTIMIZED
  */
 
 // @ts-check
@@ -15,17 +15,17 @@ const { builtinModules } = require('node:module');
  * Valid file extensions to scan for module import/require specifiers.
  * @type {ReadonlySet<string>}
  */
-const VALID_EXTENSIONS = new Set(['.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs', '.vue', '.svelte']);
+const VALID_EXTENSIONS = Object.freeze(new Set(['.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs', '.vue', '.svelte']));
 
 /**
  * Set of built-in Node.js module specifiers for quick lookup.
  * @type {ReadonlySet<string>}
  */
-const NODE_BUILTINS = new Set([
+const NODE_BUILTINS = Object.freeze(new Set([
   ...builtinModules,
   ...builtinModules.map((m) => `node:${m}`),
   'fs', 'path', 'crypto', 'http', 'url', 'stream', 'util', 'os', 'events', 'buffer', 'child_process', 'cluster', 'dgram', 'dns', 'domain', 'net', 'tls', 'zlib'
-]);
+]));
 
 /**
  * Regular expression pattern to capture import/require/export specifiers.
@@ -34,12 +34,12 @@ const NODE_BUILTINS = new Set([
 const IMPORT_SPECIFIER_REGEX = /(?:from\s+|import\s*\(?\s*|require\s*\(\s*)['"]([^'"]+)['"]/g;
 
 /**
- * Iteratively yields source file paths under a directory.
+ * Iteratively yields source file paths under a directory using safe memory management.
  * @param {string} dirPath - Root directory to start traversal.
  * @returns {Generator<string, void, unknown>}
  */
 function* walkDirectory(dirPath) {
-  if (!fs.existsSync(dirPath)) return;
+  if (!dirPath || typeof dirPath !== 'string' || !fs.existsSync(dirPath)) return;
 
   /** @type {string[]} */
   const stack = [dirPath];
@@ -50,12 +50,15 @@ function* walkDirectory(dirPath) {
 
     try {
       const entries = fs.readdirSync(currentDir, { withFileTypes: true });
-      for (let i = 0; i < entries.length; i++) {
+      for (let i = 0, len = entries.length; i < len; i++) {
         const entry = entries[i];
+        if (!entry) continue;
+        
         const fullPath = path.join(currentDir, entry.name);
 
         if (entry.isDirectory()) {
-          if (entry.name !== 'node_modules' && entry.name !== 'dist' && entry.name !== 'build' && !entry.name.startsWith('.')) {
+          const name = entry.name;
+          if (name !== 'node_modules' && name !== 'dist' && name !== 'build' && !name.startsWith('.')) {
             stack.push(fullPath);
           }
         } else if (entry.isFile()) {
@@ -66,7 +69,7 @@ function* walkDirectory(dirPath) {
         }
       }
     } catch {
-      // Ignore inaccessible directories gracefully
+      // Gracefully suppress directory traversal access errors
     }
   }
 }
@@ -77,24 +80,23 @@ function* walkDirectory(dirPath) {
  * @returns {string | null} Normalized package name or null if relative/aliased/builtin.
  */
 function normalizePackageName(rawSpecifier) {
-  if (!rawSpecifier) return null;
+  if (!rawSpecifier || typeof rawSpecifier !== 'string') return null;
 
-  let specifier = rawSpecifier.trim();
+  const specifier = rawSpecifier.trim();
+  if (specifier.length === 0) return null;
 
-  if (specifier.startsWith('node:')) {
-    specifier = specifier.slice(5);
-  }
+  const cleanSpecifier = specifier.startsWith('node:') ? specifier.slice(5) : specifier;
 
-  if (specifier.startsWith('.') || specifier.startsWith('@/')) {
+  if (cleanSpecifier.startsWith('.') || cleanSpecifier.startsWith('@/')) {
     return null;
   }
 
-  const parts = specifier.split('/');
-  if (parts[0].startsWith('@') && parts.length > 1) {
+  const parts = cleanSpecifier.split('/');
+  if (parts.length > 0 && parts[0] && parts[0].startsWith('@') && parts.length > 1 && parts[1]) {
     return `${parts[0]}/${parts[1]}`;
   }
 
-  return parts[0] || null;
+  return (parts.length > 0 && parts[0]) ? parts[0] : null;
 }
 
 /**
@@ -102,7 +104,7 @@ function normalizePackageName(rawSpecifier) {
  * @returns {void}
  */
 function auditImports() {
-  /** @type {Record<string, any>} */
+  /** @type {Record<string, unknown>} */
   let pkg;
 
   try {
@@ -115,12 +117,17 @@ function auditImports() {
     process.exit(1);
   }
 
+  const dependencies = (pkg.dependencies && typeof pkg.dependencies === 'object') ? Object.keys(/** @type {Record<string, unknown>} */(pkg.dependencies)) : [];
+  const devDependencies = (pkg.devDependencies && typeof pkg.devDependencies === 'object') ? Object.keys(/** @type {Record<string, unknown>} */(pkg.devDependencies)) : [];
+  const peerDependencies = (pkg.peerDependencies && typeof pkg.peerDependencies === 'object') ? Object.keys(/** @type {Record<string, unknown>} */(pkg.peerDependencies)) : [];
+  const optionalDependencies = (pkg.optionalDependencies && typeof pkg.optionalDependencies === 'object') ? Object.keys(/** @type {Record<string, unknown>} */(pkg.optionalDependencies)) : [];
+
   /** @type {Set<string>} */
   const deps = new Set([
-    ...Object.keys(pkg.dependencies || {}),
-    ...Object.keys(pkg.devDependencies || {}),
-    ...Object.keys(pkg.peerDependencies || {}),
-    ...Object.keys(pkg.optionalDependencies || {})
+    ...dependencies,
+    ...devDependencies,
+    ...peerDependencies,
+    ...optionalDependencies
   ]);
 
   const targetDir = path.resolve(process.cwd(), 'src');
@@ -134,15 +141,15 @@ function auditImports() {
 
       let match;
       while ((match = IMPORT_SPECIFIER_REGEX.exec(fileContent)) !== null) {
-        const rawSpecifier = match[1];
-        const pkgName = normalizePackageName(rawSpecifier);
-
-        if (pkgName) {
-          detectedImports.add(pkgName);
+        if (match[1]) {
+          const pkgName = normalizePackageName(match[1]);
+          if (pkgName) {
+            detectedImports.add(pkgName);
+          }
         }
       }
     } catch {
-      // Ignore unreadable source files gracefully
+      // Gracefully ignore unreadable source files
     }
   }
 
