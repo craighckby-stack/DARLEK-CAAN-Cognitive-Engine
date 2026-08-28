@@ -15,7 +15,7 @@ const Accordion = React.memo(
   React.forwardRef<
     React.ElementRef<typeof AccordionPrimitive.Root>,
     AccordionProps
-  >(({ ...props }, ref) => (
+  >((props, ref) => (
     <AccordionPrimitive.Root ref={ref} data-slot="accordion" {...props} />
   ))
 )
