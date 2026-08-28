@@ -14,10 +14,10 @@ The `public/` directory is designated for storing public-facing static assets—
 
 ## Code Example: Referencing Public Assets
 
-When referencing assets stored in the `public/` directory within your components or templates, reference them from the root URL (`/`):
+When referencing assets stored in the `public/` directory within your components or templates, reference them directly from the root URL (`/`):
 
 ```html
-<!-- Example: Referencing an image from the public directory -->
+<!-- Example: Referencing an optimized image from the public directory -->
 <img 
   src="/images/company-logo.svg" 
   alt="Company Logo" 
