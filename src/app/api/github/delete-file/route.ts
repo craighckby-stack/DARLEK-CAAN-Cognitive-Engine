@@ -25,6 +25,14 @@ interface GitHubDeleteResponse {
 }
 
 /**
+ * Sanitizes and safely encodes a file path for GitHub API consumption.
+ */
+function sanitizePath(filePath: string): string {
+  const cleanPath = filePath.replace(/^\/+|\/+$/g, '');
+  return cleanPath.split('/').map(encodeURIComponent).join('/');
+}
+
+/**
  * Fetches the actual file SHA from GitHub if not provided or to ensure accuracy.
  */
 async function getFileSha(
@@ -35,8 +43,7 @@ async function getFileSha(
   filePath: string
 ): Promise<string | null> {
   try {
-    const cleanPath = filePath.replace(/^\/+|\/+$/g, '');
-    const encodedPath = cleanPath.split('/').map(encodeURIComponent).join('/');
+    const encodedPath = sanitizePath(filePath);
     const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodedPath}?ref=${encodeURIComponent(branch)}`;
     
     const res = await fetch(url, {
@@ -44,6 +51,7 @@ async function getFileSha(
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/vnd.github.v3+json',
       },
+      cache: 'no-store',
     });
 
     if (res.ok) {
@@ -87,8 +95,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       });
     }
 
-    const cleanPath = filePath.replace(/^\/+|\/+$/g, '');
-    const encodedPath = cleanPath.split('/').map(encodeURIComponent).join('/');
+    const encodedPath = sanitizePath(filePath);
     const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodedPath}`;
 
     const bodyPayload = {
@@ -105,6 +112,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(bodyPayload),
+      cache: 'no-store',
     });
 
     if (!res.ok) {
