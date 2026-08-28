@@ -1,10 +1,10 @@
 import { useState, useCallback, useMemo } from 'react';
 
-export type QuantumState<T> = T & { timestamp: number };
+export type QuantumState<T> = T & { readonly timestamp: number };
 export type QuantumUpdater<T> = (prev: QuantumState<T>) => T;
 export type UseQuantumStateReturn<T> = readonly [QuantumState<T>, (updater: QuantumUpdater<T>) => void];
 
-export const useQuantumState = <T extends Record<string, any>>(initial: T): UseQuantumStateReturn<T> => {
+export const useQuantumState = <T extends Record<string, unknown>>(initial: T): UseQuantumStateReturn<T> => {
   const [state, setState] = useState<QuantumState<T>>(() => ({
     ...initial,
     timestamp: Date.now(),
