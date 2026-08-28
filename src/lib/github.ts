@@ -16,16 +16,35 @@ const DEFAULT_REPO = "god-virus";
 const TOKEN_MIN_VALID_LENGTH = 15;
 
 /**
+ * Safely accesses storage layers with robust fallback handling.
+ */
+const getStorageItem = (key: string): string | null => {
+  try {
+    return typeof window !== "undefined" ? localStorage.getItem(key) : null;
+  } catch {
+    return null;
+  }
+};
+
+const getSessionStorageItem = (key: string): string | null => {
+  try {
+    return typeof window !== "undefined" ? sessionStorage.getItem(key) : null;
+  } catch {
+    return null;
+  }
+};
+
+/**
  * Retrieves and validates GitHub configuration and authorization tokens from storage layers.
- * Utilizes constant-time assertions and zero-allocation immutable returns.
+ * Utilizes constant-time assertions and zero-allocation immutable returns with robust error isolation.
  * 
  * @returns {GitHubConfig} The frozen configuration object.
  */
 export const getGitHubConfig = (): GitHubConfig => {
-  const username = localStorage.getItem("af_github_username") ?? DEFAULT_USERNAME;
-  const repoName = localStorage.getItem("af_github_repo") ?? DEFAULT_REPO;
-  const token = sessionStorage.getItem("af_github_token") ?? 
-                localStorage.getItem("af_github_token") ?? "";
+  const username = getStorageItem("af_github_username") ?? DEFAULT_USERNAME;
+  const repoName = getStorageItem("af_github_repo") ?? DEFAULT_REPO;
+  const token = getSessionStorageItem("af_github_token") ?? 
+                getStorageItem("af_github_token") ?? "";
 
   const hasValidToken = token.length > TOKEN_MIN_VALID_LENGTH;
   const isDemoMode = username === DEFAULT_USERNAME && repoName === DEFAULT_REPO;
