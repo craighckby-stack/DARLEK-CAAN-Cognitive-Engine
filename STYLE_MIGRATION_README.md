@@ -17,6 +17,7 @@ The migration operates via a deterministic, tri-phase sequence engineered for op
 /**
  * @file migration-engine.ts
  * @description Core execution pipeline for Glass-Emergent token replacement.
+ * @version 4.9.0
  */
 
 import { STYLE_MAPPINGS } from './style-mappings';
@@ -24,10 +25,15 @@ import { STYLE_MAPPINGS } from './style-mappings';
 /**
  * Executes deterministic token transformation on source file contents.
  * 
- * @param sourceContent - Raw string payload of the target source file.
- * @returns A promise resolving to the fully refactored string payload.
+ * @param {string} sourceContent - Raw string payload of the target source file.
+ * @returns {Promise<string>} A promise resolving to the fully refactored string payload.
+ * @throws {TypeError} If the sourceContent parameter is null or undefined.
  */
 export async function executeMigration(sourceContent: string): Promise<string> {
+  if (typeof sourceContent !== 'string') {
+    throw new TypeError('Source content must be a valid string payload.');
+  }
+
   let updatedContent = sourceContent;
   
   // Phase 2: Token Mapping via iterative regex transformations
