@@ -1,13 +1,18 @@
 import React, { memo } from 'react';
 
-export type DalekStatus = 'connected' | 'offline' | string;
+export type DalekStatus = 'connected' | 'offline' | (string & {});
 
 export interface DalekStatusIndicatorProps {
   readonly status: DalekStatus;
   readonly className?: string;
 }
 
-const STATUS_CONFIG = {
+interface StatusConfigEntry {
+  readonly text: string;
+  readonly className: string;
+}
+
+const STATUS_CONFIG: Record<'connected' | 'offline', StatusConfigEntry> = {
   connected: {
     text: '● SECURE',
     className: 'text-green-500',
@@ -22,8 +27,7 @@ export const DalekStatusIndicator: React.FC<DalekStatusIndicatorProps> = memo(({
   status, 
   className = '' 
 }) => {
-  const isConnected = status === 'connected';
-  const config = isConnected ? STATUS_CONFIG.connected : STATUS_CONFIG.offline;
+  const config = status === 'connected' ? STATUS_CONFIG.connected : STATUS_CONFIG.offline;
 
   return (
     <div 
