@@ -5,32 +5,36 @@
  */
 
 export interface SiphonSource {
-  owner: string;
-  repo: string;
-  branch: string;
-  label: string;
+  readonly owner: string;
+  readonly repo: string;
+  readonly branch: string;
+  readonly label: string;
 }
 
 interface GitHubBlob {
-  path?: string;
-  type?: string;
-  content?: string;
+  readonly path?: string;
+  readonly type?: string;
+  readonly content?: string;
 }
 
 interface GitHubTreeResponse {
-  tree?: GitHubBlob[];
+  readonly tree?: readonly GitHubBlob[];
 }
 
 interface BrainApiResponse {
-  reply?: string;
+  readonly reply?: string;
 }
 
 interface GitHubRepo {
-  name: string;
+  readonly name: string;
 }
 
 interface GitHubBranch {
-  name: string;
+  readonly name: string;
+}
+
+interface GitHubUserResponse {
+  readonly login?: string;
 }
 
 export const SOURCES: readonly SiphonSource[] = [
@@ -54,7 +58,6 @@ function decodeBase64Utf8(base64Content: string): string {
     const bytes = Uint8Array.from(binString, (m) => m.codePointAt(0)!);
     return new TextDecoder().decode(bytes);
   } catch {
-    // Fallback parser
     try {
       return decodeURIComponent(escape(atob(base64Content.replace(/\s/g, ""))));
     } catch {
@@ -203,11 +206,11 @@ export async function executeAutoSiphonTarget(
   if (githubToken) {
     if (addLog) addLog(`[SIPHON] Enumerating user GitHub repositories & branches...`);
     try {
-      const headers = { Authorization: `Bearer ${githubToken}`, Accept: "application/vnd.github.v3+json" };
+      const headers: Record<string, string> = { Authorization: `Bearer ${githubToken}`, Accept: "application/vnd.github.v3+json" };
       const userRes = await fetch("https://api.github.com/user", { headers });
       
       if (userRes.ok) {
-        const userData = (await userRes.json()) as { login?: string };
+        const userData = (await userRes.json()) as GitHubUserResponse;
         const owner = userData.login;
         if (owner) {
           const reposRes = await fetch(
