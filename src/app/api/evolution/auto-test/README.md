@@ -2,7 +2,7 @@
 
 ## 🦾 Core Objective
 
-The **Auto-Test Runner** functions as the primary **Coherence Gate**, enforcing strict structural integrity, security compliance, and architectural alignment across all automated code mutations.
+The **Auto-Test Runner** functions as the primary **Coherence Gate**, enforcing strict structural integrity, security compliance, and architectural alignment across all automated code mutations within the system ecosystem.
 
 ---
 
