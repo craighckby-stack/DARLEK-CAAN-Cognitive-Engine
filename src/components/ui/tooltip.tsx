@@ -5,10 +5,12 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip"
 
 import { cn } from "@/lib/utils"
 
-function TooltipProvider({
+export interface TooltipProviderProps extends React.ComponentProps<typeof TooltipPrimitive.Provider> {}
+
+const TooltipProvider = React.memo(function TooltipProvider({
   delayDuration = 0,
   ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Provider>) {
+}: TooltipProviderProps) {
   return (
     <TooltipPrimitive.Provider
       data-slot="tooltip-provider"
@@ -16,30 +18,42 @@ function TooltipProvider({
       {...props}
     />
   )
-}
+})
 
-function Tooltip({
+TooltipProvider.displayName = "TooltipProvider"
+
+export interface TooltipProps extends React.ComponentProps<typeof TooltipPrimitive.Root> {}
+
+const Tooltip = React.memo(function Tooltip({
   ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Root>) {
+}: TooltipProps) {
   return (
     <TooltipProvider>
       <TooltipPrimitive.Root data-slot="tooltip" {...props} />
     </TooltipProvider>
   )
-}
+})
 
-function TooltipTrigger({
+Tooltip.displayName = "Tooltip"
+
+export interface TooltipTriggerProps extends React.ComponentProps<typeof TooltipPrimitive.Trigger> {}
+
+const TooltipTrigger = React.memo(function TooltipTrigger({
   ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
+}: TooltipTriggerProps) {
   return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />
-}
+})
 
-function TooltipContent({
+TooltipTrigger.displayName = "TooltipTrigger"
+
+export interface TooltipContentProps extends React.ComponentProps<typeof TooltipPrimitive.Content> {}
+
+const TooltipContent = React.memo(function TooltipContent({
   className,
   sideOffset = 0,
   children,
   ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Content>) {
+}: TooltipContentProps) {
   return (
     <TooltipPrimitive.Portal>
       <TooltipPrimitive.Content
@@ -56,6 +70,8 @@ function TooltipContent({
       </TooltipPrimitive.Content>
     </TooltipPrimitive.Portal>
   )
-}
+})
+
+TooltipContent.displayName = "TooltipContent"
 
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }
