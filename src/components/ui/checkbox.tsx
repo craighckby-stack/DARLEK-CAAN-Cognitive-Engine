@@ -20,6 +20,10 @@ const Checkbox = React.memo(
     React.ElementRef<typeof CheckboxPrimitive.Root>,
     CheckboxProps
   >(({ className, icon, ...props }, ref) => {
+    const indicatorContent = React.useMemo(() => {
+      return icon ?? <CheckIcon className="size-3.5" />
+    }, [icon])
+
     return (
       <CheckboxPrimitive.Root
         ref={ref}
@@ -34,7 +38,7 @@ const Checkbox = React.memo(
           data-slot="checkbox-indicator"
           className="flex items-center justify-center text-current transition-none"
         >
-          {icon ?? <CheckIcon className="size-3.5" />}
+          {indicatorContent}
         </CheckboxPrimitive.Indicator>
       </CheckboxPrimitive.Root>
     )
