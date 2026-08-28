@@ -53,7 +53,7 @@ export class MainWorkerPool {
   }
 
   private processNext(): void {
-    if (this.activeCount < this.concurrencyLimit && this.queue.length > 0) {
+    while (this.activeCount < this.concurrencyLimit && this.queue.length > 0) {
       const nextTask = this.queue.shift();
       if (nextTask) {
         this.activeCount++;
