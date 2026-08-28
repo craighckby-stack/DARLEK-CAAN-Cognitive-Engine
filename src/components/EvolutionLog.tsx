@@ -6,11 +6,11 @@ import { COLORS, LOG_TYPE_ICONS, LOG_TYPE_COLORS } from '@/lib/constants';
 import { ScrollText } from 'lucide-react';
 
 export interface EvolutionLogProps {
-  entries: EvolutionLogEntry[];
+  entries: ReadonlyArray<EvolutionLogEntry>;
 }
 
 interface LogRowProps {
-  entry: EvolutionLogEntry;
+  readonly entry: EvolutionLogEntry;
 }
 
 const LogRow = memo(function LogRow({ entry }: LogRowProps) {
