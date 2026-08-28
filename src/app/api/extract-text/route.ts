@@ -4,26 +4,38 @@ import mammoth from 'mammoth';
 export const dynamic = 'force-dynamic';
 
 interface SuccessResponse {
-  success: true;
-  text: string;
-  status?: string;
-  service?: string;
+  readonly success: true;
+  readonly text: string;
+  readonly status?: string;
+  readonly service?: string;
 }
 
 interface ErrorResponse {
-  success: false;
-  error: string;
+  readonly success: false;
+  readonly error: string;
 }
 
 type ApiResponse = SuccessResponse | ErrorResponse;
 
+const MAX_PAYLOAD_SIZE = 25 * 1024 * 1024; // 25MB safety boundary
+
 export async function GET(): Promise<NextResponse<ApiResponse>> {
-  return NextResponse.json({ status: 'online', service: 'EXTRACT_TEXT_API', success: true, text: '' });
+  return NextResponse.json({ 
+    status: 'online', 
+    service: 'EXTRACT_TEXT_API', 
+    success: true, 
+    text: '' 
+  });
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse>> {
   try {
-    const contentType = req.headers.get('content-type') || '';
+    const contentLength = req.headers.get('content-length');
+    if (contentLength && parseInt(contentLength, 10) > MAX_PAYLOAD_SIZE) {
+      return NextResponse.json({ error: 'Payload exceeds maximum limit of 25MB', success: false }, { status: 413 });
+    }
+
+    const contentType = req.headers.get('content-type') ?? '';
 
     if (contentType.includes('application/json')) {
       const body = await req.json().catch(() => ({}));
