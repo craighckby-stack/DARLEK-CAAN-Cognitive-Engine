@@ -8,7 +8,7 @@ export type AspectRatioProps = ComponentPropsWithoutRef<typeof AspectRatioPrimit
 export type AspectRatioElement = ElementRef<typeof AspectRatioPrimitive.Root>
 
 export const AspectRatio = forwardRef<AspectRatioElement, AspectRatioProps>(
-  function AspectRatio({ ...props }, ref): ReactElement {
+  function AspectRatio(props, ref): ReactElement {
     return <AspectRatioPrimitive.Root ref={ref} data-slot="aspect-ratio" {...props} />
   }
 )
