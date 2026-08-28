@@ -8,6 +8,19 @@ export interface ScanResult {
   sanitized?: string;
 }
 
+interface GitHubTreeItem {
+  path: string;
+  type: string;
+  sha?: string;
+  size?: number;
+  url: string;
+}
+
+interface GitHubBlobResponse {
+  content?: string;
+  encoding?: string;
+}
+
 // Safe base64 decoding supporting newlines and multi-byte UTF-8
 function safeBase64Decode(base64Str: string): string {
   try {
@@ -40,7 +53,7 @@ export function useGithubScanner() {
   const [filesSkipped, setFilesSkipped] = useState(0);
   const [scanDuration, setScanDuration] = useState(0);
   const startTime = useRef<number>(0);
-  const timerRef = useRef<any>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Live timer effect during scan
   useEffect(() => {
@@ -152,8 +165,8 @@ export function useGithubScanner() {
             const errBody = await commitRes.text();
             lastErrorMessage = errBody;
           }
-        } catch (err: any) {
-          if (err.name === 'AbortError') throw err;
+        } catch (err: unknown) {
+          if (err instanceof Error && err.name === 'AbortError') throw err;
         }
       }
 
@@ -184,8 +197,8 @@ export function useGithubScanner() {
             const errBody = await repoMetaRes.text();
             lastErrorMessage = errBody;
           }
-        } catch (err: any) {
-          if (err.name === 'AbortError') throw err;
+        } catch (err: unknown) {
+          if (err instanceof Error && err.name === 'AbortError') throw err;
         }
       }
 
@@ -215,8 +228,8 @@ export function useGithubScanner() {
               }
             }
           }
-        } catch (err: any) {
-          if (err.name === 'AbortError') throw err;
+        } catch (err: unknown) {
+          if (err instanceof Error && err.name === 'AbortError') throw err;
         }
       }
 
@@ -243,8 +256,8 @@ export function useGithubScanner() {
               delete headers.Authorization;
             }
           }
-        } catch (err: any) {
-          if (err.name === 'AbortError') throw err;
+        } catch (err: unknown) {
+          if (err instanceof Error && err.name === 'AbortError') throw err;
         }
       }
 
@@ -289,7 +302,7 @@ export function useGithubScanner() {
 
       // Filter tree using comprehensive exclusion rules
       let skippedCount = 0;
-      const scanQueue = treeData.tree.filter((item: any) => {
+      const scanQueue: GitHubTreeItem[] = treeData.tree.filter((item: GitHubTreeItem) => {
         if (item.type !== 'blob') return false;
         if (isSkippableFile(item.path)) {
           skippedCount++;
@@ -317,7 +330,7 @@ export function useGithubScanner() {
 
         const batch = scanQueue.slice(i, i + CONCURRENCY);
 
-        await Promise.all(batch.map(async (file: any) => {
+        await Promise.all(batch.map(async (file: GitHubTreeItem) => {
           if (signal.aborted) return;
           try {
             setCurrentFile(file.path);
@@ -347,7 +360,7 @@ export function useGithubScanner() {
 
             if (!res.ok) return;
 
-            const data = await res.json();
+            const data: GitHubBlobResponse = await res.json();
             if (data.content && data.encoding === 'base64') {
               const decoded = safeBase64Decode(data.content);
               if (decoded) {
@@ -362,8 +375,8 @@ export function useGithubScanner() {
                 }
               }
             }
-          } catch (e: any) {
-            if (e.name !== 'AbortError') {
+          } catch (e: unknown) {
+            if (e instanceof Error && e.name !== 'AbortError') {
               console.warn(`File scan skipped for ${file.path}:`, e.message);
             }
           } finally {
@@ -385,8 +398,8 @@ export function useGithubScanner() {
       setCurrentFile('');
       setStatusMessage(allFindings.length === 0 ? 'Scan completed. No sensitive secrets or PII detected.' : `Scan complete: ${allFindings.length} files with findings.`);
 
-    } catch (e: any) {
-      if (e.name !== 'AbortError') {
+    } catch (e: unknown) {
+      if (e instanceof Error && e.name !== 'AbortError') {
         console.error('Scan error:', e);
         setStatusMessage(`Scan failed: ${e.message}`);
       }
@@ -418,4 +431,3 @@ export function useGithubScanner() {
     scanDuration
   };
 }
-
