@@ -15,7 +15,7 @@ This repository serves as the core execution kernel for the OMEGA system. It sea
 
 ## 2. Directory Structure
 
-The repository is structured to separate orchestration, evolution, state persistence, and environment-specific configurations:
+The repository is organized to cleanly separate orchestration logic, evolution mechanisms, state persistence, and environment-specific configurations:
 
 ```text
 /
@@ -34,7 +34,7 @@ To maintain absolute system integrity and prevent unauthorized access or privile
 
 * **Credential Injection:** All sensitive keys, secrets, and authentication tokens must be injected exclusively via secure environment variables.
 * **Ignored Artifacts:** `.env` and local override files are explicitly excluded via `.gitignore` to prevent accidental credential leakage.
-* **Log Isolation:** Evolutionary audit logs and debugging traces remain strictly local-only to maintain repository cleanliness, security compliance, and minimal footprint.
+* **Log Isolation:** Evolutionary audit logs and debugging traces remain strictly local-only to maintain repository cleanliness, security compliance, and a minimal footprint.
 
 ---
 
