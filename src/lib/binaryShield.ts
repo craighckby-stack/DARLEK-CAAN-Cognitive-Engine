@@ -1,20 +1,26 @@
-interface EncryptionPacket {
-  data: string;
-  iv: string;
-  timestamp: number;
-  algorithm: string;
+/**
+ * EMG Core v49 Neural Code and Documentation Optimizer Engine
+ * File Path: "src/lib/binaryShield.ts"
+ */
+
+export interface EncryptionPacket {
+  readonly data: string;
+  readonly iv: string;
+  readonly timestamp: number;
+  readonly algorithm: string;
 }
 
-interface DecryptionPacket {
-  data: string;
-  iv: string;
+export interface DecryptionPacket {
+  readonly data: string;
+  readonly iv: string;
 }
 
 export class BinaryShield {
   private key: CryptoKey | null = null;
   private isInitializing = false;
+  private initPromise: Promise<void> | null = null;
 
-  constructor(private keyHex: string) {
+  constructor(private readonly keyHex: string) {
     if (typeof keyHex !== 'string' || keyHex.length !== 64) {
       throw new Error('Master Key must be a 64-character hex string.');
     }
@@ -25,28 +31,48 @@ export class BinaryShield {
       throw new Error('Invalid hex string length.');
     }
     
-    try {
-      return new Uint8Array(
-        hex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16))
-      ).buffer;
-    } catch (e) {
-      throw new Error('Invalid hex characters.');
+    const byteLength = hex.length / 2;
+    const buffer = new ArrayBuffer(byteLength);
+    const view = new Uint8Array(buffer);
+    
+    for (let i = 0; i < byteLength; i++) {
+      const byteStr = hex.substring(i * 2, i * 2 + 2);
+      const byte = parseInt(byteStr, 16);
+      if (Number.isNaN(byte)) {
+        throw new Error('Invalid hex characters.');
+      }
+      view[i] = byte;
     }
+    
+    return buffer;
   }
 
   private arrayBufferToBase64(buffer: ArrayBuffer | Uint8Array): string {
-    return btoa(
-      String.fromCharCode.apply(null, Array.from(new Uint8Array(buffer)))
-    );
+    const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+    let binary = '';
+    const len = bytes.byteLength;
+    const CHUNK_SIZE = 0x8000;
+    
+    for (let i = 0; i < len; i += CHUNK_SIZE) {
+      const chunk = bytes.subarray(i, Math.min(i + CHUNK_SIZE, len));
+      binary += String.fromCharCode.apply(null, Array.from(chunk));
+    }
+    
+    return btoa(binary);
   }
 
   private base64ToArrayBuffer(base64: string): ArrayBuffer {
     try {
       const binaryString = atob(base64);
-      return new Uint8Array(
-        Array.from(binaryString).map(char => char.charCodeAt(0))
-      ).buffer;
-    } catch (e) {
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      
+      return bytes.buffer;
+    } catch {
       throw new Error('Invalid base64 string.');
     }
   }
@@ -54,39 +80,35 @@ export class BinaryShield {
   async initialize(): Promise<void> {
     if (this.key) return;
     
-    // Prevent race conditions during initialization
-    if (this.isInitializing) {
-      await new Promise<void>((resolve) => {
-        const checkInterval = setInterval(() => {
-          if (this.key) {
-            clearInterval(checkInterval);
-            resolve();
-          }
-        }, 10);
-      });
-      return;
+    if (this.isInitializing && this.initPromise) {
+      return this.initPromise;
     }
 
     this.isInitializing = true;
     
-    try {
-      const keyBuffer = this.hexToBuffer(this.keyHex);
-      if (keyBuffer.byteLength !== 32) {
-        throw new Error('Master Key must be 32 bytes (64 hex characters).');
+    this.initPromise = (async () => {
+      try {
+        const keyBuffer = this.hexToBuffer(this.keyHex);
+        if (keyBuffer.byteLength !== 32) {
+          throw new Error('Master Key must be 32 bytes (64 hex characters).');
+        }
+        
+        this.key = await crypto.subtle.importKey(
+          'raw',
+          keyBuffer,
+          { name: 'AES-GCM' },
+          false,
+          ['encrypt', 'decrypt']
+        );
+      } catch (e) {
+        throw new Error(`Encryption initialization failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
+      } finally {
+        this.isInitializing = false;
+        this.initPromise = null;
       }
-      
-      this.key = await crypto.subtle.importKey(
-        'raw',
-        keyBuffer,
-        { name: 'AES-GCM' },
-        false,
-        ['encrypt', 'decrypt']
-      );
-    } catch (e) {
-      throw new Error(`Encryption initialization failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
-    } finally {
-      this.isInitializing = false;
-    }
+    })();
+
+    return this.initPromise;
   }
 
   async encryptPacket(plaintext: string): Promise<EncryptionPacket> {
@@ -140,16 +162,9 @@ export class BinaryShield {
     }
   }
 
-  // Cleanup method to securely clear the key
   async clear(): Promise<void> {
-    if (this.key) {
-      try {
-        // In a real implementation, we might want to zero out the key material
-        // Note: Web Crypto API doesn't provide a direct way to zero out keys
-        this.key = null;
-      } catch (e) {
-        console.error('Error during key cleanup:', e);
-      }
-    }
+    this.key = null;
+    this.isInitializing = false;
+    this.initPromise = null;
   }
 }
