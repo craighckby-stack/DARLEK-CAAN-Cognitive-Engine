@@ -1,1 +1,11 @@
-This is a placeholder for public assets.
+# Public Assets Directory
+
+This directory is designated for storing public-facing static assets (such as images, fonts, icons, and media files) that are served directly to the client without processing by the asset bundler.
+
+---
+
+## Guidelines for Usage
+
+- **File Organization**: Keep assets properly categorized in subdirectories (e.g., `/images`, `/icons`) when the project scales.
+- **Naming Conventions**: Use lowercase letters, hyphens instead of spaces, and descriptive names for all asset files (e.g., `company-logo.svg`).
+- **Optimization**: Ensure all images and media files are compressed and appropriately sized before committing them to this directory to maintain optimal application performance.
