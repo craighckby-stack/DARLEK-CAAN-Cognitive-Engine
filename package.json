@@ -1,10 +1,12 @@
 {
   "name": "nextjs_tailwind_shadcn_ts",
   "version": "0.2.0",
+  "private": true,
   "scripts": {
-    "build": "prisma generate \u0026\u0026 next build",
+    "build": "prisma generate && next build",
     "dev": "next dev -p 3000",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc --noEmit",
     "start": "node server.js"
   },
   "dependencies": {
@@ -69,14 +71,14 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4.0.0",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
     "eslint": "^9.39.5",
     "eslint-config-next": "^15.1.6",
-    "postcss": "^8",
+    "postcss": "^8.5.1",
     "prisma": "^6.19.3",
     "tailwindcss": "^4.0.0",
-    "typescript": "^5"
+    "typescript": "^5.7.2"
   }
 }
