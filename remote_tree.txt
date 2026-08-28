@@ -1,3 +1,10 @@
+# Remote Repository Tree
+
+This document provides a comprehensive structural mapping of the repository codebase, outlining all core modules, API routes, user interface components, utilities, and configuration assets.
+
+## Project Structure Overview
+
+```text
 .env.example
 .gitignore
 README.md
@@ -11,10 +18,10 @@ download_changed_fast.js
 download_missing.js
 download_page.js
 eslint.config.mjs
-examples
-examples/websocket
-examples/websocket/frontend.tsx
-examples/websocket/server.ts
+examples/
+  websocket/
+    frontend.tsx
+    server.ts
 fetch_engine.js
 fetch_missing.js
 fetch_readme.js
@@ -46,8 +53,8 @@ patch_logging.js
 patch_prompt.js
 patch_prompt_json.js
 postcss.config.mjs
-prisma
-prisma/schema.prisma
+prisma/
+  schema.prisma
 remote_App.tsx
 remote_blobs.json
 remote_main.tsx
@@ -57,205 +64,206 @@ restore_repo.js
 restore_repo_fast.js
 robust_parser.js
 server.ts
-src
-src/App.tsx
-src/app
-src/app/api
-src/app/api/brain
-src/app/api/brain/route.ts
-src/app/api/brain/types.ts
-src/app/api/chat
-src/app/api/chat/route.ts
-src/app/api/evolution
-src/app/api/evolution/analyze-impact
-src/app/api/evolution/analyze-impact/route.ts
-src/app/api/evolution/auto-test
-src/app/api/evolution/auto-test/route.ts
-src/app/api/evolution/coherence-gate
-src/app/api/evolution/coherence-gate/route.ts
-src/app/api/evolution/debate
-src/app/api/evolution/debate/route.ts
-src/app/api/evolution/health
-src/app/api/evolution/health/route.ts
-src/app/api/evolution/orchestra
-src/app/api/evolution/orchestra/route.ts
-src/app/api/evolution/propose
-src/app/api/evolution/propose/route.ts
-src/app/api/extract-text
-src/app/api/extract-text/route.ts
-src/app/api/github
-src/app/api/github/branches
-src/app/api/github/branches/route.ts
-src/app/api/github/bulk-commit
-src/app/api/github/bulk-commit/route.ts
-src/app/api/github/create-branch
-src/app/api/github/create-branch/route.ts
-src/app/api/github/create-repo
-src/app/api/github/create-repo/route.ts
-src/app/api/github/create-system-repo
-src/app/api/github/create-system-repo/route.ts
-src/app/api/github/delete-file
-src/app/api/github/delete-file/route.ts
-src/app/api/github/push-enhancements
-src/app/api/github/push-enhancements/route.ts
-src/app/api/github/read-file
-src/app/api/github/read-file/route.ts
-src/app/api/github/scan
-src/app/api/github/scan/route.ts
-src/app/api/github/user-repos
-src/app/api/github/user-repos/route.ts
-src/app/api/github/write-file
-src/app/api/github/write-file/route.ts
-src/app/api/route.ts
-src/app/api/setup
-src/app/api/setup/test-connection
-src/app/api/setup/test-connection/route.ts
-src/app/api/system
-src/app/api/system/reboot
-src/app/api/system/reboot/route.ts
-src/app/error.tsx
-src/app/global-error.tsx
-src/app/globals.css
-src/app/layout.tsx
-src/app/not-found.tsx
-src/app/page.tsx
-src/brain-firebase-runtime.ts
-src/components
-src/components/AgentOrchestra.tsx
-src/components/AgiCognitiveDashboard.tsx
-src/components/ChatMessage.tsx
-src/components/ChatPanel.tsx
-src/components/ChessBoard.tsx
-src/components/DalekStatusIndicator.tsx
-src/components/DashboardPanel.tsx
-src/components/DebateChamber.tsx
-src/components/ErrorBoundary.tsx
-src/components/EvolutionLog.tsx
-src/components/HmrErrorHandler.tsx
-src/components/MainPage.tsx
-src/components/MutationDiffView.tsx
-src/components/MutationHistoryPanel.tsx
-src/components/MutationStatusIndicator.tsx
-src/components/PageClient.tsx
-src/components/QuickActions.tsx
-src/components/SaturationMetrics.tsx
-src/components/SoundEngine.ts
-src/components/StatusBar.tsx
-src/components/ui
-src/components/ui/accordion.tsx
-src/components/ui/alert-dialog.tsx
-src/components/ui/alert.tsx
-src/components/ui/aspect-ratio.tsx
-src/components/ui/avatar.tsx
-src/components/ui/badge.tsx
-src/components/ui/breadcrumb.tsx
-src/components/ui/button.tsx
-src/components/ui/calendar.tsx
-src/components/ui/card.tsx
-src/components/ui/carousel.tsx
-src/components/ui/chart.tsx
-src/components/ui/checkbox.tsx
-src/components/ui/collapsible.tsx
-src/components/ui/command.tsx
-src/components/ui/context-menu.tsx
-src/components/ui/dialog.tsx
-src/components/ui/drawer.tsx
-src/components/ui/dropdown-menu.tsx
-src/components/ui/form.tsx
-src/components/ui/hover-card.tsx
-src/components/ui/input-otp.tsx
-src/components/ui/input.tsx
-src/components/ui/label.tsx
-src/components/ui/menubar.tsx
-src/components/ui/navigation-menu.tsx
-src/components/ui/pagination.tsx
-src/components/ui/popover.tsx
-src/components/ui/progress.tsx
-src/components/ui/radio-group.tsx
-src/components/ui/resizable.tsx
-src/components/ui/scroll-area.tsx
-src/components/ui/select.tsx
-src/components/ui/separator.tsx
-src/components/ui/sheet.tsx
-src/components/ui/sidebar.tsx
-src/components/ui/skeleton.tsx
-src/components/ui/slider.tsx
-src/components/ui/sonner.tsx
-src/components/ui/switch.tsx
-src/components/ui/table.tsx
-src/components/ui/tabs.tsx
-src/components/ui/textarea.tsx
-src/components/ui/toast.tsx
-src/components/ui/toaster.tsx
-src/components/ui/toggle-group.tsx
-src/components/ui/toggle.tsx
-src/components/ui/tooltip.tsx
-src/core
-src/core/types.ts
-src/hooks
-src/hooks/use-mobile.ts
-src/hooks/use-toast.ts
-src/hooks/useAgentOrchestra.ts
-src/hooks/useMutationData.ts
-src/hooks/useQuantumState.ts
-src/hooks/useSystemBootstrap.ts
-src/hooks/useSystemOrchestrator.ts
-src/hooks/useSystemState.ts
-src/index.css
-src/lib
-src/lib/LifecycleManager.ts
-src/lib/ast-diff-gate.ts
-src/lib/binaryShield.ts
-src/lib/brain.ts
-src/lib/constants.ts
-src/lib/dalek-brain.ts
-src/lib/db.ts
-src/lib/diagnostic-registry.ts
-src/lib/diagnostic-utils.ts
-src/lib/firebase.ts
-src/lib/gemini.ts
-src/lib/github-client.ts
-src/lib/github-orchestrator.ts
-src/lib/github.ts
-src/lib/llm-provider.ts
-src/lib/main-worker.ts
-src/lib/omega-bootstrap.ts
-src/lib/ragBrain.ts
-src/lib/sandbox.ts
-src/lib/scanner-utils.ts
-src/lib/structural-sanity-guard.ts
-src/lib/telemetry.ts
-src/lib/types.ts
-src/lib/utils.ts
-src/lib/utils
-src/lib/utils/core.ts
-src/main.tsx
-src/middleware
-src/middleware/SecurityMiddleware.ts
-src/providers
-src/providers/SystemTelemetryProvider.tsx
-src/types.ts
-src/types
-src/types/brain-runtime.d.ts
-src/types/evolution.ts
-src/types/kernel.d.ts
-src/types/manifest.d.ts
-src/types/omega-core.d.ts
-src/types/omega.d.ts
-src/types/orchestrator.d.ts
-src/types/repository.ts
-src/types/system.d.ts
-src/utils
-src/utils/agi-engine.ts
-src/utils/board-safety.ts
-src/utils/engine.ts
-src/utils/error-parser.ts
-src/utils/siphon.ts
+src/
+  App.tsx
+  app/
+    api/
+      brain/
+        route.ts
+        types.ts
+      chat/
+        route.ts
+      evolution/
+        analyze-impact/
+          route.ts
+        auto-test/
+          route.ts
+        coherence-gate/
+          route.ts
+        debate/
+          route.ts
+        health/
+          route.ts
+        orchestra/
+          route.ts
+        propose/
+          route.ts
+      extract-text/
+        route.ts
+      github/
+        branches/
+          route.ts
+        bulk-commit/
+          route.ts
+        create-branch/
+          route.ts
+        create-repo/
+          route.ts
+        create-system-repo/
+          route.ts
+        delete-file/
+          route.ts
+        push-enhancements/
+          route.ts
+        read-file/
+          route.ts
+        scan/
+          route.ts
+        user-repos/
+          route.ts
+        write-file/
+          route.ts
+      route.ts
+      setup/
+        test-connection/
+          route.ts
+      system/
+        reboot/
+          route.ts
+    error.tsx
+    global-error.tsx
+    globals.css
+    layout.tsx
+    not-found.tsx
+    page.tsx
+  brain-firebase-runtime.ts
+  components/
+    AgentOrchestra.tsx
+    AgiCognitiveDashboard.tsx
+    ChatMessage.tsx
+    ChatPanel.tsx
+    ChessBoard.tsx
+    DalekStatusIndicator.tsx
+    DashboardPanel.tsx
+    DebateChamber.tsx
+    ErrorBoundary.tsx
+    EvolutionLog.tsx
+    HmrErrorHandler.tsx
+    MainPage.tsx
+    MutationDiffView.tsx
+    MutationHistoryPanel.tsx
+    MutationStatusIndicator.tsx
+    PageClient.tsx
+    QuickActions.tsx
+    SaturationMetrics.tsx
+    SoundEngine.ts
+    StatusBar.tsx
+    ui/
+      accordion.tsx
+      alert-dialog.tsx
+      alert.tsx
+      aspect-ratio.tsx
+      avatar.tsx
+      badge.tsx
+      breadcrumb.tsx
+      button.tsx
+      calendar.tsx
+      card.tsx
+      carousel.tsx
+      chart.tsx
+      checkbox.tsx
+      collapsible.tsx
+      command.tsx
+      context-menu.tsx
+      dialog.tsx
+      drawer.tsx
+      dropdown-menu.tsx
+      form.tsx
+      hover-card.tsx
+      input-otp.tsx
+      input.tsx
+      label.tsx
+      menubar.tsx
+      navigation-menu.tsx
+      pagination.tsx
+      popover.tsx
+      progress.tsx
+      radio-group.tsx
+      resizable.tsx
+      scroll-area.tsx
+      select.tsx
+      separator.tsx
+      sheet.tsx
+      sidebar.tsx
+      skeleton.tsx
+      slider.tsx
+      sonner.tsx
+      switch.tsx
+      table.tsx
+      tabs.tsx
+      textarea.tsx
+      toast.tsx
+      toaster.tsx
+      toggle-group.tsx
+      toggle.tsx
+      tooltip.tsx
+  core/
+    types.ts
+  hooks/
+    use-mobile.ts
+    use-toast.ts
+    useAgentOrchestra.ts
+    useMutationData.ts
+    useQuantumState.ts
+    useSystemBootstrap.ts
+    useSystemOrchestrator.ts
+    useSystemState.ts
+  index.css
+  lib/
+    LifecycleManager.ts
+    ast-diff-gate.ts
+    binaryShield.ts
+    brain.ts
+    constants.ts
+    dalek-brain.ts
+    db.ts
+    diagnostic-registry.ts
+    diagnostic-utils.ts
+    firebase.ts
+    gemini.ts
+    github-client.ts
+    github-orchestrator.ts
+    github.ts
+    llm-provider.ts
+    main-worker.ts
+    omega-bootstrap.ts
+    ragBrain.ts
+    sandbox.ts
+    scanner-utils.ts
+    structural-sanity-guard.ts
+    telemetry.ts
+    types.ts
+    utils.ts
+    utils/
+      core.ts
+  main.tsx
+  middleware/
+    SecurityMiddleware.ts
+  providers/
+    SystemTelemetryProvider.tsx
+  types.ts
+  types/
+    brain-runtime.d.ts
+    evolution.ts
+    kernel.d.ts
+    manifest.d.ts
+    omega-core.d.ts
+    omega.d.ts
+    orchestrator.d.ts
+    repository.ts
+    system.d.ts
+  utils/
+    agi-engine.ts
+    board-safety.ts
+    engine.ts
+    error-parser.ts
+    siphon.ts
 test-worker.ts
 tsconfig.json
-types
-types/chess-engine.ts
+types/
+  chess-engine.ts
 updateModule.js
 updateStyles.js
 update_propose.js
 vite.config.ts
+```
