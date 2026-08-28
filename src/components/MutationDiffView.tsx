@@ -53,6 +53,7 @@ export default function MutationDiffView({
 
   const truncate = useCallback((code: string, maxLines: number = 20): string => {
     try {
+      if (!code) return '';
       const lines = code.split('\n');
       if (lines.length <= maxLines) return code;
       return `${lines.slice(0, maxLines).join('\n')}\n\n... (${lines.length - maxLines} more lines)`;
@@ -61,13 +62,15 @@ export default function MutationDiffView({
     }
   }, []);
 
-  const originalSize = useMemo(() => (mutation.originalContent.length / 1024).toFixed(1), [mutation.originalContent]);
-  const proposedSize = useMemo(() => (mutation.proposedCode.length / 1024).toFixed(1), [mutation.proposedCode]);
+  const originalSize = useMemo(() => ((mutation.originalContent?.length ?? 0) / 1024).toFixed(1), [mutation.originalContent]);
+  const proposedSize = useMemo(() => ((mutation.proposedCode?.length ?? 0) / 1024).toFixed(1), [mutation.proposedCode]);
   const sizeDiff = useMemo(() => {
-    if (mutation.originalContent.length === 0) return '0';
-    return Math.abs(((mutation.proposedCode.length - mutation.originalContent.length) / mutation.originalContent.length) * 100).toFixed(0);
+    const origLen = mutation.originalContent?.length ?? 0;
+    const propLen = mutation.proposedCode?.length ?? 0;
+    if (origLen === 0) return '0';
+    return Math.abs(((propLen - origLen) / origLen) * 100).toFixed(0);
   }, [mutation.originalContent, mutation.proposedCode]);
-  const sizeDiffSign = mutation.proposedCode.length > mutation.originalContent.length ? '+' : '';
+  const sizeDiffSign = (mutation.proposedCode?.length ?? 0) > (mutation.originalContent?.length ?? 0) ? '+' : '';
 
   const handleToggleOriginal = useCallback(() => setShowOriginal(prev => !prev), []);
   const handleToggleProposed = useCallback(() => setShowProposed(prev => !prev), []);
