@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mainWorker } from '@/lib/main-worker';
 import { runAstDiffGate } from '@/lib/ast-diff-gate';
+import { safeReqJson } from '@/lib/safe-json';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +14,7 @@ export const dynamic = 'force-dynamic';
 // Returns a structured report that feeds into the Coherence Gate.
 // ───────────────────────────────────────────────────────────────────
 
-interface AutoTestResult {
+export interface AutoTestResult {
   category: string;
   test: string;
   status: 'pass' | 'fail' | 'warn';
@@ -21,7 +22,18 @@ interface AutoTestResult {
   severity: 'high' | 'medium' | 'low';
 }
 
-function runTypeScriptSyntaxCheck(code: string, filePath: string): AutoTestResult[] {
+export interface AutoTestResponse {
+  success: boolean;
+  results: AutoTestResult[];
+  verdict: 'PASSED' | 'WARNING_PASSED' | 'REJECTED' | 'ERROR';
+  total: number;
+  passed: number;
+  failed: number;
+  warned: number;
+  error?: string;
+}
+
+function runTypeScriptSyntaxCheck(code: string, _filePath: string): AutoTestResult[] {
   const results: AutoTestResult[] = [];
 
   // Check for basic syntax issues via pattern matching
@@ -199,7 +211,7 @@ function runExportValidation(code: string, filePath: string): AutoTestResult[] {
   return results;
 }
 
-function runAntiPatternCheck(code: string, originalCode: string, filePath: string): AutoTestResult[] {
+function runAntiPatternCheck(code: string, _originalCode: string, filePath: string): AutoTestResult[] {
   const results: AutoTestResult[] = [];
 
   // Check for dangerous eval usage
@@ -229,15 +241,16 @@ function runAntiPatternCheck(code: string, originalCode: string, filePath: strin
     /api[_-]?key\s*[:=]\s*['"][^'"]{20,}['"]/gi,
     /password\s*[:=]\s*['"][^'"]{8,}['"]/gi,
     /token\s*[:=]\s*['"][^'"]{20,}['"]/gi,
-    /secret\s*[:=]\s*['"][^'"]{8+}['"]/gi,
+    /secret\s*[:=]\s*['"][^'"]{8,}['"]/gi,
   ];
   for (const pattern of secretPatterns) {
     const matches = [...code.matchAll(pattern)];
     if (matches.length > 0) {
       // Skip if it's a type definition or interface
       const realSecrets = matches.filter(m => {
-        const lineStart = code.lastIndexOf('\n', m.index!) + 1;
-        const line = code.slice(lineStart, m.index! + m[0].length);
+        const index = m.index ?? 0;
+        const lineStart = code.lastIndexOf('\n', index) + 1;
+        const line = code.slice(lineStart, index + m[0].length);
         return !line.includes('interface') && !line.includes('type ') && !line.includes('placeholder') && !line.includes('TODO');
       });
       if (realSecrets.length > 0) {
@@ -342,7 +355,7 @@ function runAntiPatternCheck(code: string, originalCode: string, filePath: strin
   return results;
 }
 
-function runDiffSanityCheck(code: string, originalCode: string, filePath: string): AutoTestResult[] {
+function runDiffSanityCheck(code: string, originalCode: string, _filePath: string): AutoTestResult[] {
   const results: AutoTestResult[] = [];
 
   // Check if the file got completely wiped
@@ -371,15 +384,18 @@ function runDiffSanityCheck(code: string, originalCode: string, filePath: string
   return results;
 }
 
-import { safeReqJson } from '@/lib/safe-json';
-
-export async function GET() {
+export async function GET(): Promise<NextResponse> {
   return NextResponse.json({ status: 'online', service: 'EVOLUTION_AUTO_TEST_API' });
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse<AutoTestResponse>> {
   try {
-    const { originalCode = '', proposedCode = '', filePath = '', repoFiles = [], newFiles = [] } = await safeReqJson(req, {});
+    const body = await safeReqJson(req, {});
+    const originalCode = typeof body.originalCode === 'string' ? body.originalCode : '';
+    const proposedCode = typeof body.proposedCode === 'string' ? body.proposedCode : '';
+    const filePath = typeof body.filePath === 'string' ? body.filePath : '';
+    const repoFiles = Array.isArray(body.repoFiles) ? body.repoFiles : [];
+    const newFiles = Array.isArray(body.newFiles) ? body.newFiles : [];
 
     const results: AutoTestResult[] = [];
 
@@ -441,11 +457,12 @@ export async function POST(req: NextRequest) {
       failed,
       warned
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errMessage = error instanceof Error ? error.message : 'AutoTest compilation failed';
     console.error('AutoTest API error:', error);
     return NextResponse.json({
       success: false,
-      error: error.message || 'AutoTest compilation failed',
+      error: errMessage,
       results: [],
       verdict: 'ERROR',
       total: 0,
