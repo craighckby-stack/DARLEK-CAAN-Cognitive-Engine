@@ -25,6 +25,27 @@ export interface LlmResult {
   latencyMs?: number;
 }
 
+interface ContentPart {
+  text: string;
+}
+
+interface ContentItem {
+  role: string;
+  parts: ContentPart[];
+}
+
+interface ChatHistoryItem {
+  role: string;
+  content: string;
+}
+
+type SdkRole = 'system' | 'assistant' | 'user';
+
+interface SdkMessage {
+  role: SdkRole;
+  content: string;
+}
+
 // === CONSTANTS & ERROR NORMALIZATION ===
 
 const ERROR_PATTERNS = {
@@ -39,13 +60,13 @@ function getErrorMessage(err: unknown): string {
 }
 
 function logProviderWarning(context: string, msg: string): void {
-  if (ERROR_PATTERNS.GEOBLOCK.some(p => msg.includes(p))) {
+  if (ERROR_PATTERNS.GEOBLOCK.some((p: string) => msg.includes(p))) {
     console.warn(`[${context}] Gemini geoblocked — falling back to offline engine.`);
-  } else if (ERROR_PATTERNS.AUTH.some(p => msg.includes(p))) {
+  } else if (ERROR_PATTERNS.AUTH.some((p: string) => msg.includes(p))) {
     console.warn(`[${context}] Gemini API key invalid/unauthorized — falling back to offline engine.`);
-  } else if (ERROR_PATTERNS.QUOTA.some(p => msg.includes(p))) {
+  } else if (ERROR_PATTERNS.QUOTA.some((p: string) => msg.includes(p))) {
     console.warn(`[${context}] Gemini quota limit reached (429) — falling back.`);
-  } else if (ERROR_PATTERNS.SDK_CONFIG.some(p => msg.includes(p))) {
+  } else if (ERROR_PATTERNS.SDK_CONFIG.some((p: string) => msg.includes(p))) {
     console.warn(`[${context}] SDK config not found — falling back to offline Dalek Brain.`);
   } else {
     console.warn(`[${context}] Warning:`, msg);
@@ -68,7 +89,7 @@ async function callGeminiPrimary(
       temperature: temperature ?? 0.6,
     });
     return { text: text || null, provider: 'Gemini', latencyMs: Date.now() - start };
-  } catch (err) {
+  } catch (err: unknown) {
     logProviderWarning('LLM', getErrorMessage(err));
     return { text: null, provider: 'Gemini', latencyMs: Date.now() - start };
   }
@@ -94,7 +115,7 @@ async function callSDK(
     });
     const text = completion.choices?.[0]?.message?.content || null;
     return { text, provider: 'SDK', latencyMs: Date.now() - start };
-  } catch (err) {
+  } catch (err: unknown) {
     logProviderWarning('LLM', getErrorMessage(err));
     return { text: null, provider: 'SDK', latencyMs: Date.now() - start };
   }
@@ -104,20 +125,20 @@ async function callSDK(
 
 async function callSDKMultiTurn(
   systemPrompt: string,
-  contents: Array<{ role: string; parts: Array<{ text: string }> }>
+  contents: ContentItem[]
 ): Promise<LlmResult> {
   const start = Date.now();
   try {
     const zai = await ZAI.create();
-    const lastUser = contents.filter(c => c.role === 'user').pop();
-    const lastAssistant = contents.filter(c => c.role === 'model' || c.role === 'assistant').pop();
-    const sdkMessages: Array<{ role: 'system' | 'assistant' | 'user'; content: string }> = [
+    const lastUser = contents.filter((c: ContentItem) => c.role === 'user').pop();
+    const lastAssistant = contents.filter((c: ContentItem) => c.role === 'model' || c.role === 'assistant').pop();
+    const sdkMessages: SdkMessage[] = [
       { role: 'system', content: systemPrompt },
     ];
-    if (lastAssistant) {
+    if (lastAssistant && lastAssistant.parts[0]) {
       sdkMessages.push({ role: 'assistant', content: lastAssistant.parts[0].text });
     }
-    if (lastUser) {
+    if (lastUser && lastUser.parts[0]) {
       sdkMessages.push({ role: 'user', content: lastUser.parts[0].text });
     }
     const completion = await zai.chat.completions.create({
@@ -126,7 +147,7 @@ async function callSDKMultiTurn(
     });
     const text = completion.choices?.[0]?.message?.content || null;
     return { text, provider: 'SDK', latencyMs: Date.now() - start };
-  } catch (err) {
+  } catch (err: unknown) {
     logProviderWarning('LLM MultiTurn', getErrorMessage(err));
     return { text: null, provider: 'SDK', latencyMs: Date.now() - start };
   }
@@ -243,7 +264,7 @@ export async function callLlm(options: LlmOptions): Promise<LlmResult> {
  */
 export async function callLlmMultiTurn(
   systemPrompt: string,
-  contents: Array<{ role: string; parts: Array<{ text: string }> }>,
+  contents: ContentItem[],
   geminiApiKey?: string,
   maxTokens?: number
 ): Promise<LlmResult> {
@@ -258,7 +279,7 @@ export async function callLlmMultiTurn(
       if (text) {
         return { text, provider: 'Gemini', latencyMs: Date.now() - start };
       }
-    } catch (err) {
+    } catch (err: unknown) {
       logProviderWarning('LLM MultiTurn', getErrorMessage(err));
     }
   }
@@ -281,7 +302,7 @@ export async function callLlmMultiTurn(
 export async function callLlmChat(
   systemPrompt: string,
   userMessage: string,
-  history: Array<{ role: string; content: string }>,
+  history: ChatHistoryItem[],
   geminiApiKey?: string
 ): Promise<LlmResult> {
   // 1. Try Gemini
@@ -293,13 +314,13 @@ export async function callLlmChat(
         temperature: 0.7,
       });
       if (text) return { text, provider: 'Gemini', latencyMs: Date.now() - start };
-    } catch (err) {
+    } catch (err: unknown) {
       logProviderWarning('LLM Chat', getErrorMessage(err));
     }
   }
 
   // 2. SDK fallback
-  const sdkMessages: Array<{ role: 'system' | 'assistant' | 'user'; content: string }> = [
+  const sdkMessages: SdkMessage[] = [
     { role: 'system', content: systemPrompt },
   ];
   
