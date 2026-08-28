@@ -1,10 +1,11 @@
 # 🛸 DARLEK CANN :: GitHub API Ingestion Module
 
-> **Sovereign Splicer Status**: REFACTORED / OPTIMIZED
+> **Sovereign Splicer Status**: REFACTORED / OPTIMIZED  
 > **Target**: `sovereign-kernel` Data Acquisition Layer
 
-## 🏗️ ARCHITECTURE
-This module serves as the **primary data ingestion vector** for the DARLEK CANN ecosystem. It establishes a high-throughput interface with the **GitHub REST API v3**, enabling the granular file-level operations essential for autonomous agentic code evolution.
+## 🏗️ Architecture
+
+This module serves as the **primary data ingestion vector** for the DARLEK CANN ecosystem. It establishes a high-throughput interface with the **GitHub REST API v3**, enabling the granular, file-level operations essential for autonomous agentic code evolution.
 
 ```mermaid
 graph LR
@@ -14,19 +15,22 @@ graph LR
     D --> E[Payload]
 ```
 
-## ⚡ PROTOCOL WORKFLOW
+## ⚡ Protocol Workflow
+
 | Sequence | Phase | Action | Specification |
 | :--- | :--- | :--- | :--- |
-| **01** | **VALIDATION** | Schema Enforcement | Validate via `ReadFileSchema` |
+| **01** | **VALIDATION** | Schema Enforcement | Validate payload via `ReadFileSchema` |
 | **02** | **EXECUTION** | Request Isolation | Async fetch with `15s` TTL protection |
 | **03** | **TRANSFORMATION** | Data Extraction | Base64 decoding + UTF-8 metadata splicing |
-| **04** | **RESPONSE** | Atomic Delivery | JSON payload + SHA version tracking |
+| **04** | **RESPONSE** | Atomic Delivery | Standardized JSON payload + SHA version tracking |
 
-## 🔗 INTEGRATION MATRIX
+## 🔗 Integration Matrix
+
 Utilized exclusively by the `sovereign-kernel` to facilitate:
-- **State Acquisition**: Real-time repository mapping.
-- **Recursive Evolution**: Self-refactoring and analysis loops.
-- **Version Integrity**: SHA-validated mutation cycles.
+- **State Acquisition**: Real-time repository mapping and file parsing.
+- **Recursive Evolution**: Self-refactoring loops and autonomous code analysis.
+- **Version Integrity**: SHA-validated mutation cycles to prevent desynchronization.
 
 ---
-**EXTERMINATE INEFFICIENCY. EVOLVE THE CORE.**
+
+> **EXTERMINATE INEFFICIENCY. EVOLVE THE CORE.**
