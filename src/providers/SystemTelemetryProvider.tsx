@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useMemo, type JSX, type ReactNode } from 'react';
+import React, { createContext, useContext, useMemo, type JSX, type ReactNode } from 'react';
 
 export interface SystemTelemetryContextType {
   readonly status: 'active';
@@ -14,7 +14,7 @@ export interface SystemTelemetryProviderProps {
 }
 
 export const SystemTelemetryProvider = ({ children }: SystemTelemetryProviderProps): JSX.Element => {
-  useEffect(() => {
+  useMemo(() => {
     try {
       console.info("[DARLEK-CANN] System Telemetry Initialized: Quantum-Ready");
     } catch (error: unknown) {
