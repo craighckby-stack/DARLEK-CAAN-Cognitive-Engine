@@ -13,7 +13,15 @@ export interface UseMutationDataResult {
   refetch: () => void;
 }
 
-export function useMutationData(sessionId: string | null | undefined, trigger?: number): UseMutationDataResult {
+interface BrainApiResponse {
+  mutations?: unknown;
+  [key: string]: unknown;
+}
+
+export function useMutationData(
+  sessionId: string | null | undefined,
+  trigger?: number
+): UseMutationDataResult {
   const [mutations, setMutations] = useState<MutationRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
@@ -38,7 +46,7 @@ export function useMutationData(sessionId: string | null | undefined, trigger?: 
     let isMounted = true;
     const controller = new AbortController();
 
-    const fetchMutations = async () => {
+    const fetchMutations = async (): Promise<void> => {
       setLoading(true);
       setError(null);
 
@@ -48,7 +56,10 @@ export function useMutationData(sessionId: string | null | undefined, trigger?: 
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ action: 'get-mutation-history', sessionId: currentSessionId }),
+          body: JSON.stringify({
+            action: 'get-mutation-history',
+            sessionId: currentSessionId,
+          }),
           signal: controller.signal,
         });
 
@@ -56,12 +67,16 @@ export function useMutationData(sessionId: string | null | undefined, trigger?: 
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const data = await response.json();
+        const data = (await response.json()) as BrainApiResponse;
 
         if (isMounted) {
-          setMutations(Array.isArray(data?.mutations) ? data.mutations : []);
+          setMutations(
+            Array.isArray(data?.mutations)
+              ? (data.mutations as MutationRecord[])
+              : []
+          );
         }
-      } catch (err) {
+      } catch (err: unknown) {
         if (isMounted && err instanceof Error && err.name !== 'AbortError') {
           setError(err);
           setMutations([]);
@@ -73,7 +88,7 @@ export function useMutationData(sessionId: string | null | undefined, trigger?: 
       }
     };
 
-    fetchMutations();
+    void fetchMutations();
 
     return () => {
       isMounted = false;
