@@ -1,37 +1,39 @@
 /**
  * DALEK CAAN CHESS ENGINE - TYPE DEFINITIONS
  * Siphoned from unitary-core, psr-governance, and darlek-cann-v3
+ * Optimized by EMG Core v49 Neural Code and Documentation Optimizer Engine
  */
 
 export type PieceType = 'p' | 'r' | 'n' | 'b' | 'q' | 'k';
 export type PieceColor = 'w' | 'b';
+export type Square = string & { readonly __brand: 'Square' };
 
 export interface ChessPiece {
-  id: string;
-  type: PieceType;
-  color: PieceColor;
-  square: string; // e.g., 'e4'
-  isResurrected?: boolean;
-  isRedeemed?: boolean;
+  readonly id: string;
+  readonly type: PieceType;
+  readonly color: PieceColor;
+  readonly square: Square;
+  readonly isResurrected?: boolean;
+  readonly isRedeemed?: boolean;
 }
 
 export interface BoardState {
-  pieces: Record<string, ChessPiece>; // Map of square to piece
-  turn: PieceColor;
-  halfMoveClock: number;
-  fullMoveNumber: number;
-  capturedPieces: {
-    w: ChessPiece[];
-    b: ChessPiece[];
+  readonly pieces: Readonly<Record<string, ChessPiece>>;
+  readonly turn: PieceColor;
+  readonly halfMoveClock: number;
+  readonly fullMoveNumber: number;
+  readonly capturedPieces: {
+    readonly w: readonly ChessPiece[];
+    readonly b: readonly ChessPiece[];
   };
 }
 
 export interface HeuristicEvaluation {
-  score: number;
-  materialScore: number;
-  positionalScore: number;
-  ethicalScore: number;
-  chaosNoise?: number;
+  readonly score: number;
+  readonly materialScore: number;
+  readonly positionalScore: number;
+  readonly ethicalScore: number;
+  readonly chaosNoise?: number;
 }
 
 export type InterventionType = 
@@ -42,75 +44,37 @@ export type InterventionType =
   | 'SACRED_REDEMPTION';
 
 export interface InterventionEvent {
-  id: string;
-  type: InterventionType;
-  actor: 'DALEK' | 'JESUS';
-  timestamp: number;
-  details: {
-    targetSquare?: string;
-    sourceSquare?: string;
-    pieceId?: string;
-    pieceType?: PieceType;
+  readonly id: string;
+  readonly type: InterventionType;
+  readonly actor: 'DALEK' | 'JESUS';
+  readonly timestamp: number;
+  readonly details: {
+    readonly targetSquare?: Square;
+    readonly sourceSquare?: Square;
+    readonly pieceId?: string;
+    readonly pieceType?: PieceType;
   };
-  isChallenged: boolean;
-  isReverted: boolean;
+  readonly isChallenged: boolean;
+  readonly isReverted: boolean;
 }
 
 export interface GovernanceMetrics {
-  securityStateEntropy: number; // Se
-  antifragilityIndex: number;   // A
-  ethicalAlignmentVector: {     // E
-    harmony: number;
-    destruction: number;
+  readonly securityStateEntropy: number;
+  readonly antifragilityIndex: number;
+  readonly ethicalAlignmentVector: {
+    readonly harmony: number;
+    readonly destruction: number;
   };
 }
 
 export interface EngineConfig {
-  dalekChaosCoefficient: number; // χ
-  jesusCommunityMultiplier: number; // γ
-  cheatProbability: number; // Default 0.25
-  miracleProbability: number; // Default 0.12
-  useLLMFallback: boolean;
+  readonly dalekChaosCoefficient: number;
+  readonly jesusCommunityMultiplier: number;
+  readonly cheatProbability: number;
+  readonly miracleProbability: number;
+  readonly useLLMFallback: boolean;
 }
 
 export interface SubscriptionTeardown {
-  unsubscribe: () => void;
+  readonly unsubscribe: () => void;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
