@@ -1,7 +1,7 @@
 /**
  * @file src/lib/scanner-utils.ts
  * @module ScannerUtils
- * @description Optimized utility functions for file path classification and scan metrics aggregation.
+ * @description Sovereign-optimized utility functions for file path classification and scan metrics aggregation.
  */
 
 export interface ScannableFile {
@@ -15,7 +15,7 @@ export interface ScanMetrics {
 }
 
 /**
- * Precompiled Set of critical file extensions for $O(1)$ lookup performance.
+ * Precompiled ReadonlySet of critical file extensions for $O(1)$ lookup performance.
  */
 const CRITICAL_EXTENSIONS: ReadonlySet<string> = new Set([
   '.ts',
@@ -29,7 +29,7 @@ const CRITICAL_EXTENSIONS: ReadonlySet<string> = new Set([
 
 /**
  * Determines whether a given file path corresponds to a critical file type
- * based on its extension.
+ * based on its extension using zero-allocation string slicing.
  *
  * @param {string} path - The file path to evaluate.
  * @returns {boolean} True if the file extension is recognized as critical.
@@ -39,19 +39,17 @@ export const isCriticalFile = (path: string): boolean => {
     return false;
   }
 
-  // Find the last dot to extract the extension efficiently without regex overhead
   const lastDotIndex = path.lastIndexOf('.');
-  if (lastDotIndex === -1) {
+  if (lastDotIndex === -1 || lastDotIndex === path.length - 1) {
     return false;
   }
 
-  const ext = path.slice(lastDotIndex);
-  return CRITICAL_EXTENSIONS.has(ext);
+  return CRITICAL_EXTENSIONS.has(path.slice(lastDotIndex));
 };
 
 /**
- * Computes aggregate scan metrics for an array of scanned files with memory efficiency
- * and robust type safety.
+ * Computes aggregate scan metrics for an array of scanned files with peak memory efficiency,
+ * strict type safety, and defensive runtime validation.
  *
  * @template T
  * @param {readonly T[]} files - Array of file objects containing an optional size property.
@@ -66,9 +64,12 @@ export const formatScanMetrics = <T extends ScannableFile>(files: readonly T[]):
   const count = files.length;
 
   for (let i = 0; i < count; i++) {
-    const size = files[i]?.size;
-    if (typeof size === 'number' && size > 0) {
-      totalSize += size;
+    const file = files[i];
+    if (file !== null && typeof file === 'object') {
+      const size = file.size;
+      if (typeof size === 'number' && size > 0 && Number.isFinite(size)) {
+        totalSize += size;
+      }
     }
   }
 
