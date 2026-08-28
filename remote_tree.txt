@@ -5,265 +5,265 @@ This document provides a comprehensive structural mapping of the repository code
 ## Project Structure Overview
 
 ```text
-.env.example
-.gitignore
-README.md
-add_governance.js
-changed_files.json
-check_github_page.js
-compare.js
-components.json
-download_changed.js
-download_changed_fast.js
-download_missing.js
-download_page.js
-eslint.config.mjs
-examples/
+.env.example                 # Environment variable template
+.gitignore                   # Git ignore patterns
+README.md                    # Project documentation
+add_governance.js            # Governance injection script
+changed_files.json           # Tracking manifest for modified files
+check_github_page.js         # GitHub Pages verification utility
+compare.js                   # Diff comparison script
+components.json              # UI component configuration
+download_changed.js          # File download utility (standard)
+download_changed_fast.js     # File download utility (optimized/parallel)
+download_missing.js          # Missing asset retrieval script
+download_page.js             # Webpage scraping utility
+eslint.config.mjs            # ESLint modern configuration
+examples/                    # Code examples and templates
   websocket/
-    frontend.tsx
-    server.ts
-fetch_engine.js
-fetch_missing.js
-fetch_readme.js
-fetch_remote_app.js
-fetch_repo.js
-fetch_siphon.js
-find_changed.js
-firebase-applet-config.json
-firebase-blueprint.json
-fix_prompt.js
-fix_prompt2.js
-fix_prompt3.js
-fix_prompt4.js
-fix_prompt5.js
-fix_prompt6.js
-fix_prompt7.js
-fix_prompt8.js
-get_git_log.js
-index.html
-metadata.json
-missing_files.json
-next-env.d.ts
-next.config.ts
-package-lock.json
-package.json
-patch.js
-patch_alignment.js
-patch_logging.js
-patch_prompt.js
-patch_prompt_json.js
-postcss.config.mjs
-prisma/
-  schema.prisma
-remote_App.tsx
-remote_blobs.json
-remote_main.tsx
-renameVars.js
-replace_random.js
-restore_repo.js
-restore_repo_fast.js
-robust_parser.js
-server.ts
-src/
-  App.tsx
-  app/
-    api/
+    frontend.tsx             # WebSocket frontend example
+    server.ts                # WebSocket backend server
+fetch_engine.js              # Engine retrieval script
+fetch_missing.js             # Asset recovery utility
+fetch_readme.js              # Documentation fetching tool
+fetch_remote_app.js          # Remote application sync utility
+fetch_repo.js                # Repository cloning/fetching utility
+fetch_siphon.js              # Data extraction script
+find_changed.js              # Git modification scanner
+firebase-applet-config.json  # Firebase applet configuration
+firebase-blueprint.json      # Firebase deployment blueprint
+fix_prompt.js                # Prompt correction utility (v1)
+fix_prompt2.js               # Prompt correction utility (v2)
+fix_prompt3.js               # Prompt correction utility (v3)
+fix_prompt4.js               # Prompt correction utility (v4)
+fix_prompt5.js               # Prompt correction utility (v5)
+fix_prompt6.js               # Prompt correction utility (v6)
+fix_prompt7.js               # Prompt correction utility (v7)
+fix_prompt8.js               # Prompt correction utility (v8)
+get_git_log.js               # Git history extraction utility
+index.html                   # HTML entry point
+metadata.json                # Project metadata definitions
+missing_files.json           # List of unresolvable/missing files
+next-env.d.ts                # Next.js TypeScript declarations
+next.config.ts               # Next.js configuration
+package-lock.json            # Dependency lockfile
+package.json                 # Project dependencies and scripts
+patch.js                     # Generic patching utility
+patch_alignment.js           # Structural alignment patcher
+patch_logging.js             # Logging enhancement patcher
+patch_prompt.js              # Prompt patching utility
+patch_prompt_json.js         # JSON-based prompt patcher
+postcss.config.mjs           # PostCSS configuration
+prisma/                      # Database ORM configuration
+  schema.prisma              # Prisma database schema
+remote_App.tsx               # Remote application root component
+remote_blobs.json            # Remote binary/blob manifest
+remote_main.tsx              # Remote application entry point
+renameVars.js                # Variable refactoring utility
+replace_random.js            # Deterministic replacement utility
+restore_repo.js              # Repository restoration script (standard)
+restore_repo_fast.js         # Repository restoration script (optimized)
+robust_parser.js             # Resilient parsing engine
+server.ts                    # Core HTTP/WebSocket server
+src/                         # Application source code
+  App.tsx                    # Main React application component
+  app/                       # Next.js App Router root
+    api/                     # Backend API endpoints
       brain/
-        route.ts
-        types.ts
+        route.ts             # Cognitive engine API route
+        types.ts             # Brain endpoint type definitions
       chat/
-        route.ts
-      evolution/
+        route.ts             # Chat interface API route
+      evolution/             # System evolution and testing routes
         analyze-impact/
-          route.ts
+          route.ts           # Mutation impact analysis
         auto-test/
-          route.ts
+          route.ts           # Automated test orchestrator
         coherence-gate/
-          route.ts
+          route.ts           # System coherence validation gate
         debate/
-          route.ts
+          route.ts           # Multi-agent debate engine
         health/
-          route.ts
+          route.ts           # Evolution subsystem health check
         orchestra/
-          route.ts
+          route.ts           # Agent orchestration controller
         propose/
-          route.ts
+          route.ts           # Evolution proposal generator
       extract-text/
-        route.ts
-      github/
+        route.ts             # Text extraction utility route
+      github/                # GitHub integration API routes
         branches/
-          route.ts
+          route.ts           # Branch management endpoint
         bulk-commit/
-          route.ts
-        create-branch/
-          route.ts
-        create-repo/
-          route.ts
-        create-system-repo/
-          route.ts
-        delete-file/
-          route.ts
-        push-enhancements/
-          route.ts
-        read-file/
-          route.ts
-        scan/
-          route.ts
-        user-repos/
-          route.ts
-        write-file/
-          route.ts
-      route.ts
+          route.ts           # Bulk commit processing
+        create-branch/       
+          route.ts           # Branch creation endpoint
+        create-repo/         
+          route.ts           # Repository creation endpoint
+        create-system-repo/  
+          route.ts           # System repository generator
+        delete-file/         
+          route.ts           # File deletion handler
+        push-enhancements/   
+          route.ts           # Enhancement push controller
+        read-file/           
+          route.ts           # File content reader
+        scan/                
+          route.ts           # Repository scanner endpoint
+        user-repos/          
+          route.ts           # User repository enumerator
+        write-file/          
+          route.ts           # File writer endpoint
+      route.ts               # Base API router handler
       setup/
         test-connection/
-          route.ts
+          route.ts           # Infrastructure connectivity test
       system/
         reboot/
-          route.ts
-    error.tsx
-    global-error.tsx
-    globals.css
-    layout.tsx
-    not-found.tsx
-    page.tsx
-  brain-firebase-runtime.ts
-  components/
-    AgentOrchestra.tsx
-    AgiCognitiveDashboard.tsx
-    ChatMessage.tsx
-    ChatPanel.tsx
-    ChessBoard.tsx
-    DalekStatusIndicator.tsx
-    DashboardPanel.tsx
-    DebateChamber.tsx
-    ErrorBoundary.tsx
-    EvolutionLog.tsx
-    HmrErrorHandler.tsx
-    MainPage.tsx
-    MutationDiffView.tsx
-    MutationHistoryPanel.tsx
-    MutationStatusIndicator.tsx
-    PageClient.tsx
-    QuickActions.tsx
-    SaturationMetrics.tsx
-    SoundEngine.ts
-    StatusBar.tsx
-    ui/
-      accordion.tsx
-      alert-dialog.tsx
-      alert.tsx
-      aspect-ratio.tsx
-      avatar.tsx
-      badge.tsx
-      breadcrumb.tsx
-      button.tsx
-      calendar.tsx
-      card.tsx
-      carousel.tsx
-      chart.tsx
-      checkbox.tsx
-      collapsible.tsx
-      command.tsx
-      context-menu.tsx
-      dialog.tsx
-      drawer.tsx
-      dropdown-menu.tsx
-      form.tsx
-      hover-card.tsx
-      input-otp.tsx
-      input.tsx
-      label.tsx
-      menubar.tsx
-      navigation-menu.tsx
-      pagination.tsx
-      popover.tsx
-      progress.tsx
-      radio-group.tsx
-      resizable.tsx
-      scroll-area.tsx
-      select.tsx
-      separator.tsx
-      sheet.tsx
-      sidebar.tsx
-      skeleton.tsx
-      slider.tsx
-      sonner.tsx
-      switch.tsx
-      table.tsx
-      tabs.tsx
-      textarea.tsx
-      toast.tsx
-      toaster.tsx
-      toggle-group.tsx
-      toggle.tsx
-      tooltip.tsx
+          route.ts           # Remote system reboot controller
+    error.tsx                # App-level error boundary
+    global-error.tsx         # Global application error boundary
+    globals.css              # Global stylesheet
+    layout.tsx               # Root application layout
+    not-found.tsx            # 404 Not Found page component
+    page.tsx                 # Root index page
+  brain-firebase-runtime.ts  # Firebase cognitive runtime binding
+  components/                # Reusable UI components
+    AgentOrchestra.tsx       # Multi-agent orchestration visualizer
+    AgiCognitiveDashboard.tsx# AGI cognitive dashboard panel
+    ChatMessage.tsx          # Chat bubble component
+    ChatPanel.tsx            # Chat interface wrapper
+    ChessBoard.tsx           # Interactive chess engine UI
+    DalekStatusIndicator.tsx # Diagnostic status widget
+    DashboardPanel.tsx       # Main dashboard layout panel
+    DebateChamber.tsx        # Multi-agent debate visualization
+    ErrorBoundary.tsx        # React error handling boundary
+    EvolutionLog.tsx         # System evolution event log
+    HmrErrorHandler.tsx      # Hot Module Replacement error interceptor
+    MainPage.tsx             # Primary dashboard view controller
+    MutationDiffView.tsx     # AST/Code mutation diff viewer
+    MutationHistoryPanel.tsx # History log of code mutations
+    MutationStatusIndicator.tsx# Live status indicator for mutations
+    PageClient.tsx           # Client-side page wrapper
+    QuickActions.tsx         # Shortcut action toolbar
+    SaturationMetrics.tsx    # System resource saturation monitor
+    SoundEngine.ts           # Audio feedback subsystem
+    StatusBar.tsx            # Application status header/footer
+    ui/                      # Design system primitive components
+      accordion.tsx          # Accordion component
+      alert-dialog.tsx       # Alert dialog component
+      alert.tsx              # Alert notification component
+      aspect-ratio.tsx       # Aspect ratio container
+      avatar.tsx             # User avatar component
+      badge.tsx              # Status badge component
+      breadcrumb.tsx         # Breadcrumb navigation
+      button.tsx             # Button component
+      calendar.tsx           # Date picker calendar
+      card.tsx               # Container card component
+      carousel.tsx           # Carousel slider component
+      chart.tsx              # Data visualization charts
+      checkbox.tsx           # Checkbox input
+      collapsible.tsx        # Collapsible content wrapper
+      command.tsx            # Command palette menu
+      context-menu.tsx       # Right-click context menu
+      dialog.tsx             # Modal dialog window
+      drawer.tsx             # Slide-out drawer component
+      dropdown-menu.tsx      # Dropdown selection menu
+      form.tsx               # Form validation wrapper
+      hover-card.tsx         # Preview hover card
+      input-otp.tsx          # One-time password input field
+      input.tsx              # Standard text input field
+      label.tsx              # Form input label
+      menubar.tsx            # Application menu bar
+      navigation-menu.tsx    # Primary navigation menu
+      pagination.tsx         # Pagination controls
+      popover.tsx            # Popover container
+      progress.tsx           # Progress bar indicator
+      radio-group.tsx        # Radio button selection group
+      resizable.tsx          # Resizable split-pane layout
+      scroll-area.tsx        # Custom scrollable viewport
+      select.tsx             # Dropdown selection input
+      separator.tsx          # Visual divider line
+      sheet.tsx              # Side sheet panel
+      sidebar.tsx            # Navigation sidebar
+      skeleton.tsx           # Loading placeholder skeleton
+      slider.tsx             # Range slider component
+      sonner.tsx             # Toast notification provider
+      switch.tsx             # Toggle switch component
+      table.tsx              # Data table component
+      tabs.tsx               # Tabbed view interface
+      textarea.tsx           # Multiline text input
+      toast.tsx              # Toast notification banner
+      toaster.tsx            # Toast notification container
+      toggle-group.tsx       # Button toggle group
+      toggle.tsx             # Single toggle button
+      tooltip.tsx            # Helper tooltip component
   core/
-    types.ts
-  hooks/
-    use-mobile.ts
-    use-toast.ts
-    useAgentOrchestra.ts
-    useMutationData.ts
-    useQuantumState.ts
-    useSystemBootstrap.ts
-    useSystemOrchestrator.ts
-    useSystemState.ts
-  index.css
-  lib/
-    LifecycleManager.ts
-    ast-diff-gate.ts
-    binaryShield.ts
-    brain.ts
-    constants.ts
-    dalek-brain.ts
-    db.ts
-    diagnostic-registry.ts
-    diagnostic-utils.ts
-    firebase.ts
-    gemini.ts
-    github-client.ts
-    github-orchestrator.ts
-    github.ts
-    llm-provider.ts
-    main-worker.ts
-    omega-bootstrap.ts
-    ragBrain.ts
-    sandbox.ts
-    scanner-utils.ts
-    structural-sanity-guard.ts
-    telemetry.ts
-    types.ts
-    utils.ts
+    types.ts                 # Core system type definitions
+  hooks/                     # Custom React hooks
+    use-mobile.ts            # Mobile viewport detection hook
+    use-toast.ts             # Toast notification trigger hook
+    useAgentOrchestra.ts     # Agent orchestration state hook
+    useMutationData.ts       # Mutation metrics state hook
+    useQuantumState.ts       # Quantum telemetry hook
+    useSystemBootstrap.ts    # System initialization hook
+    useSystemOrchestrator.ts # System orchestration hook
+    useSystemState.ts        # Global system state hook
+  index.css                  # Core stylesheet import
+  lib/                       # Utility libraries and services
+    LifecycleManager.ts      # Application lifecycle manager
+    ast-diff-gate.ts         # Abstract Syntax Tree diff validator
+    binaryShield.ts          # Binary integrity shield
+    brain.ts                 # Cognitive engine core logic
+    constants.ts             # Global application constants
+    dalek-brain.ts           # Diagnostic anomaly detector
+    db.ts                    # Database connection client
+    diagnostic-registry.ts   # Diagnostic check registry
+    diagnostic-utils.ts      # Diagnostic helper functions
+    firebase.ts              # Firebase service client
+    gemini.ts                # Google Gemini LLM integration
+    github-client.ts         # GitHub API client wrapper
+    github-orchestrator.ts   # GitHub workflow automation
+    github.ts                # GitHub core utility functions
+    llm-provider.ts          # Multi-provider LLM abstraction
+    main-worker.ts           # Background worker thread
+    omega-bootstrap.ts       # Omega core initialization routine
+    ragBrain.ts              # Retrieval-Augmented Generation brain
+    sandbox.ts               # Isolated code execution sandbox
+    scanner-utils.ts         # Codebase scanning utilities
+    structural-sanity-guard.ts# AST and file structural validator
+    telemetry.ts             # Application telemetry logger
+    types.ts                 # Library-specific type definitions
+    utils.ts                 # General helper utilities
     utils/
-      core.ts
-  main.tsx
+      core.ts                # Core utility functions
+  main.tsx                   # Main React DOM mounting script
   middleware/
-    SecurityMiddleware.ts
+    SecurityMiddleware.ts    # Request security filter middleware
   providers/
-    SystemTelemetryProvider.tsx
-  types.ts
-  types/
-    brain-runtime.d.ts
-    evolution.ts
-    kernel.d.ts
-    manifest.d.ts
-    omega-core.d.ts
-    omega.d.ts
-    orchestrator.d.ts
-    repository.ts
-    system.d.ts
+    SystemTelemetryProvider.tsx# Telemetry context provider
+  types.ts                   # Root application types
+  types/                     # TypeScript ambient declarations
+    brain-runtime.d.ts       # Cognitive runtime declarations
+    evolution.ts             # Evolution subsystem definitions
+    kernel.d.ts              # System kernel declarations
+    manifest.d.ts            # Application manifest types
+    omega-core.d.ts          # Omega core declarations
+    omega.d.ts               # Omega system definitions
+    orchestrator.d.ts        # Orchestrator definitions
+    repository.ts            # Repository data types
+    system.d.ts              # Global system type declarations
   utils/
-    agi-engine.ts
-    board-safety.ts
-    engine.ts
-    error-parser.ts
-    siphon.ts
-test-worker.ts
-tsconfig.json
+    agi-engine.ts            # AGI reasoning engine helper
+    board-safety.ts          # Board state safety validator
+    engine.ts                # Execution engine utilities
+    error-parser.ts          # Stack trace and error parser
+    siphon.ts                # Data extraction utility
+test-worker.ts               # Worker testing script
+tsconfig.json                # TypeScript compiler configuration
 types/
-  chess-engine.ts
-updateModule.js
-updateStyles.js
-update_propose.js
-vite.config.ts
+  chess-engine.ts            # Chess engine type definitions
+updateModule.js              # Module updater utility
+updateStyles.js              # Style synchronization script
+update_propose.js            # Evolution proposal update script
+vite.config.ts               # Vite bundler configuration
 ```
