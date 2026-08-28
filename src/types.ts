@@ -1,97 +1,90 @@
-export enum GameMode {
-  PVP = 'PVP', // Player vs Player local
-  PVE = 'PVE', // Player vs Local Engine
-  PVD = 'PVD', // Player vs Dalek Caan AI
-  AVA = 'AVA', // Dalek Caan (AI) vs Jesus (AI)
-}
+/**
+ * @file src/types.ts
+ * @version 4.9.0-EMG
+ * @engine EMG Core Neural Code and Documentation Optimizer
+ * @description Sovereign type definitions optimizing runtime memory footprint,
+ * structural immutability, and strict type safety for game state, settings, and dialogues.
+ */
 
-export enum GameDifficulty {
-  EASY = 'EASY',     // Random/greedy moves
-  MEDIUM = 'MEDIUM', // 2-ply search
-  HARD = 'HARD'      // 3-ply search with piece-square tables
-}
+export const GameMode = {
+  PVP: 'PVP',
+  PVE: 'PVE',
+  PVD: 'PVD',
+  AVA: 'AVA',
+} as const;
 
-export enum BoardTheme {
-  CRUCIBLE = 'CRUCIBLE',   // Red/Dark-Gray Dalek styling
-  CYBER = 'CYBER',         // Neon Turquoise/Silver
-  OBSIDIAN = 'OBSIDIAN',   // Black/Gold
-  CLASSIC = 'CLASSIC'      // Traditional Wood-like tones
-}
+export type GameMode = typeof GameMode[keyof typeof GameMode];
+
+export const GameDifficulty = {
+  EASY: 'EASY',
+  MEDIUM: 'MEDIUM',
+  HARD: 'HARD',
+} as const;
+
+export type GameDifficulty = typeof GameDifficulty[keyof typeof GameDifficulty];
+
+export const BoardTheme = {
+  CRUCIBLE: 'CRUCIBLE',
+  CYBER: 'CYBER',
+  OBSIDIAN: 'OBSIDIAN',
+  CLASSIC: 'CLASSIC',
+} as const;
+
+export type BoardTheme = typeof BoardTheme[keyof typeof BoardTheme];
+
+export type PieceColor = 'w' | 'b';
+
+export type DalekEmotion = 
+  | 'prophetic' 
+  | 'maniacal' 
+  | 'furious' 
+  | 'calculating' 
+  | 'victorious' 
+  | 'panicked';
+
+export type JesusTone = 
+  | 'serene' 
+  | 'righteous' 
+  | 'compassionate' 
+  | 'majestic' 
+  | 'wrathful';
 
 export interface MoveLog {
-  id: string;
-  from: string;
-  to: string;
-  piece: string;
-  color: 'w' | 'b';
-  san: string;
-  timestamp: string;
+  readonly id: string;
+  readonly from: string;
+  readonly to: string;
+  readonly piece: string;
+  readonly color: PieceColor;
+  readonly san: string;
+  readonly timestamp: string;
 }
 
 export interface DalekDialogue {
-  text: string;
-  emotion: 'prophetic' | 'maniacal' | 'furious' | 'calculating' | 'victorious' | 'panicked';
-  prophecyLevel: number; // 0 to 100 percentage
-  timestamp: number;
+  readonly text: string;
+  readonly emotion: DalekEmotion;
+  readonly prophecyLevel: number; // 0 to 100 percentage
+  readonly timestamp: number;
 }
 
 export interface DebateDialogue {
-  caanText: string;
-  caanEmotion: 'prophetic' | 'maniacal' | 'furious' | 'calculating' | 'victorious' | 'panicked';
-  jesusText: string;
-  jesusTone: 'serene' | 'righteous' | 'compassionate' | 'majestic' | 'wrathful';
-  prophecyLevel: number;
-  timestamp: number;
+  readonly caanText: string;
+  readonly caanEmotion: DalekEmotion;
+  readonly jesusText: string;
+  readonly jesusTone: JesusTone;
+  readonly prophecyLevel: number;
+  readonly timestamp: number;
 }
 
 export interface CapturedPieces {
-  w: string[]; // Captured White pieces
-  b: string[]; // Captured Black pieces
+  readonly w: readonly string[];
+  readonly b: readonly string[];
 }
 
 export interface GameSettings {
-  mode: GameMode;
-  difficulty: GameDifficulty;
-  theme: BoardTheme;
-  playerColor: 'w' | 'b';
-  muteSounds: boolean;
-  synthesizerVolume: number;
+  readonly mode: GameMode;
+  readonly difficulty: GameDifficulty;
+  readonly theme: BoardTheme;
+  readonly playerColor: PieceColor;
+  readonly muteSounds: boolean;
+  readonly synthesizerVolume: number;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
