@@ -1,9 +1,12 @@
 'use client';
+
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 
 interface Props {
   children: ReactNode;
+  fallback?: ReactNode;
+  onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
 
 interface State {
@@ -11,57 +14,92 @@ interface State {
   error: Error | null;
 }
 
+interface FirestoreErrorPayload {
+  operationType?: string;
+  authInfo?: unknown;
+  path?: string;
+  error?: string;
+}
+
 export class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
-    error: null
+    error: null,
   };
 
   public static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Uncaught error:', error, errorInfo);
-    // Auto-recover from chunk loading errors caused by dev updates
-    if (error?.message?.includes('Loading chunk') || error?.name === 'ChunkLoadError') {
-      const lastChunkReload = sessionStorage.getItem('last_chunk_reload');
-      const now = Date.now();
-      if (!lastChunkReload || now - parseInt(lastChunkReload, 10) > 10000) {
-        sessionStorage.setItem('last_chunk_reload', now.toString());
-        window.location.reload();
+  public componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    // Invoke external error reporter if provided
+    if (this.props.onError) {
+      try {
+        this.props.onError(error, errorInfo);
+      } catch (reporterError) {
+        console.error('Error in custom onError boundary handler:', reporterError);
+      }
+    }
+
+    console.error('Uncaught error inside Neural Boundary:', error, errorInfo);
+
+    // Auto-recover from chunk loading errors caused by dev updates or stale bundles
+    const isChunkError =
+      error?.message?.includes('Loading chunk') ||
+      error?.name === 'ChunkLoadError' ||
+      error?.message?.includes('dynamically imported module');
+
+    if (isChunkError) {
+      try {
+        const lastChunkReload = sessionStorage.getItem('last_chunk_reload');
+        const now = Date.now();
+        if (!lastChunkReload || now - parseInt(lastChunkReload, 10) > 10000) {
+          sessionStorage.setItem('last_chunk_reload', now.toString());
+          window.location.reload();
+        }
+      } catch (storageError) {
+        // sessionStorage might be restricted in private browsing modes
+        console.warn('Failed to access sessionStorage for chunk reload guard:', storageError);
       }
     }
   }
 
-  private handleReset = () => {
+  private handleReset = (): void => {
     this.setState({ hasError: false, error: null });
     window.location.reload();
   };
 
-  public render() {
+  private handleReturnHome = (): void => {
+    window.location.href = '/';
+  };
+
+  public render(): ReactNode {
     if (this.state.hasError) {
-      let errorMessage = "An unexpected error occurred.";
+      if (this.props.fallback) {
+        return this.props.fallback;
+      }
+
+      let errorMessage = 'An unexpected error occurred.';
       let isFirestoreError = false;
 
-      try {
-        if (this.state.error?.message) {
-          const parsed = JSON.parse(this.state.error.message);
-          if (parsed.operationType && parsed.authInfo) {
+      if (this.state.error?.message) {
+        try {
+          const parsed = JSON.parse(this.state.error.message) as FirestoreErrorPayload;
+          if (parsed && typeof parsed === 'object' && parsed.operationType && parsed.authInfo) {
             isFirestoreError = true;
-            errorMessage = `Firestore ${parsed.operationType.toUpperCase()} error at path: ${parsed.path || 'unknown'}. ${parsed.error}`;
+            errorMessage = `Firestore ${parsed.operationType.toUpperCase()} error at path: ${parsed.path || 'unknown'}. ${parsed.error || 'Unknown database exception'}`;
           }
+        } catch {
+          errorMessage = this.state.error.message;
         }
-      } catch (e) {
-        errorMessage = this.state.error?.message || errorMessage;
       }
 
       return (
-        <div className="min-h-screen bg-black flex items-center justify-center p-6 font-mono">
+        <div className="min-h-screen bg-black flex items-center justify-center p-6 font-mono select-none">
           <div className="max-w-md w-full border border-red-900/30 bg-[#0A0000] p-8 rounded-lg shadow-2xl relative overflow-hidden">
-            {/* Glitch Effect Background */}
+            {/* Glitch Effect Background Pattern */}
             <div className="absolute inset-0 opacity-5 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
-            
+
             <div className="relative z-10">
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 bg-red-950/50 rounded border border-red-900/50 animate-pulse">
@@ -75,7 +113,7 @@ export class ErrorBoundary extends Component<Props, State> {
                   <div className="font-bold mb-1 text-red-500 uppercase tracking-widest text-[8px]">Synaptic Error Signature:</div>
                   {errorMessage}
                 </div>
-                
+
                 {isFirestoreError && (
                   <p className="text-[9px] text-red-600/60 italic uppercase tracking-tight">
                     CRITICAL: Security rules or authentication state preventing neural synchronization.
@@ -85,15 +123,17 @@ export class ErrorBoundary extends Component<Props, State> {
 
               <div className="grid grid-cols-2 gap-3">
                 <button
+                  type="button"
                   onClick={this.handleReset}
-                  className="flex items-center justify-center gap-2 p-3 bg-red-950/20 border border-red-900/50 text-red-500 hover:bg-red-900/30 transition-all rounded text-[10px] font-bold uppercase tracking-widest"
+                  className="flex items-center justify-center gap-2 p-3 bg-red-950/20 border border-red-900/50 text-red-500 hover:bg-red-900/30 transition-all rounded text-[10px] font-bold uppercase tracking-widest cursor-pointer"
                 >
                   <RefreshCw className="w-3 h-3" />
                   Reboot System
                 </button>
                 <button
-                  onClick={() => window.location.href = '/'}
-                  className="flex items-center justify-center gap-2 p-3 bg-[#111] border border-[#222] text-gray-500 hover:text-white transition-all rounded text-[10px] font-bold uppercase tracking-widest"
+                  type="button"
+                  onClick={this.handleReturnHome}
+                  className="flex items-center justify-center gap-2 p-3 bg-[#111] border border-[#222] text-gray-500 hover:text-white transition-all rounded text-[10px] font-bold uppercase tracking-widest cursor-pointer"
                 >
                   <Home className="w-3 h-3" />
                   Return Home
