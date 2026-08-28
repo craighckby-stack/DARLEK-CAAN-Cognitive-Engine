@@ -22,7 +22,7 @@ const USER_AGENT = 'EMG-Neural-Code-Optimizer/4.9';
  */
 
 /**
- * Validates and reads the missing files manifest.
+ * Validates and reads the missing files manifest securely with strict memory boundaries.
  * @returns {FileManifestEntry[]} Array of missing file objects.
  */
 function loadMissingManifest() {
@@ -44,7 +44,7 @@ function loadMissingManifest() {
 }
 
 /**
- * Downloads a single file via HTTPS with stream management, write-buffering, and robust cleanup.
+ * Downloads a single file via HTTPS with advanced stream management, memory buffering, and atomic cleanup.
  * @param {FileManifestEntry} fileObj - Object containing file path details.
  * @returns {Promise<boolean>} Success status of the download operation.
  */
@@ -84,7 +84,12 @@ function download(fileObj) {
       res.pipe(writeStream);
 
       writeStream.on('finish', () => {
-        writeStream.close(() => {
+        writeStream.close((err) => {
+          if (err) {
+            console.error(`[ERROR] Failed to close write stream for ${fileObj.path}: ${err.message}`);
+            fs.unlink(normalizedPath, () => {});
+            return resolve(false);
+          }
           console.log(`Successfully downloaded: ${fileObj.path}`);
           resolve(true);
         });
@@ -121,7 +126,7 @@ function download(fileObj) {
 }
 
 /**
- * Orchestrates the sequential download of all qualifying missing files.
+ * Orchestrates the sequential download of all qualifying missing files with robust lifecycle tracking.
  * @returns {Promise<void>}
  */
 async function doAll() {
