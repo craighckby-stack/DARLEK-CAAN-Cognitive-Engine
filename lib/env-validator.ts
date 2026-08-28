@@ -46,7 +46,7 @@ export class EnvironmentValidator {
 
   private validate(): SystemEnvironmentConfig {
     const nodeEnv = (process.env.NODE_ENV ?? 'development') as SystemEnvironmentConfig['NODE_ENV'];
-    if (!['development', 'production', 'test'].includes(nodeEnv)) {
+    if (nodeEnv !== 'development' && nodeEnv !== 'production' && nodeEnv !== 'test') {
       throw new Error(`Invalid NODE_ENV configuration: "${nodeEnv}". Allowed values: development, production, test.`);
     }
 
@@ -59,23 +59,23 @@ export class EnvironmentValidator {
     const memoryDir = process.env.MEMORY_DIR ?? './memory';
 
     const rawConsensus = process.env.CONSENSUS_WEIGHT_THRESHOLD;
-    const consensusWeight = rawConsensus !== undefined ? parseFloat(rawConsensus) : 0.75;
+    const consensusWeight = rawConsensus !== undefined ? Number(rawConsensus) : 0.75;
     const validConsensus = Number.isNaN(consensusWeight) ? 0.75 : consensusWeight;
 
     const sandboxIsolation = (process.env.SANDBOX_ISOLATION_LEVEL ?? 'zero-leak') as SystemEnvironmentConfig['SANDBOX_ISOLATION_LEVEL'];
-    if (!['strict', 'permissive', 'zero-leak'].includes(sandboxIsolation)) {
+    if (sandboxIsolation !== 'strict' && sandboxIsolation !== 'permissive' && sandboxIsolation !== 'zero-leak') {
       throw new Error(`Invalid SANDBOX_ISOLATION_LEVEL configuration: "${sandboxIsolation}". Allowed values: strict, permissive, zero-leak.`);
     }
 
     const diagnosticsEnabled = process.env.DIAGNOSTICS_ENABLED !== 'false';
 
     const logLevel = (process.env.LOG_LEVEL ?? 'info') as SystemEnvironmentConfig['LOG_LEVEL'];
-    if (!['debug', 'info', 'warn', 'error'].includes(logLevel)) {
+    if (logLevel !== 'debug' && logLevel !== 'info' && logLevel !== 'warn' && logLevel !== 'error') {
       throw new Error(`Invalid LOG_LEVEL configuration: "${logLevel}". Allowed values: debug, info, warn, error.`);
     }
 
     const rawPort = process.env.PORT;
-    const port = rawPort !== undefined ? parseInt(rawPort, 10) : 3000;
+    const port = rawPort !== undefined ? Number.parseInt(rawPort, 10) : 3000;
     const validPort = Number.isNaN(port) ? 3000 : port;
 
     return {
