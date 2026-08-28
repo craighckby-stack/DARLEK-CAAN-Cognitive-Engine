@@ -6,42 +6,46 @@
 # Version: 2.1.2-DIAGNOSTIC-ENFORCED
 -->
 
-## 🧩 Description & Context
+## ⚡ Executive Summary
 
-Provide a comprehensive overview of the proposed code mutation. Detail how this change integrates into the core system architecture and enumerate all affected modules.
+| Attribute | Summary Details |
+| :--- | :--- |
+| **PR Classification** | `[ Fix | Feature | Breaking | Sandbox | Telemetry ]` |
+| **Affected Subsystems** | `[ Subsystem / Module Names ]` |
+| **Related Issues** | Fixes #<!-- Insert issue number --> |
+| **Compliance Status** | `[ ] Zero-Leak Sandbox` \| `[ ] DCW Verified` \| `[ ] Diagnostic Registered` |
+
+---
+
+## 📑 Table of Contents
+- [1. Description \& Context](#1-description--context)
+- [2. Type of Change](#2-type-of-change)
+- [3. Architectural Compliance Checklist](#3-architectural-compliance-checklist)
+  - [3.1 Zero-Leak Sandbox Compliance](#31-zero-leak-sandbox-compliance)
+  - [3.2 Dynamic Consensus Weighting (DCW)](#32-dynamic-consensus-weighting-dcw)
+  - [3.3 Diagnostic Engine Integration](#33-diagnostic-engine-integration)
+- [4. Verification \& Testing](#4-verification--testing)
+  - [4.1 Automated Quality Checks](#41-automated-quality-checks)
+  - [4.2 Diagnostic Telemetry Output](#42-diagnostic-telemetry-output)
+
+---
+
+## 1. Description & Context
+
+> **Overview:** Provide a concise overview of proposed code mutations, core architecture integration, and affected modules.
+
+### Scope Breakdown
+- **Mutation Overview:** 
+- **Architectural Integration:** 
+- **Affected Modules:** 
 
 **Related Issue(s):** Fixes #<!-- Insert issue number -->
 
 ---
 
-## 🛡️ Architectural Compliance Checklist
+## 2. Type of Change
 
-This repository enforces strict architectural guarantees. Submissions failing any of these checks will be automatically rejected by the CI Gatekeeper.
-
-### 1. Zero-Leak Sandbox Compliance
-- [ ] **Isolation:** Changes do not introduce global state mutations or unhandled memory allocations.
-- [ ] **Teardown:** All event listeners, stream subscriptions, and timers are explicitly registered for cleanup.
-- [ ] **Memory Management:** Cache layers utilize `WeakMap` or `WeakSet` primitives to allow non-blocking garbage collection.
-- [ ] **Telemetry:** Verified memory usage stability using the `DiagnosticEngine`.
-
-### 2. Dynamic Consensus Weighting (DCW)
-- [ ] **Logic Mutation:** This PR modifies agent decision-making algorithms or consensus logic.
-  > *If checked, detail the weight calculation algorithm and validation strategy below:*
-  ```text
-  [Provide weight calculation algorithm details and validation methodology]
-  ```
-- [ ] **Liveness:** Verified that agent weight mutations do not induce consensus deadlocks, livelocks, or resource starvation.
-
-### 3. Diagnostic Engine Integration
-- [ ] **Registry:** New modules and components are registered in `diagnostic_registry.py` (or language-equivalent registry).
-- [ ] **Interface:** Implemented the `DiagnosticResult` interface across all newly exported functions.
-- [ ] **Local Validation:** Executed the local diagnostic suite (`npm run diag` or `python diagnostic_engine.py`).
-
----
-
-## 🛠️ Type of Change
-
-Select all applicable classifications:
+*Select all applicable classifications:*
 
 - [ ] **CRITICAL BUG FIX:** Non-breaking change fixing a system-level regression.
 - [ ] **EVOLUTIONARY FEATURE:** Non-breaking change adding high-value functionality.
@@ -51,17 +55,41 @@ Select all applicable classifications:
 
 ---
 
-## 🧪 Verification & Testing
+## 3. Architectural Compliance Checklist
 
-### Automated Quality Checks
+> ⚠️ Submissions failing any of these checks will be automatically rejected by the CI Gatekeeper.
+
+### 3.1 Zero-Leak Sandbox Compliance
+- [ ] **Isolation:** Changes do not introduce global state mutations or unhandled memory allocations.
+- [ ] **Teardown:** All event listeners, stream subscriptions, and timers are explicitly registered for cleanup.
+- [ ] **Memory Management:** Cache layers utilize `WeakMap` or `WeakSet` primitives to allow non-blocking garbage collection.
+- [ ] **Telemetry:** Verified memory usage stability using the `DiagnosticEngine`.
+
+### 3.2 Dynamic Consensus Weighting (DCW)
+- [ ] **Logic Mutation:** This PR modifies agent decision-making algorithms or consensus logic.
+  > *If checked, detail the weight calculation algorithm and validation strategy below:*
+  ```text
+  [Provide weight calculation algorithm details and validation methodology]
+  ```
+- [ ] **Liveness:** Verified that agent weight mutations do not induce consensus deadlocks, livelocks, or resource starvation.
+
+### 3.3 Diagnostic Engine Integration
+- [ ] **Registry:** New modules and components are registered in `diagnostic_registry.py` (or language-equivalent registry).
+- [ ] **Interface:** Implemented the `DiagnosticResult` interface across all newly exported functions.
+- [ ] **Local Validation:** Executed the local diagnostic suite (`npm run diag` or `python diagnostic_engine.py`).
+
+---
+
+## 4. Verification & Testing
+
+### 4.1 Automated Quality Checks
 - [ ] **Linting & Formatting:** Code strictly adheres to repository standards (`npm run lint` / `ruff check`).
 - [ ] **Unit Tests:** Included comprehensive tests proving feature correctness and edge-case handling.
 - [ ] **Integration:** All unit and integration tests pass locally (`npm run test` / `pytest`).
 
-### 📊 Diagnostic Telemetry Output
+### 4.2 Diagnostic Telemetry Output
 
-Paste the console output from the `run_system_diagnostics()` execution below.  
-*Note: Submissions returning a `CRITICAL_FAILURE` status will not be accepted for review.*
+> ℹ️ Paste console output from `run_system_diagnostics()`. *Submissions returning a `CRITICAL_FAILURE` status will not be accepted for review.*
 
 ```json
 {
