@@ -12,15 +12,16 @@ export interface FolderScanFileResult {
 
 export function useFolderScanner() {
   const [results, setResults] = useState<FolderScanFileResult[]>([]);
-  const [isScanning, setIsScanning] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [currentFile, setCurrentFile] = useState('');
-  const [statusMessage, setStatusMessage] = useState('');
-  const [filesScanned, setFilesScanned] = useState(0);
-  const [filesSkipped, setFilesSkipped] = useState(0);
-  const [scanDuration, setScanDuration] = useState(0);
+  const [isScanning, setIsScanning] = useState<boolean>(false);
+  const [progress, setProgress] = useState<number>(0);
+  const [currentFile, setCurrentFile] = useState<string>('');
+  const [statusMessage, setStatusMessage] = useState<string>('');
+  const [filesScanned, setFilesScanned] = useState<number>(0);
+  const [filesSkipped, setFilesSkipped] = useState<number>(0);
+  const [scanDuration, setScanDuration] = useState<number>(0);
+
   const startTime = useRef<number>(0);
-  const timerRef = useRef<any>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
   const abortController = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -30,14 +31,16 @@ export function useFolderScanner() {
           setScanDuration(Math.floor((Date.now() - startTime.current) / 1000));
         }
       }, 500);
-    } else {
+    } else if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
+    return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
-    }
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [isScanning]);
 
@@ -49,7 +52,7 @@ export function useFolderScanner() {
     setStatusMessage('Scan aborted by user.');
   }, []);
 
-  const scanFileList = useCallback(async (fileList: File[]) => {
+  const scanFileList = useCallback(async (fileList: File[]): Promise<void> => {
     setIsScanning(true);
     setResults([]);
     setProgress(0);
@@ -72,14 +75,7 @@ export function useFolderScanner() {
       const relPath = file.webkitRelativePath || file.name;
       setCurrentFile(relPath);
 
-      if (isSkippableFile(relPath)) {
-        skipped++;
-        setFilesSkipped(skipped);
-        setProgress(Math.round(((i + 1) / fileList.length) * 100));
-        continue;
-      }
-
-      if (file.size > MAX_SIZE) {
+      if (isSkippableFile(relPath) || file.size > MAX_SIZE) {
         skipped++;
         setFilesSkipped(skipped);
         setProgress(Math.round(((i + 1) / fileList.length) * 100));
@@ -88,10 +84,12 @@ export function useFolderScanner() {
 
       try {
         const text = await file.text();
-        // Check for binary content (null bytes)
+        
+        // Check for binary content (null bytes within first 1000 chars)
         if (text.slice(0, 1000).includes('\0')) {
           skipped++;
           setFilesSkipped(skipped);
+          setProgress(Math.round(((i + 1) / fileList.length) * 100));
           continue;
         }
 
@@ -116,28 +114,32 @@ export function useFolderScanner() {
       }
 
       setProgress(Math.round(((i + 1) / fileList.length) * 100));
-      // Give UI loop a breather every 20 files
+
+      // Yield execution thread every 20 iterations to prevent UI freezing
       if (i % 20 === 0) {
-        await new Promise((r) => setTimeout(r, 0));
+        await new Promise<void>((resolve) => setTimeout(resolve, 0));
       }
     }
 
     setIsScanning(false);
-    setStatusMessage(`Scan complete. Found ${newResults.reduce((acc, r) => acc + r.findings.length, 0)} secrets across ${newResults.length} files.`);
+    const totalFindings = newResults.reduce((acc, r) => acc + r.findings.length, 0);
+    setStatusMessage(`Scan complete. Found ${totalFindings} secrets across ${newResults.length} files.`);
   }, []);
 
-  const downloadSanitizedZip = useCallback(async () => {
+  const downloadSanitizedZip = useCallback(async (): Promise<void> => {
     if (results.length === 0) return;
     const zip = new JSZip();
-    results.forEach((res) => {
+    for (const res of results) {
       zip.file(res.file, res.sanitized);
-    });
+    }
     const blob = await zip.generateAsync({ type: 'blob' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `sanitized-project-${Date.now()}.zip`;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }, [results]);
 
