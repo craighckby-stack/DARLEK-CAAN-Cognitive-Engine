@@ -16,30 +16,22 @@ export type DrawerFooterProps = React.ComponentProps<"div">
 export type DrawerTitleProps = React.ComponentProps<typeof DrawerPrimitive.Title>
 export type DrawerDescriptionProps = React.ComponentProps<typeof DrawerPrimitive.Description>
 
-const Drawer = React.memo(function Drawer({
-  ...props
-}: DrawerProps) {
+const Drawer = React.memo(function Drawer(props: DrawerProps) {
   return <DrawerPrimitive.Root data-slot="drawer" {...props} />
 })
 Drawer.displayName = "Drawer"
 
-const DrawerTrigger = React.memo(function DrawerTrigger({
-  ...props
-}: DrawerTriggerProps) {
+const DrawerTrigger = React.memo(function DrawerTrigger(props: DrawerTriggerProps) {
   return <DrawerPrimitive.Trigger data-slot="drawer-trigger" {...props} />
 })
 DrawerTrigger.displayName = "DrawerTrigger"
 
-const DrawerPortal = React.memo(function DrawerPortal({
-  ...props
-}: DrawerPortalProps) {
+const DrawerPortal = React.memo(function DrawerPortal(props: DrawerPortalProps) {
   return <DrawerPrimitive.Portal data-slot="drawer-portal" {...props} />
 })
 DrawerPortal.displayName = "DrawerPortal"
 
-const DrawerClose = React.memo(function DrawerClose({
-  ...props
-}: DrawerCloseProps) {
+const DrawerClose = React.memo(function DrawerClose(props: DrawerCloseProps) {
   return <DrawerPrimitive.Close data-slot="drawer-close" {...props} />
 })
 DrawerClose.displayName = "DrawerClose"
