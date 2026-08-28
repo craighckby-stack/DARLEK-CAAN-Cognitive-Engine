@@ -1,6 +1,7 @@
 # 🛡️ DARLEK CANN v3.0: Auto-Test Runner
 
 ## 🦾 Core Objective
+
 The **Auto-Test Runner** functions as the primary **Coherence Gate**, enforcing strict structural integrity, security compliance, and architectural alignment across all automated code mutations.
 
 ---
