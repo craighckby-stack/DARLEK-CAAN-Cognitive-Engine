@@ -6,7 +6,17 @@
 
 export type PieceType = 'p' | 'r' | 'n' | 'b' | 'q' | 'k';
 export type PieceColor = 'w' | 'b';
-export type Square = string & { readonly __brand: 'Square' };
+
+// Brand type utilizing unique symbol for absolute structural nominal typing safety
+declare const SquareBrand: unique symbol;
+export type Square = string & { readonly [SquareBrand]: 'Square' };
+
+/**
+ * Type guard to validate whether a given string strictly conforms to the Square branding contract.
+ */
+export function isValidSquare(value: string): value is Square {
+  return /^[a-h][1-8]$/.test(value);
+}
 
 export interface ChessPiece {
   readonly id: string;
