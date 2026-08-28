@@ -1,23 +1,27 @@
 # SaturationMetrics Component Architecture
 
 ## Overview
-The `SaturationMetrics` component is an integral module of the `unitary-core` diagnostic suite, designed to monitor real-time cognitive load and structural integrity across the agent swarm.
+The `SaturationMetrics` component is a core telemetry module within the `unitary-core` diagnostic suite. It is engineered to monitor real-time cognitive load, structural integrity, and operational health across distributed agent swarms.
 
 ## Integration & Architecture
-- **Inputs**: Consumes the `SaturationMetrics` data interface imported from `@/lib/types`.
-- **Visuals**: Styled using `Tailwind CSS` alongside `Lucide-React` icons to deliver high-contrast, low-latency UI feedback.
-- **Logic**: Implements memoized state derivation patterns to prevent unnecessary re-renders during high-frequency telemetry updates.
+- **Inputs**: Consumes the strongly typed `SaturationMetrics` interface imported from `@/lib/types`.
+- **Styling**: Utilizes `Tailwind CSS` for performant layout design alongside `Lucide-React` iconography to ensure high-contrast, low-latency visual feedback.
+- **Performance**: Implements optimized memoization patterns (`useMemo`, `useCallback`) to prevent redundant re-renders during high-frequency telemetry ingestion streams.
 
 ## Operational Thresholds
-- **Structural Change**: Max threshold `5.0` (Warning: `3.5`, Critical: `4.5`)
-- **Semantic Saturation**: Max threshold `0.35` (Warning: `0.25`, Critical: `0.32`)
-- **Identity Preservation**: Inverted logic model where lower numerical values represent degraded operational states.
+The component evaluates telemetry against the following standardized parameters:
+- **Structural Change**: Maximum threshold `5.0` (Warning: `3.5`, Critical: `4.5`)
+- **Semantic Saturation**: Maximum threshold `0.35` (Warning: `0.25`, Critical: `32` / `0.32`)
+- **Identity Preservation**: Evaluated via an inverted logic model where descending numerical values directly correlate with degraded operational states.
 
+### Code Implementation Example
 ```typescript
-// Example telemetry consumption pattern
 import { SaturationMetrics as ISaturationMetrics } from '@/lib/types';
 
-interface SaturationProps {
+export interface SaturationProps {
+  /** Real-time telemetry data ingested from the agent swarm core */
   metrics: ISaturationMetrics;
+  /** Optional refresh cadence override in milliseconds */
+  refreshRate?: number;
 }
 ```
