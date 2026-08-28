@@ -1,11 +1,11 @@
-# Public Assets Directory
+# Public Assets Directory (`public/`)
 
-This directory is designated for storing public-facing static assets—such as images, fonts, icons, and media files—that are served directly to the client without processing by the asset bundler.
+The `public/` directory is designated for storing public-facing static assets—such as images, fonts, icons, and media files—that are served directly to the client without processing or transformation by the core asset bundler.
 
 ---
 
 ## Guidelines for Usage
 
-- **File Organization**: Keep assets properly categorized in subdirectories (e.g., `/images`, `/icons`) as the project scales.
-- **Naming Conventions**: Use lowercase letters, hyphens instead of spaces, and descriptive names for all asset files (e.g., `company-logo.svg`).
-- **Optimization**: Ensure all images and media files are compressed and appropriately sized before committing them to this directory to maintain optimal application performance.
+- **File Organization**: Keep assets properly categorized in descriptive subdirectories (e.g., `/images`, `/icons`, `/fonts`) as the project scales to maintain a clean workspace.
+- **Naming Conventions**: Use lowercase letters, kebab-case (hyphens instead of spaces), and descriptive identifiers for all asset files (e.g., `company-logo.svg`, `hero-background.webp`).
+- **Performance Optimization**: Ensure all rasterized images, vector graphics, and media files are compressed and appropriately sized prior to committing them to this directory to guarantee optimal application performance and fast client-side loading times.
