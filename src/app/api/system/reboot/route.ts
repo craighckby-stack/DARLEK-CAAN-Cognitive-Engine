@@ -3,8 +3,10 @@ import { promises as fs } from 'fs';
 import { existsSync } from 'fs';
 import path from 'path';
 import { db } from '@/lib/db';
+import { safeReqJson } from '@/lib/safe-json';
 
 export const maxDuration = 120;
+export const dynamic = 'force-dynamic';
 
 // ── SYSTEM REBOOT ──────────────────────────────────────────────────
 // Pulls enhanced files from GitHub back to the local filesystem.
@@ -19,17 +21,58 @@ interface RebootFileResult {
   error?: string;
 }
 
-import { safeReqJson } from '@/lib/safe-json';
+interface RebootRequestBody {
+  token?: string;
+  owner?: string;
+  repo?: string;
+  branch?: string;
+  sessionId?: string;
+}
 
-export const dynamic = 'force-dynamic';
+interface GitHubTreeItem {
+  type: string;
+  path: string;
+}
 
-export async function GET() {
+interface GitHubTreeResponse {
+  tree?: GitHubTreeItem[];
+}
+
+interface GitHubContentResponse {
+  encoding?: string;
+  content?: string;
+}
+
+const ALLOWED_ROOT_FILES = new Set([
+  'package.json',
+  'next.config.ts',
+  'next.config.js',
+  'next.config.mjs',
+  'tsconfig.json',
+  'tailwind.config.ts',
+  'tailwind.config.js',
+  'postcss.config.js',
+  'postcss.config.mjs',
+  '.eslintrc.json',
+  '.eslintrc.js',
+]);
+
+const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.css', '.json', '.html']);
+
+function isAllowedFile(filePath: string): boolean {
+  if (filePath.startsWith('src/') || filePath.startsWith('public/')) {
+    return true;
+  }
+  return ALLOWED_ROOT_FILES.has(filePath);
+}
+
+export async function GET(): Promise<NextResponse> {
   return NextResponse.json({ status: 'online', service: 'SYSTEM_REBOOT_API' });
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
-    const body = await safeReqJson(req, {});
+    const body = (await safeReqJson(req, {})) as RebootRequestBody;
     const { token, owner, repo, branch, sessionId } = body;
 
     if (!token || !owner || !repo || !branch) {
@@ -52,7 +95,7 @@ export async function POST(req: NextRequest) {
           orderBy: { createdAt: 'desc' },
           select: { filePath: true },
         });
-        mutatedFiles = mutations.map(m => m.filePath);
+        mutatedFiles = mutations.map((m: { filePath: string }) => m.filePath);
       } catch {
         // BRAIN DB may not be available — fall back to scanning the repo
       }
@@ -69,16 +112,27 @@ export async function POST(req: NextRequest) {
       });
 
       if (treeRes.ok) {
-        const treeData = await treeRes.json();
-        const sourceExtensions = ['.ts', '.tsx', '.js', '.jsx', '.css', '.json', '.html'];
+        const treeData = (await treeRes.json()) as GitHubTreeResponse;
         const sourceFiles = (treeData.tree || [])
-          .filter((item: { type: string; path: string }) => {
+          .filter((item: GitHubTreeItem) => {
             if (item.type !== 'blob') return false;
-            if (item.path.includes('node_modules/') || item.path.includes('.next/') || item.path.includes('.git/')) return false;
-            const ext = '.' + item.path.split('.').pop()?.toLowerCase();
-            return sourceExtensions.includes(ext) || ['next.config', 'package.json', 'tsconfig.json', 'tailwind.config', 'postcss.config', '.eslintrc'].some(k => item.path === k || item.path.startsWith(k + '.'));
+            if (
+              item.path.includes('node_modules/') ||
+              item.path.includes('.next/') ||
+              item.path.includes('.git/')
+            ) {
+              return false;
+            }
+            const ext = '.' + (item.path.split('.').pop()?.toLowerCase() || '');
+            const isSrcExt = SOURCE_EXTENSIONS.has(ext);
+            const isConfigOrRoot =
+              isSrcExt ||
+              ['next.config', 'package.json', 'tsconfig.json', 'tailwind.config', 'postcss.config', '.eslintrc'].some(
+                (k) => item.path === k || item.path.startsWith(k + '.')
+              );
+            return isConfigOrRoot;
           })
-          .map((item: { path: string }) => item.path);
+          .map((item: GitHubTreeItem) => item.path);
         mutatedFiles = sourceFiles;
       }
     }
@@ -108,14 +162,15 @@ export async function POST(req: NextRequest) {
     for (let i = 0; i < mutatedFiles.length; i++) {
       const filePath = mutatedFiles[i];
 
-      if (!filePath.startsWith('src/') && !filePath.startsWith('public/') &&
-          !['package.json', 'next.config.ts', 'next.config.js', 'next.config.mjs', 'tsconfig.json', 'tailwind.config.ts', 'tailwind.config.js', 'postcss.config.js', 'postcss.config.mjs', '.eslintrc.json', '.eslintrc.js'].includes(filePath)) {
+      if (!isAllowedFile(filePath)) {
         results.push({ file: filePath, status: 'skipped' });
         continue;
       }
 
       try {
-        if (i > 0) await new Promise(r => setTimeout(r, rateDelay));
+        if (i > 0) {
+          await new Promise((r) => setTimeout(r, rateDelay));
+        }
 
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 8000);
@@ -137,7 +192,7 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
-        const fileData = await fileRes.json();
+        const fileData = (await fileRes.json()) as GitHubContentResponse;
         if (fileData.encoding !== 'base64' || !fileData.content) {
           results.push({ file: filePath, status: 'skipped', error: 'Binary or empty file' });
           continue;
@@ -165,23 +220,24 @@ export async function POST(req: NextRequest) {
         updated++;
 
         results.push({ file: filePath, status: 'updated' });
-      } catch (err) {
+      } catch (err: unknown) {
         const errMsg = err instanceof Error ? err.message : 'Unknown error';
         results.push({ file: filePath, status: 'error', error: errMsg });
         failed++;
       }
     }
 
+    const skippedCount = results.filter((r) => r.status === 'skipped').length;
     return NextResponse.json({
       success: true,
-      message: `Reboot complete. ${updated} files updated, ${results.filter(r => r.status === 'skipped').length} skipped, ${failed} failed.`,
+      message: `Reboot complete. ${updated} files updated, ${skippedCount} skipped, ${failed} failed.`,
       results,
       total: mutatedFiles.length,
       updated,
       failed,
       backupDir: `.darleK-backups/pre-reboot-${timestamp}`,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Reboot error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
