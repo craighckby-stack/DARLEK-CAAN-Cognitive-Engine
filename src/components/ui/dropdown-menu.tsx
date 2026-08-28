@@ -32,6 +32,8 @@ const DropdownMenu = React.memo(
   }
 )
 
+DropdownMenu.displayName = "DropdownMenu"
+
 const DropdownMenuPortal = React.memo(
   function DropdownMenuPortal({
     ...props
@@ -41,6 +43,8 @@ const DropdownMenuPortal = React.memo(
     )
   }
 )
+
+DropdownMenuPortal.displayName = "DropdownMenuPortal"
 
 const DropdownMenuTrigger = React.memo(
   function DropdownMenuTrigger({
@@ -54,6 +58,8 @@ const DropdownMenuTrigger = React.memo(
     )
   }
 )
+
+DropdownMenuTrigger.displayName = "DropdownMenuTrigger"
 
 const DropdownMenuContent = React.memo(
   function DropdownMenuContent({
@@ -77,6 +83,8 @@ const DropdownMenuContent = React.memo(
   }
 )
 
+DropdownMenuContent.displayName = "DropdownMenuContent"
+
 const DropdownMenuGroup = React.memo(
   function DropdownMenuGroup({
     ...props
@@ -86,6 +94,8 @@ const DropdownMenuGroup = React.memo(
     )
   }
 )
+
+DropdownMenuGroup.displayName = "DropdownMenuGroup"
 
 const DropdownMenuItem = React.memo(
   function DropdownMenuItem({
@@ -108,6 +118,8 @@ const DropdownMenuItem = React.memo(
     )
   }
 )
+
+DropdownMenuItem.displayName = "DropdownMenuItem"
 
 const DropdownMenuCheckboxItem = React.memo(
   function DropdownMenuCheckboxItem({
@@ -137,6 +149,8 @@ const DropdownMenuCheckboxItem = React.memo(
   }
 )
 
+DropdownMenuCheckboxItem.displayName = "DropdownMenuCheckboxItem"
+
 const DropdownMenuRadioGroup = React.memo(
   function DropdownMenuRadioGroup({
     ...props
@@ -149,6 +163,8 @@ const DropdownMenuRadioGroup = React.memo(
     )
   }
 )
+
+DropdownMenuRadioGroup.displayName = "DropdownMenuRadioGroup"
 
 const DropdownMenuRadioItem = React.memo(
   function DropdownMenuRadioItem({
@@ -176,6 +192,8 @@ const DropdownMenuRadioItem = React.memo(
   }
 )
 
+DropdownMenuRadioItem.displayName = "DropdownMenuRadioItem"
+
 const DropdownMenuLabel = React.memo(
   function DropdownMenuLabel({
     className,
@@ -196,6 +214,8 @@ const DropdownMenuLabel = React.memo(
   }
 )
 
+DropdownMenuLabel.displayName = "DropdownMenuLabel"
+
 const DropdownMenuSeparator = React.memo(
   function DropdownMenuSeparator({
     className,
@@ -210,6 +230,8 @@ const DropdownMenuSeparator = React.memo(
     )
   }
 )
+
+DropdownMenuSeparator.displayName = "DropdownMenuSeparator"
 
 const DropdownMenuShortcut = React.memo(
   function DropdownMenuShortcut({
@@ -229,6 +251,8 @@ const DropdownMenuShortcut = React.memo(
   }
 )
 
+DropdownMenuShortcut.displayName = "DropdownMenuShortcut"
+
 const DropdownMenuSub = React.memo(
   function DropdownMenuSub({
     ...props
@@ -236,6 +260,8 @@ const DropdownMenuSub = React.memo(
     return <DropdownMenuPrimitive.Sub data-slot="dropdown-menu-sub" {...props} />
   }
 )
+
+DropdownMenuSub.displayName = "DropdownMenuSub"
 
 const DropdownMenuSubTrigger = React.memo(
   function DropdownMenuSubTrigger({
@@ -261,6 +287,8 @@ const DropdownMenuSubTrigger = React.memo(
   }
 )
 
+DropdownMenuSubTrigger.displayName = "DropdownMenuSubTrigger"
+
 const DropdownMenuSubContent = React.memo(
   function DropdownMenuSubContent({
     className,
@@ -278,6 +306,8 @@ const DropdownMenuSubContent = React.memo(
     )
   }
 )
+
+DropdownMenuSubContent.displayName = "DropdownMenuSubContent"
 
 export {
   DropdownMenu,
