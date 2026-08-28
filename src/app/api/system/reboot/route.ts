@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
-import { existsSync } from 'fs';
 import path from 'path';
 import { db } from '@/lib/db';
 import { safeReqJson } from '@/lib/safe-json';
@@ -201,7 +200,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         const newContent = Buffer.from(fileData.content, 'base64').toString('utf-8');
         const localPath = path.join(projectRoot, filePath);
 
-        if (existsSync(localPath)) {
+        let fileExists = false;
+        try {
+          await fs.access(localPath);
+          fileExists = true;
+        } catch {
+          fileExists = false;
+        }
+
+        if (fileExists) {
           const backupPath = path.join(backupDir, filePath);
           const backupSubDir = path.dirname(backupPath);
           await fs.mkdir(backupSubDir, { recursive: true });
