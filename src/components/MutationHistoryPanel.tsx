@@ -23,7 +23,7 @@ interface MutationApiResponse {
 
 interface MutationHistoryPanelProps {
   sessionId: string;
-  refreshTrigger?: number; // increment to force re-fetch
+  refreshTrigger?: number;
 }
 
 export default function MutationHistoryPanel({ sessionId, refreshTrigger }: MutationHistoryPanelProps) {
@@ -35,7 +35,6 @@ export default function MutationHistoryPanel({ sessionId, refreshTrigger }: Muta
   useEffect(() => {
     if (!sessionId) return;
     
-    // Fetch if session changed or refreshTrigger changed
     const hasTriggerChanged = refreshTrigger !== lastRefreshTriggerRef.current;
     if (fetchedRef.current === sessionId && !hasTriggerChanged) return;
     
