@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-This protocol establishes the definitive boundary between the mutable, self-improving agent core and the immutable, version-controlled repository within the **Omega Architecture**. Adherence to these guidelines ensures system integrity, security compliance, and prevents runtime state leakage into source control.
+This protocol establishes the definitive boundary between the mutable, self-improving agent core and the immutable, version-controlled repository within the **Omega Architecture**. Strict adherence to these guidelines ensures system integrity, security compliance, and prevents runtime state leakage into source control.
 
 ---
 
@@ -21,7 +21,7 @@ Any file matching the extensions `*.consciousness.dump` or `*.quantum.data` must
 All cryptographic assets, including `.vault` and `.key` files, are managed exclusively by the `sovereign-kernel`. These credentials must remain strictly local to the execution runtime environment and are hard-excluded from distribution pipelines.
 
 ### 2.3 Rule 03: Evolution History Protection
-Files designated with the `.evolution.history` extension are restricted to local diagnostic and auditing analysis only. They capture the heuristic decision-making processes, reward functions, and "thought traces" of the autonomous agent, constituting proprietary intellectual property.
+Files designated with the `.evolution.history` extension are restricted to local diagnostic and auditing analysis only. They capture the heuristic decision-making processes, reward functions, and agent thought traces, constituting proprietary intellectual property.
 
 ---
 
