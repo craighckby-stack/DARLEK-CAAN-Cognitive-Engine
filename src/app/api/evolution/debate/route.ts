@@ -8,47 +8,47 @@ export const dynamic = 'force-dynamic';
 
 // Type Definitions
 interface AgentPersona {
-  id: string;
-  name: string;
-  role: string;
-  bias: string;
+  readonly id: string;
+  readonly name: string;
+  readonly role: string;
+  readonly bias: string;
 }
 
 interface StructuralProposal {
-  newPath?: string;
-  type?: 'move' | 'create';
-  branch?: string;
+  readonly newPath?: string;
+  readonly type?: 'move' | 'create';
+  readonly branch?: string;
 }
 
 interface AgentVote {
-  agentId: string;
-  agentName: string;
-  vote: 'approve' | 'reject' | 'abstain';
-  confidence: number;
-  reasoning: string;
-  provider: string;
-  structuralProposal?: StructuralProposal | null;
+  readonly agentId: string;
+  readonly agentName: string;
+  readonly vote: 'approve' | 'reject' | 'abstain';
+  readonly confidence: number;
+  readonly reasoning: string;
+  readonly provider: string;
+  readonly structuralProposal?: StructuralProposal | null;
 }
 
 interface DebateBody {
-  filePath?: string;
-  originalCode?: string;
-  proposedCode?: string;
-  riskScore?: number;
-  analysis?: string;
-  affectedFiles?: string[];
-  apiKeys?: Record<string, string>;
-  rounds?: number;
-  activeAgents?: string[];
-  owner?: string;
-  repo?: string;
-  branch?: string;
-  sessionId?: string;
-  isArchitecturalGenesis?: boolean;
-  hallucinationLevel?: number;
+  readonly filePath?: string;
+  readonly originalCode?: string;
+  readonly proposedCode?: string;
+  readonly riskScore?: number;
+  readonly analysis?: string;
+  readonly affectedFiles?: readonly string[];
+  readonly apiKeys?: Record<string, string>;
+  readonly rounds?: number;
+  readonly activeAgents?: readonly string[];
+  readonly owner?: string;
+  readonly repo?: string;
+  readonly branch?: string;
+  readonly sessionId?: string;
+  readonly isArchitecturalGenesis?: boolean;
+  readonly hallucinationLevel?: number;
 }
 
-// GitHub Tree Fetcher with Robust Error Suppression
+// GitHub Tree Fetcher with Robust Error Suppression and Timeout Control
 async function getFileTree(token: string, owner: string, repo: string, branch: string): Promise<string[]> {
   if (!token || !owner || !repo || !branch) return [];
   try {
@@ -62,7 +62,7 @@ async function getFileTree(token: string, owner: string, repo: string, branch: s
       signal: AbortSignal.timeout(8000)
     });
     if (res.ok) {
-      const data = await res.json() as { tree?: { path: string }[] };
+      const data = await res.json() as { tree?: readonly { path: string }[] };
       return Array.isArray(data?.tree) ? data.tree.map((file) => file.path) : [];
     }
     return [];
@@ -90,27 +90,27 @@ async function fetchGithubFile(token: string, owner: string, repo: string, branc
   }
 }
 
-// Agent Personas Matrix
-const AGENT_PERSONAS: AgentPersona[] = [
+// Agent Personas Matrix (Immutable)
+const AGENT_PERSONAS: readonly AgentPersona[] = [
   {
-    id: "archivist",
-    name: "ARCHIVIST",
-    role: "Evaluate if the extracted logic is the truest historical representation of the stub's PURPOSE. Reject name collisions and dashboard impostors.",
-    bias: "favors authentic historical lineage",
+    id: 'archivist',
+    name: 'ARCHIVIST',
+    role: 'Evaluate if the extracted logic is the truest historical representation of the stub\'s PURPOSE. Reject name collisions and dashboard impostors.',
+    bias: 'favors authentic historical lineage',
   },
   {
-    id: "security",
-    name: "SECURITY",
-    role: "Evaluate for unredacted secrets, exposed tokens, or unsafe autonomous loops. Reject any code that could create vulnerabilities.",
-    bias: "favors strict security and sanitization",
+    id: 'security',
+    name: 'SECURITY',
+    role: 'Evaluate for unredacted secrets, exposed tokens, or unsafe autonomous loops. Reject any code that could create vulnerabilities.',
+    bias: 'favors strict security and sanitization',
   },
   {
-    id: "pragmatist",
-    name: "PRAGMATIST",
-    role: "Evaluate against the Stasis Trap. Reject bloated, over-engineered, or duplicated logic that fails to provide a concrete behavioral update.",
-    bias: "favors highly functional and concrete updates over theoretical bloat",
+    id: 'pragmatist',
+    name: 'PRAGMATIST',
+    role: 'Evaluate against the Stasis Trap. Reject bloated, over-engineered, or duplicated logic that fails to provide a concrete behavioral update.',
+    bias: 'favors highly functional and concrete updates over theoretical bloat',
   }
-];
+] as const;
 
 export async function GET(): Promise<NextResponse> {
   return NextResponse.json({ status: 'online', service: 'EVOLUTION_DEBATE_API' });
@@ -119,13 +119,13 @@ export async function GET(): Promise<NextResponse> {
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const body = await safeReqJson<DebateBody>(req, {});
-    const filePath = body.filePath || '';
-    const originalCode = body.originalCode || '';
-    const proposedCode = body.proposedCode || '';
+    const filePath = body.filePath ?? '';
+    const originalCode = body.originalCode ?? '';
+    const proposedCode = body.proposedCode ?? '';
     const riskScore = typeof body.riskScore === 'number' ? body.riskScore : 5;
-    const analysis = body.analysis || 'Evolutionary delta inspection';
+    const analysis = body.analysis ?? 'Evolutionary delta inspection';
     const affectedFiles = Array.isArray(body.affectedFiles) ? body.affectedFiles : [];
-    const apiKeys = body.apiKeys || {};
+    const apiKeys = body.apiKeys ?? {};
     const rounds = typeof body.rounds === 'number' ? body.rounds : 1;
     const sessionId = body.sessionId;
     const isArchitecturalGenesis = body.isArchitecturalGenesis === true;
@@ -141,14 +141,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const originalLines = originalCode.split('\n').length;
     const proposedLines = proposedCode.split('\n').length;
-    const diffSummary = `File: ${filePath}\nRisk Score: ${riskScore}/10\nAnalysis: ${analysis}\nAffected Files: ${affectedFiles.join(', ') || 'None'}\nOriginal: ${originalLines} lines\nProposed: ${proposedLines} lines\nLine change: ${proposedLines - originalLines >= 0 ? '+' : ''}${proposedLines - originalLines} lines`;
+    const diffSummary = `File: ${filePath}\nRisk Score: ${riskScore}/10\nAnalysis: ${analysis}\Affected Files: ${affectedFiles.join(', ') || 'None'}\nOriginal: ${originalLines} lines\nProposed: ${proposedLines} lines\nLine change: ${proposedLines - originalLines >= 0 ? '+' : ''}${proposedLines - originalLines} lines`;
 
-    const githubToken = apiKeys.github || '';
-    const repoOwner = body.owner || 'unknown';
-    const repoName = body.repo || 'unknown';
-    const repoBranch = body.branch || 'main';
+    const githubToken = apiKeys.github ?? '';
+    const repoOwner = body.owner ?? 'unknown';
+    const repoName = body.repo ?? 'unknown';
+    const repoBranch = body.branch ?? 'main';
 
-    // Parallel IO fetching for file tree & README & mutations
+    // Parallel IO fetching for file tree, README, and mutations
     const [fileTree, readmeContent, recentMutations] = await Promise.all([
       getFileTree(githubToken, repoOwner, repoName, repoBranch),
       fetchGithubFile(githubToken, repoOwner, repoName, repoBranch, 'README.md'),
@@ -160,8 +160,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     ]);
 
     const fileTreeSummary = fileTree.join('\n');
-    let readmeContext = readmeContent ? `\n\nTARGET REPOSITORY SYSTEM INSTRUCTIONS (README.md):\n${readmeContent.slice(0, 3000)}` : '';
-    let appliedMutationsContext = (recentMutations && recentMutations.length > 0)
+    const readmeContext = readmeContent ? `\n\nTARGET REPOSITORY SYSTEM INSTRUCTIONS (README.md):\n${readmeContent.slice(0, 3000)}` : '';
+    const appliedMutationsContext = (recentMutations && recentMutations.length > 0)
       ? `\n\nRECENT SYSTEM MUTATIONS (Context of what you have done so far in this session):\n${recentMutations.map(m => `  - File: ${m.filePath} | Analysis: ${m.analysis}`).join('\n')}`
       : '';
 
@@ -197,7 +197,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           const result = await callLlm({
             systemPrompt,
             userPrompt,
-            geminiApiKey: apiKeys.gemini || getDefaultGeminiKey(),
+            geminiApiKey: apiKeys.gemini ?? getDefaultGeminiKey(),
             maxTokens: 512,
             temperature: typeof body.hallucinationLevel === 'number' ? body.hallucinationLevel / 100 : 0.6,
           });
@@ -221,7 +221,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
                 reasoning = parsed.reasoning.trim().slice(0, 200);
               }
               if (typeof parsed.structuralProposal === 'object' && parsed.structuralProposal !== null) {
-                structuralProposal = parsed.structuralProposal;
+                structuralProposal = parsed.structuralProposal as StructuralProposal;
               }
             } catch {
               const lowerText = result.text.toLowerCase();
@@ -231,18 +231,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
               
               const match = reasoning.match(/\{"newPath"\s*:\s*"[^"]*",\s*"type"\s*:\s*"[^"]*"(?:,\s*"branch"\s*:\s*"[^"]*")?\s*\}/);
               if (match) {
-                try { structuralProposal = JSON.parse(match[0]); } catch {}
+                try { structuralProposal = JSON.parse(match[0]) as StructuralProposal; } catch {}
               }
             }
           }
 
           if (vote === 'abstain' && confidence === 50 && reasoning.includes('LLM unavailable')) {
             const fallbackVote = dalekBrainDebateVote(agent.id, agent.name, filePath || 'module.ts', originalCode, currentProposedCode, 3);
-            vote = fallbackVote.vote;
+            vote = fallbackVote.vote as 'approve' | 'reject' | 'abstain';
             confidence = fallbackVote.confidence;
             reasoning = fallbackVote.reasoning;
             if (fallbackVote.structuralProposal) {
-              structuralProposal = fallbackVote.structuralProposal;
+              structuralProposal = fallbackVote.structuralProposal as StructuralProposal;
             }
           }
 
@@ -253,7 +253,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             confidence,
             reasoning,
             structuralProposal,
-            provider: result.provider || 'Dalek Brain',
+            provider: result.provider ?? 'Dalek Brain',
           };
         });
 
@@ -269,7 +269,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           const result = await callLlm({
             systemPrompt,
             userPrompt,
-            geminiApiKey: apiKeys.gemini || getDefaultGeminiKey(),
+            geminiApiKey: apiKeys.gemini ?? getDefaultGeminiKey(),
             maxTokens: 512,
             temperature: typeof body.hallucinationLevel === 'number' ? body.hallucinationLevel / 100 : 0.6,
           });
@@ -301,7 +301,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
           if (vote === 'abstain' && confidence === 50) {
             const fallbackVote = dalekBrainDebateVote(agent.id, agent.name, filePath || 'module.ts', originalCode, currentProposedCode, 3);
-            vote = fallbackVote.vote;
+            vote = fallbackVote.vote as 'approve' | 'reject' | 'abstain';
             confidence = fallbackVote.confidence;
             reasoning = fallbackVote.reasoning;
           }
@@ -312,7 +312,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             vote,
             confidence,
             reasoning,
-            provider: result.provider || 'Dalek Brain',
+            provider: result.provider ?? 'Dalek Brain',
           };
         });
 
@@ -336,9 +336,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
         try {
           const synthResult = await callLlm({
-            systemPrompt: "[ROLE] AHI CODE SYNTHESIZER. Output raw executable code only without markdown wrappers.",
+            systemPrompt: '[ROLE] AHI CODE SYNTHESIZER. Output raw executable code only without markdown wrappers.',
             userPrompt: synthesizePrompt,
-            geminiApiKey: apiKeys.gemini || getDefaultGeminiKey(),
+            geminiApiKey: apiKeys.gemini ?? getDefaultGeminiKey(),
             maxTokens: 8000,
             temperature: 0.2,
           });
@@ -391,7 +391,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       const rulingResult = await callLlm({
         systemPrompt: '[ROLE] AHI HEGELIAN SYNTHESIZER. Pure plain text only.',
         userPrompt: rulingPrompt,
-        geminiApiKey: apiKeys.gemini || getDefaultGeminiKey(),
+        geminiApiKey: apiKeys.gemini ?? getDefaultGeminiKey(),
         maxTokens: 256,
         temperature: 0.3,
       });
@@ -410,7 +410,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       try {
         const match = v.reasoning.match(/\{"newPath"\s*:\s*"[^"]*",\s*"type"\s*:\s*"[^"]*"(?:,\s*"branch"\s*:\s*"[^"]*")?\s*\}/);
         if (match) {
-          structuralProposal = JSON.parse(match[0]);
+          structuralProposal = JSON.parse(match[0]) as StructuralProposal;
           break;
         }
       } catch {}
