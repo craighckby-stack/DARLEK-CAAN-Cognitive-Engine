@@ -18,12 +18,6 @@ interface GitHubContentResponse {
   type?: string;
 }
 
-interface FetchOptions {
-  headers: Record<string, string>;
-  signal: AbortSignal;
-  method?: string;
-}
-
 async function fetchWithTimeout(
   url: string,
   options: Omit<RequestInit, 'signal'>,
@@ -81,7 +75,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     if (!metaRes.ok) {
       if (metaRes.status === 403) {
-        let headRes: Response;
+        let headRes: Response | null = null;
         try {
           headRes = await fetchWithTimeout(url, { method: 'HEAD', headers: standardHeaders }, HEAD_TIMEOUT);
         } catch {
@@ -166,8 +160,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       try {
         if (lowerPath.endsWith('.pdf')) {
           const pdfParseModule = await import('pdf-parse');
-          const pdfParse = (pdfParseModule as any).default || pdfParseModule;
-          const pdfData = await pdfParse(buffer);
+          const pdfParse = (pdfParseModule as { default?: (buf: Buffer) => Promise<{ text: string }> }).default || pdfParseModule;
+          const pdfData = await (pdfParse as (buf: Buffer) => Promise<{ text: string }>)(buffer);
           return NextResponse.json({
             content: `[PDF CONTENT EXTRACTED]\n\n${pdfData.text}`,
             sha: data.sha,
