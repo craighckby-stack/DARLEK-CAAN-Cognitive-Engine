@@ -1,21 +1,33 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import type { Message } from '@/lib/types';
 import { COLORS } from '@/lib/constants';
 
-interface ChatMessageProps {
+export interface ChatMessageProps {
   message: Message;
 }
 
 const COLLAPSE_THRESHOLD = 280;
 const PREVIEW_LINES = 3;
 
+/**
+ * Truncates text to a specified maximum number of lines with high memory efficiency.
+ */
 function truncateToLines(text: string, maxLines: number): string {
-  const lines = text.split('\n');
-  if (lines.length <= maxLines) return text;
-  return lines.slice(0, maxLines).join('\n');
+  let lineCount = 0;
+  let index = 0;
+  
+  while (index < text.length && lineCount < maxLines) {
+    const nextNewline = text.indexOf('\n', index);
+    if (nextNewline === -1) break;
+    lineCount++;
+    index = nextNewline + 1;
+  }
+
+  if (lineCount < maxLines) return text;
+  return text.slice(0, index - 1);
 }
 
 function getPreviewText(text: string): string {
@@ -25,13 +37,48 @@ function getPreviewText(text: string): string {
 }
 
 export default function ChatMessage({ message }: ChatMessageProps) {
-  const [expanded, setExpanded] = useState(false);
-  const timeStr = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const [expanded, setExpanded] = useState<boolean>(false);
 
-  const content = message.content;
+  const timeStr = useMemo(() => {
+    try {
+      return new Date(message.timestamp).toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      });
+    } catch {
+      return '';
+    }
+  }, [message.timestamp]);
+
+  const content = message.content ?? '';
   const isLong = content.length > COLLAPSE_THRESHOLD;
-  const shouldShow = isLong ? (expanded ? content : getPreviewText(content)) : content;
-  const hiddenLines = isLong ? content.split('\n').length - PREVIEW_LINES : 0;
+  
+  const shouldShow = useMemo(() => {
+    if (!isLong) return content;
+    return expanded ? content : getPreviewText(content);
+  }, [isLong, expanded, content]);
+
+  const hiddenLines = useMemo(() => {
+    if (!isLong) return 0;
+    let count = 0;
+    for (let i = 0; i < content.length; i++) {
+      if (content[i] === '\n') count++;
+    }
+    return Math.max(0, count - PREVIEW_LINES + 1);
+  }, [isLong, content]);
+
+  const handleToggle = useCallback(() => {
+    setExpanded((prev) => !prev);
+  }, []);
+
+  const handleMouseEnter = useCallback((e: React.MouseEvent<HTMLButtonElement>, hoverBg: string) => {
+    e.currentTarget.style.background = hoverBg;
+  }, []);
+
+  const handleMouseLeave = useCallback((e: React.MouseEvent<HTMLButtonElement>, normalBg: string) => {
+    e.currentTarget.style.background = normalBg;
+  }, []);
 
   if (message.role === 'system') {
     return (
@@ -71,7 +118,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
           </p>
           {isLong && (
             <button
-              onClick={() => setExpanded(!expanded)}
+              onClick={handleToggle}
               className="flex items-center justify-center gap-1 mx-auto mt-1.5 px-2 py-0.5 rounded-sm transition-all"
               style={{
                 fontSize: '9px',
@@ -82,8 +129,8 @@ export default function ChatMessage({ message }: ChatMessageProps) {
                 border: '1px solid rgba(0, 255, 204, 0.15)',
                 cursor: 'pointer',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0, 255, 204, 0.12)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0, 255, 204, 0.06)'; }}
+              onMouseEnter={(e) => handleMouseEnter(e, 'rgba(0, 255, 204, 0.12)')}
+              onMouseLeave={(e) => handleMouseLeave(e, 'rgba(0, 255, 204, 0.06)')}
             >
               {expanded ? (
                 <><ChevronDown size={10} /><span>COLLAPSE</span></>
@@ -132,7 +179,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
           </p>
           {isLong && (
             <button
-              onClick={() => setExpanded(!expanded)}
+              onClick={handleToggle}
               className="flex items-center gap-1 mt-2 px-2 py-0.5 rounded-sm transition-all"
               style={{
                 fontSize: '9px',
@@ -143,8 +190,8 @@ export default function ChatMessage({ message }: ChatMessageProps) {
                 border: '1px solid rgba(255, 32, 32, 0.15)',
                 cursor: 'pointer',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 32, 32, 0.12)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 32, 32, 0.06)'; }}
+              onMouseEnter={(e) => handleMouseEnter(e, 'rgba(255, 32, 32, 0.12)')}
+              onMouseLeave={(e) => handleMouseLeave(e, 'rgba(255, 32, 32, 0.06)')}
             >
               {expanded ? (
                 <><ChevronDown size={10} /><span>COLLAPSE</span></>
@@ -157,11 +204,6 @@ export default function ChatMessage({ message }: ChatMessageProps) {
       </div>
     );
   }
-
-  // operator messages — also collapsible if long
-  const operatorIsLong = content.length > COLLAPSE_THRESHOLD;
-  const operatorShow = operatorIsLong ? (expanded ? content : getPreviewText(content)) : content;
-  const operatorHidden = operatorIsLong ? content.split('\n').length - PREVIEW_LINES : 0;
 
   return (
     <div className="message-animate flex justify-end">
@@ -193,11 +235,11 @@ export default function ChatMessage({ message }: ChatMessageProps) {
             color: '#ffffff',
           }}
         >
-          {operatorShow}
+          {shouldShow}
         </p>
-        {operatorIsLong && (
+        {isLong && (
           <button
-            onClick={() => setExpanded(!expanded)}
+            onClick={handleToggle}
             className="flex items-center gap-1 mt-2 ml-auto px-2 py-0.5 rounded-sm transition-all"
             style={{
               fontSize: '9px',
@@ -208,13 +250,13 @@ export default function ChatMessage({ message }: ChatMessageProps) {
               border: '1px solid rgba(255, 170, 0, 0.15)',
               cursor: 'pointer',
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 170, 0, 0.12)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 170, 0, 0.06)'; }}
+            onMouseEnter={(e) => handleMouseEnter(e, 'rgba(255, 170, 0, 0.12)')}
+            onMouseLeave={(e) => handleMouseLeave(e, 'rgba(255, 170, 0, 0.06)')}
           >
             {expanded ? (
               <><ChevronDown size={10} /><span>COLLAPSE</span></>
             ) : (
-              <><ChevronRight size={10} /><span>EXPAND (+{operatorHidden} lines)</span></>
+              <><ChevronRight size={10} /><span>EXPAND (+{hiddenLines} lines)</span></>
             )}
           </button>
         )}
