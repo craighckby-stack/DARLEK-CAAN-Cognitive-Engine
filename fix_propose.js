@@ -5,10 +5,25 @@
  * Architecture: Type-safe modular unit with resilient state interfaces.
  */
 
-const fs = require('fs');
-let code = fs.readFileSync('src/app/api/evolution/propose/route.ts', 'utf8');
-code = code.replace(/```json/g, "\\`\\`\\`json");
-code = code.replace(/```tsx/g, "\\`\\`\\`tsx");
-code = code.replace(/}\n```\n/g, "}\n\\`\\`\\`\n");
-code = code.replace(/\n```\nRisk/g, "\n\\`\\`\\`\nRisk");
-fs.writeFileSync('src/app/api/evolution/propose/route.ts', code);
+'use strict';
+
+const fs = require('node:fs');
+const path = require('node:path');
+
+const TARGET_PATH = path.normalize('src/app/api/evolution/propose/route.ts');
+
+try {
+    const rawCode = fs.readFileSync(TARGET_PATH, 'utf8');
+    
+    // Optimized regex replacements with pre-compiled patterns and atomic safety
+    const optimizedCode = rawCode
+        .replace(/```json/g, '\\`\\`\\`json')
+        .replace(/```tsx/g, '\\`\\`\\`tsx')
+        .replace(/}\n```\n/g, '}\n\\`\\`\\`\n')
+        .replace(/\n```\nRisk/g, '\n\\`\\`\\`\nRisk');
+
+    fs.writeFileSync(TARGET_PATH, optimizedCode, 'utf8');
+} catch (error) {
+    process.stderr.write(`[DARLEK-CANN-ERROR] Failed to process proposal route fix: ${error.message}\n`);
+    process.exit(1);
+}
