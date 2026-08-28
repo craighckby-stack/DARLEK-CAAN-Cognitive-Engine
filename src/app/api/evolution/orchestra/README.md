@@ -42,6 +42,7 @@ graph TD
 /**
  * @fileoverview Core execution entry point and data structures for the Orchestra Evolution Engine.
  * @module OrchestraEvolution
+ * @version 2.0-SOVEREIGN
  */
 
 /**
