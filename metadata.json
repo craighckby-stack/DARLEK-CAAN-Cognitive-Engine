@@ -1,1 +1,53 @@
-{"name": "Git Secret & PII Sanitizer", "description": "Deep PII and Secret Scanner for GitHub repositories.", "requestFramePermissions": [], "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]}
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ExtensionMetadata",
+  "type": "object",
+  "required": [
+    "name",
+    "description",
+    "requestFramePermissions",
+    "majorCapabilities"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "examples": [
+        "Git Secret & PII Sanitizer"
+      ]
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "examples": [
+        "Deep PII and Secret Scanner for GitHub repositories."
+      ]
+    },
+    "requestFramePermissions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true,
+      "default": []
+    },
+    "majorCapabilities": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+        ]
+      },
+      "uniqueItems": true,
+      "minItems": 1
+    }
+  },
+  "additionalProperties": false,
+  "name": "Git Secret & PII Sanitizer",
+  "description": "Deep PII and Secret Scanner for GitHub repositories.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
