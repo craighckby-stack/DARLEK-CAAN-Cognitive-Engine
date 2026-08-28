@@ -105,7 +105,7 @@ export class Brain extends EventTarget {
     super();
     this._strategy = config.strategy ?? null;
     this._shield = config.shield ?? null;
-    this._mutationTimeout = config.mutationTimeout ?? 30000; // Default 30 seconds
+    this._mutationTimeout = config.mutationTimeout ?? 30000;
     this.transition(BrainState.BOOTING);
   }
 
@@ -204,7 +204,6 @@ export class Brain extends EventTarget {
     this._lock = true;
     this.transition(BrainState.MUTATING);
     
-    // Set mutation timeout
     this._timeoutId = setTimeout(() => {
       this.handleMutationTimeout();
     }, this._mutationTimeout);
@@ -228,7 +227,7 @@ export class Brain extends EventTarget {
       }
 
       this._version++;
-      this._binarySubstrate = null; // Invalidate cache
+      this._binarySubstrate = null;
 
       if (this._strategy) {
         const payload = await this.export();
@@ -367,7 +366,6 @@ export class Brain extends EventTarget {
   }
 }
 
-// Global utilities for direct DNA manipulation
 export const packDNA = NeuralCodec.encode.bind(NeuralCodec);
 export const unpackDNA = NeuralCodec.decode.bind(NeuralCodec);
 export { NeuralCodec, minifyCode };
