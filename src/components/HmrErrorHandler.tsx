@@ -2,26 +2,47 @@
 
 import { useEffect } from 'react';
 
-export default function HmrErrorHandler() {
-  useEffect(() => {
-    const handleRejection = (event: PromiseRejectionEvent) => {
-      const reason = event?.reason;
-      const message = typeof reason === 'string' ? reason : reason?.message || '';
-      const name = reason?.name || '';
+const SUPPRESSED_ERROR_PATTERNS = [
+  'hmr-client',
+  'Failed to load chunk',
+  'turbopack',
+  'error.js',
+  'global-error.js',
+] as const;
 
-      if (
-        name === 'ChunkLoadError' ||
-        message.includes('hmr-client') ||
-        message.includes('Failed to load chunk') ||
-        message.includes('turbopack') ||
-        message.includes('error.js') ||
-        message.includes('global-error.js')
-      ) {
+const SUPPRESSED_ERROR_NAMES = new Set(['ChunkLoadError']);
+
+export default function HmrErrorHandler(): null {
+  useEffect(() => {
+    const handleRejection = (event: PromiseRejectionEvent): void => {
+      const reason = event.reason;
+      
+      let message = '';
+      let name = '';
+
+      if (typeof reason === 'string') {
+        message = reason;
+      } else if (reason !== null && typeof reason === 'object') {
+        if ('message' in reason && typeof (reason as Record<string, unknown>).message === 'string') {
+          message = (reason as { message: string }).message;
+        }
+        if ('name' in reason && typeof (reason as Record<string, unknown>).name === 'string') {
+          name = (reason as { name: string }).name;
+        }
+      }
+
+      const isSuppressedName = SUPPRESSED_ERROR_NAMES.has(name);
+      const isSuppressedMessage = SUPPRESSED_ERROR_PATTERNS.some((pattern) => 
+        message.includes(pattern)
+      );
+
+      if (isSuppressedName || isSuppressedMessage) {
         event.preventDefault();
       }
     };
 
     window.addEventListener('unhandledrejection', handleRejection);
+    
     return () => {
       window.removeEventListener('unhandledrejection', handleRejection);
     };
