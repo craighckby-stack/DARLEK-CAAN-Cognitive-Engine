@@ -1,4 +1,3 @@
-# 🛡️ Git Secret & PII Sanitizer & Autonomous Code Evolution Platform
 
 [![Live App](https://img.shields.io/badge/Live_App-Open_Application-00FF88?style=for-the-badge&logo=googlecloud)](https://ais-dev-amubz4v3czr3772fnvrcru-483535245139.asia-southeast1.run.app)
 [![Preview](https://img.shields.io/badge/Preview-Shared_Environment-blue?style=for-the-badge&logo=next.js)](https://ais-pre-amubz4v3czr3772fnvrcru-483535245139.asia-southeast1.run.app)
