@@ -11,6 +11,8 @@ export interface AgentOrchestratorProps {
   readonly priority: number;
 }
 
-export type DeepReadonly<T> = {
-  readonly [P in keyof T]: T[P] extends object ? DeepReadonly<T[P]> : T[P];
-};
+export type DeepReadonly<T> = T extends Function | Date | RegExp | Map<any, any> | Set<any, any>
+  ? T
+  : T extends object
+  ? { readonly [K in keyof T]: DeepReadonly<T[K]> }
+  : T;
