@@ -1,15 +1,15 @@
 # ARCHITECTURAL BLUEPRINT: OMEGA-EMERGENT-INTELLIGENCE
 
 > **System Designation:** `OMEGA-EMERGENT-INTELLIGENCE`  
-> **Kernel Version:** Core v49  
+> **Kernel Version:** `Core v49`  
 > **Classification:** Autonomous Self-Refactoring Multi-Agent System  
-> **Optimizer Engine:** EMG Core v49 Neural Code and Documentation Optimizer
+> **Optimizer Engine:** `EMG Core v49 Neural Code and Documentation Optimizer`
 
 ---
 
 ## 1. System Overview
 
-This repository serves as the core execution kernel for the OMEGA system. It seamlessly integrates advanced multi-agent orchestration frameworks with a continuous, self-refactoring evolutionary loop inspired by the **Huxley-Singularity-Loop**.
+This repository serves as the core execution kernel for the `OMEGA` system. It seamlessly integrates advanced multi-agent orchestration frameworks with a continuous, self-refactoring evolutionary loop inspired by the **Huxley-Singularity-Loop**.
 
 ---
 
@@ -40,7 +40,7 @@ To maintain absolute system integrity and prevent unauthorized access or privile
 
 ## 4. System Integration & External Modules
 
-The OMEGA kernel interfaces with external high-availability modules for distributed computation and self-modification:
+The `OMEGA` kernel interfaces with external high-availability modules for distributed computation and self-modification:
 
 * **`Unitary-Core`**: Responsible for high-dimensional tensor processing, cognitive pattern recognition, and vector embedding computations.
 * **`Sovereign-v86`**: Provides kernel-level access for autonomous self-refactoring, instruction-set verification, and zero-downtime hot-patching.
