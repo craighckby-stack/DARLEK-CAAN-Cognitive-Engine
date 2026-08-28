@@ -1,57 +1,41 @@
-# DARLEK CANN V3.0: ARCHITECTURAL MANIFESTO
+# DARLEK CANN v3.0: Architectural Manifesto
 
 ## Overview
-This repository serves as the nexus for the DARLEK CANN evolution engine. It integrates the 'Sovereign-Kernel' self-refactoring logic with 'Omega' emergent intelligence patterns.
+
+This repository serves as the central nexus for the **DARLEK CANN** evolution engine. It seamlessly integrates *'Sovereign-Kernel'* self-refactoring logic with *'Omega'* emergent intelligence patterns to drive autonomous system growth and optimization.
+
+---
 
 ## Integration Schema
-- **Core**: Next.js 14+ / TypeScript / Tailwind CSS
-- **Agent Orchestra**: Multi-tier LLM fallback (GPT-4o / Claude 3.5 / Local-LLM)
-- **State Management**: Atomic state synchronization across distributed agent nodes.
 
-## Security Protocol
-All environment variables are strictly ignored via `.gitignore`. Use `.env.example` for template distribution. Sensitive agent memory dumps are excluded from VCS to prevent PII/Secret leakage.
+The system architecture is built upon a high-performance, modern technology stack:
+
+*   **Core Framework**: Next.js 14+ / TypeScript / Tailwind CSS
+*   **Agent Orchestra**: Multi-tier Large Language Model (LLM) fallback architecture (GPT-4o / Claude 3.5 / Local-LLM)
+*   **State Management**: Atomic state synchronization protocols operating across distributed agent nodes.
+
+---
+
+## Security Protocols
+
+To maintain rigorous security standards across all environments, adhere to the following guidelines:
+
+*   **Environment Variables**: All runtime configuration files are strictly ignored via `.gitignore`. Always use `.env.example` as a template for secure local distribution.
+*   **Memory Isolation**: Sensitive agent memory dumps and runtime states are strictly excluded from Version Control Systems (VCS) to prevent PII and secret leakage.
+
+---
 
 ## Development Workflow
-1. **Analyze**: Run `cann-analyze` on target modules.
-2. **Evolve**: Apply mutations via `cann-evolve`.
-3. **Verify**: Run `npm run test:coverage` to ensure structural integrity.
 
+Execute the standard pipeline to analyze, mutate, and verify system modules:
 
+```bash
+# 1. Analyze target modules for optimization vectors
+cann-analyze --target ./modules
 
+# 2. Apply autonomous evolutionary mutations
+cann-evolve --strategy omega
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# 3. Verify structural and logical integrity
+npm run test:coverage
+```
