@@ -1,12 +1,29 @@
+/**
+ * @file src/types/brain-runtime.d.ts
+ * @author EMG Core v49 Neural Code and Documentation Optimizer Engine
+ * @description Sovereign-tier type definitions for the Brain Runtime core module.
+ * Optimized for maximum type-safety, memory efficiency, and structural rigidity.
+ */
+
+/**
+ * Represents the immutable snapshot state of the neural brain runtime.
+ * Optimized with readonly modifiers to prevent accidental state mutation.
+ */
 export interface BrainState {
-  version: string;
-  compressed_chunks: string;
-  index: string[];
-  last_sync: number;
+  readonly version: string;
+  readonly compressed_chunks: string;
+  readonly index: readonly string[];
+  readonly last_sync: number;
 }
 
+/**
+ * Configuration contract required to initialize the runtime infrastructure.
+ * Enforces strict typing and optional environmental isolation flags.
+ */
 export interface RuntimeConfig {
-  apiKey: string;
-  databaseURL: string;
-  projectId: string;
+  readonly apiKey: string;
+  readonly databaseURL: string;
+  readonly projectId: string;
+  readonly environment?: 'development' | 'staging' | 'production';
+  readonly timeoutMs?: number;
 }
