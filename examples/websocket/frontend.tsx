@@ -7,118 +7,206 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
-import { io } from 'socket.io-client';
+import { useEffect, useState, useRef, useCallback, ReactElement } from 'react';
+import { io, Socket } from 'socket.io-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-type User = {
+export type User = {
   id: string;
   username: string;
-}
+};
 
-type Message = {
+export type Message = {
   id: string;
   username: string;
   content: string;
   timestamp: Date | string;
   type: 'user' | 'system';
+};
+
+interface ServerToClientEvents {
+  message: (msg: Message) => void;
+  'user-joined': (data: { user: User; message: Message }) => void;
+  'user-left': (data: { user: User; message: Message }) => void;
+  'users-list': (data: { users: User[] }) => void;
 }
 
-export default function SocketDemo() {
+interface ClientToServerEvents {
+  join: (data: { username: string }) => void;
+  message: (data: { content: string; username: string }) => void;
+}
+
+type TypedSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
+
+const formatTimestamp = (timestamp: Date | string): string => {
+  try {
+    const date = new Date(timestamp);
+    return isNaN(date.getTime()) ? '' : date.toLocaleTimeString();
+  } catch {
+    return '';
+  }
+};
+
+export default function SocketDemo(): ReactElement {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [username, setUsername] = useState('');
-  const [isUsernameSet, setIsUsernameSet] = useState(false);
-  const [socket, setSocket] = useState<any>(null);
-  const [isConnected, setIsConnected] = useState(false);
+  const [inputMessage, setInputMessage] = useState<string>('');
+  const [username, setUsername] = useState<string>('');
+  const [isUsernameSet, setIsUsernameSet] = useState<boolean>(false);
+  const [socket, setSocket] = useState<TypedSocket | null>(null);
+  const [isConnected, setIsConnected] = useState<boolean>(false);
   const [users, setUsers] = useState<User[]>([]);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+
+  const socketRef = useRef<TypedSocket | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
 
   useEffect(() => {
     // Connect to websocket server
     // Never use PORT in the URL, alyways use XTransformPort
     // DO NOT change the path, it is used by Caddy to forward the request to the correct port
-    const socketInstance = io('/?XTransformPort=3003', {
+    const socketInstance: TypedSocket = io('/?XTransformPort=3003', {
       transports: ['websocket', 'polling'],
       forceNew: true,
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
-      timeout: 10000
-    })
+      timeout: 10000,
+    });
 
+    socketRef.current = socketInstance;
     setSocket(socketInstance);
 
-    socketInstance.on('connect', () => {
+    const onConnect = () => {
       setIsConnected(true);
-    });
+      setConnectionError(null);
+    };
 
-    socketInstance.on('disconnect', () => {
+    const onDisconnect = () => {
       setIsConnected(false);
-    });
+    };
 
-    socketInstance.on('message', (msg: Message) => {
-      setMessages(prev => [...prev, msg]);
-    });
+    const onConnectError = (err: Error) => {
+      setIsConnected(false);
+      setConnectionError(err.message || 'Connection failed');
+    };
 
-    socketInstance.on('user-joined', (data: { user: User; message: Message }) => {
-      setMessages(prev => [...prev, data.message]);
-      setUsers(prev => {
-        if (!prev.find(u => u.id === data.user.id)) {
+    const onMessage = (msg: Message) => {
+      setMessages((prev) => [...prev, msg]);
+    };
+
+    const onUserJoined = (data: { user: User; message: Message }) => {
+      setMessages((prev) => [...prev, data.message]);
+      setUsers((prev) => {
+        if (!prev.some((u) => u.id === data.user.id)) {
           return [...prev, data.user];
         }
         return prev;
       });
-    });
+    };
 
-    socketInstance.on('user-left', (data: { user: User; message: Message }) => {
-      setMessages(prev => [...prev, data.message]);
-      setUsers(prev => prev.filter(u => u.id !== data.user.id));
-    });
+    const onUserLeft = (data: { user: User; message: Message }) => {
+      setMessages((prev) => [...prev, data.message]);
+      setUsers((prev) => prev.filter((u) => u.id !== data.user.id));
+    };
 
-    socketInstance.on('users-list', (data: { users: User[] }) => {
+    const onUsersList = (data: { users: User[] }) => {
       setUsers(data.users);
-    });
+    };
+
+    socketInstance.on('connect', onConnect);
+    socketInstance.on('disconnect', onDisconnect);
+    socketInstance.on('connect_error', onConnectError);
+    socketInstance.on('message', onMessage);
+    socketInstance.on('user-joined', onUserJoined);
+    socketInstance.on('user-left', onUserLeft);
+    socketInstance.on('users-list', onUsersList);
 
     return () => {
+      socketInstance.off('connect', onConnect);
+      socketInstance.off('disconnect', onDisconnect);
+      socketInstance.off('connect_error', onConnectError);
+      socketInstance.off('message', onMessage);
+      socketInstance.off('user-joined', onUserJoined);
+      socketInstance.off('user-left', onUserLeft);
+      socketInstance.off('users-list', onUsersList);
       socketInstance.disconnect();
+      socketRef.current = null;
     };
   }, []);
 
-  const handleJoin = () => {
-    if (socket && username.trim() && isConnected) {
-      socket.emit('join', { username: username.trim() });
+  const handleJoin = useCallback(() => {
+    const trimmedUsername = username.trim();
+    const currentSocket = socketRef.current || socket;
+    if (currentSocket && trimmedUsername && isConnected) {
+      currentSocket.emit('join', { username: trimmedUsername });
       setIsUsernameSet(true);
     }
-  };
+  }, [username, isConnected, socket]);
 
-  const sendMessage = () => {
-    if (socket && inputMessage.trim() && username.trim()) {
-      socket.emit('message', {
-        content: inputMessage.trim(),
-        username: username.trim()
+  const sendMessage = useCallback(() => {
+    const trimmedMessage = inputMessage.trim();
+    const trimmedUsername = username.trim();
+    const currentSocket = socketRef.current || socket;
+    if (currentSocket && trimmedMessage && trimmedUsername && isConnected) {
+      currentSocket.emit('message', {
+        content: trimmedMessage,
+        username: trimmedUsername,
       });
       setInputMessage('');
     }
-  };
+  }, [inputMessage, username, isConnected, socket]);
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      sendMessage();
-    }
-  };
+  const handleKeyPress = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        sendMessage();
+      }
+    },
+    [sendMessage]
+  );
+
+  const handleJoinKeyPress = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        handleJoin();
+      }
+    },
+    [handleJoin]
+  );
 
   return (
     <div className="container mx-auto p-4 max-w-2xl">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            WebSocket Demo
-            <span className={`text-sm px-2 py-1 rounded ${isConnected ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-              {isConnected ? 'Connected' : 'Disconnected'}
-            </span>
+            <span>WebSocket Demo</span>
+            <div className="flex items-center space-x-2">
+              {users.length > 0 && isUsernameSet && (
+                <span className="text-xs text-gray-500 font-normal">
+                  {users.length} user{users.length !== 1 ? 's' : ''} online
+                </span>
+              )}
+              <span
+                className={`text-sm px-2 py-1 rounded ${
+                  isConnected
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-red-100 text-red-800'
+                }`}
+              >
+                {isConnected ? 'Connected' : connectionError || 'Disconnected'}
+              </span>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -127,11 +215,7 @@ export default function SocketDemo() {
               <Input
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    handleJoin();
-                  }
-                }}
+                onKeyDown={handleJoinKeyPress}
                 placeholder="Enter your username..."
                 disabled={!isConnected}
                 className="flex-1"
@@ -155,26 +239,33 @@ export default function SocketDemo() {
                       <div key={msg.id} className="border-b pb-2 last:border-b-0">
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
-                            <p className={`text-sm font-medium ${msg.type === 'system'
-                                ? 'text-blue-600 italic'
-                                : 'text-gray-700'
-                              }`}>
+                            <p
+                              className={`text-sm font-medium ${
+                                msg.type === 'system'
+                                  ? 'text-blue-600 italic'
+                                  : 'text-gray-700'
+                              }`}
+                            >
                               {msg.username}
                             </p>
-                            <p className={`${msg.type === 'system'
-                                ? 'text-blue-500 italic'
-                                : 'text-gray-900'
-                              }`}>
+                            <p
+                              className={`${
+                                msg.type === 'system'
+                                  ? 'text-blue-500 italic'
+                                  : 'text-gray-900'
+                              }`}
+                            >
                               {msg.content}
                             </p>
                           </div>
-                          <span className="text-xs text-gray-500">
-                            {new Date(msg.timestamp).toLocaleTimeString()}
+                          <span className="text-xs text-gray-500 ml-2 whitespace-nowrap">
+                            {formatTimestamp(msg.timestamp)}
                           </span>
                         </div>
                       </div>
                     ))
                   )}
+                  <div ref={messagesEndRef} />
                 </div>
               </ScrollArea>
 
@@ -182,7 +273,7 @@ export default function SocketDemo() {
                 <Input
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyPress={handleKeyPress}
+                  onKeyDown={handleKeyPress}
                   placeholder="Type a message..."
                   disabled={!isConnected}
                   className="flex-1"
