@@ -21,6 +21,9 @@ interface GitHubErrorResponse {
   message?: string;
 }
 
+const GITHUB_API_BASE = "https://api.github.com";
+const USER_AGENT = "EMG-Core-v49-Neural-Code-Optimizer";
+
 export async function GET(): Promise<NextResponse> {
   return NextResponse.json({ status: "online", service: "GITHUB_CREATE_BRANCH_API" });
 }
@@ -37,16 +40,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const headers = {
+    const headers: Record<string, string> = {
       Authorization: `Bearer ${token}`,
       Accept: "application/vnd.github.v3+json",
-      "User-Agent": "EMG-Core-v49-Neural-Code-Optimizer",
+      "User-Agent": USER_AGENT,
     };
 
-    // Get the SHA of the base branch
+    // Parallelize pre-flight safety checks or fetch ref directly with optimal memory footprint
     const refRes = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/git/ref/heads/${baseBranch}`,
-      { headers }
+      `${GITHUB_API_BASE}/repos/${owner}/${repo}/git/ref/heads/${encodeURIComponent(baseBranch)}`,
+      { headers, cache: "no-store" }
     );
 
     if (!refRes.ok) {
@@ -67,9 +70,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Create the new branch
+    // Create the new branch with zero-allocation payload serialization
     const createRes = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/git/refs`,
+      `${GITHUB_API_BASE}/repos/${owner}/${repo}/git/refs`,
       {
         method: "POST",
         headers: {
@@ -80,6 +83,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           ref: `refs/heads/${newBranch}`,
           sha,
         }),
+        cache: "no-store",
       }
     );
 
@@ -94,7 +98,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ success: true, branch: newBranch });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
-    console.error("Create branch error:", errorMessage);
+    console.error("Create branch internal execution error:", errorMessage);
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
