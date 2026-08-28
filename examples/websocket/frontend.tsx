@@ -7,7 +7,7 @@
 
 'use client';
 
-import { useEffect, useState, useRef, useCallback, ReactElement } from 'react';
+import { useEffect, useState, useRef, useCallback, ReactElement, KeyboardEvent, ChangeEvent } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,7 +55,7 @@ export default function SocketDemo(): ReactElement {
   const [inputMessage, setInputMessage] = useState<string>('');
   const [username, setUsername] = useState<string>('');
   const [isUsernameSet, setIsUsernameSet] = useState<boolean>(false);
-  const [socket, setSocket] = useState<TypedSocket | null>(null);
+  const [, setSocket] = useState<TypedSocket | null>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [users, setUsers] = useState<User[]>([]);
   const [connectionError, setConnectionError] = useState<string | null>(null);
@@ -73,7 +73,7 @@ export default function SocketDemo(): ReactElement {
 
   useEffect(() => {
     // Connect to websocket server
-    // Never use PORT in the URL, alyways use XTransformPort
+    // Never use PORT in the URL, always use XTransformPort
     // DO NOT change the path, it is used by Caddy to forward the request to the correct port
     const socketInstance: TypedSocket = io('/?XTransformPort=3003', {
       transports: ['websocket', 'polling'],
@@ -147,17 +147,17 @@ export default function SocketDemo(): ReactElement {
 
   const handleJoin = useCallback(() => {
     const trimmedUsername = username.trim();
-    const currentSocket = socketRef.current || socket;
+    const currentSocket = socketRef.current;
     if (currentSocket && trimmedUsername && isConnected) {
       currentSocket.emit('join', { username: trimmedUsername });
       setIsUsernameSet(true);
     }
-  }, [username, isConnected, socket]);
+  }, [username, isConnected]);
 
   const sendMessage = useCallback(() => {
     const trimmedMessage = inputMessage.trim();
     const trimmedUsername = username.trim();
-    const currentSocket = socketRef.current || socket;
+    const currentSocket = socketRef.current;
     if (currentSocket && trimmedMessage && trimmedUsername && isConnected) {
       currentSocket.emit('message', {
         content: trimmedMessage,
@@ -165,10 +165,10 @@ export default function SocketDemo(): ReactElement {
       });
       setInputMessage('');
     }
-  }, [inputMessage, username, isConnected, socket]);
+  }, [inputMessage, username, isConnected]);
 
   const handleKeyPress = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
+    (e: KeyboardEvent<HTMLInputElement>) => {
       if (e.key === 'Enter') {
         sendMessage();
       }
@@ -177,13 +177,21 @@ export default function SocketDemo(): ReactElement {
   );
 
   const handleJoinKeyPress = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
+    (e: KeyboardEvent<HTMLInputElement>) => {
       if (e.key === 'Enter') {
         handleJoin();
       }
     },
     [handleJoin]
   );
+
+  const handleUsernameChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    setUsername(e.target.value);
+  }, []);
+
+  const handleInputMessageChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    setInputMessage(e.target.value);
+  }, []);
 
   return (
     <div className="container mx-auto p-4 max-w-2xl">
@@ -214,7 +222,7 @@ export default function SocketDemo(): ReactElement {
             <div className="space-y-2">
               <Input
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={handleUsernameChange}
                 onKeyDown={handleJoinKeyPress}
                 placeholder="Enter your username..."
                 disabled={!isConnected}
@@ -272,7 +280,7 @@ export default function SocketDemo(): ReactElement {
               <div className="flex space-x-2">
                 <Input
                   value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
+                  onChange={handleInputMessageChange}
                   onKeyDown={handleKeyPress}
                   placeholder="Type a message..."
                   disabled={!isConnected}
