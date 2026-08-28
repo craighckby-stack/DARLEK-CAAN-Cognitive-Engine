@@ -1,11 +1,18 @@
 "use client"
 
 import * as AspectRatioPrimitive from "@radix-ui/react-aspect-ratio"
+import type { ComponentPropsWithoutRef, ElementRef, ReactElement } from "react"
+import { forwardRef } from "react"
 
-function AspectRatio({
-  ...props
-}: React.ComponentProps<typeof AspectRatioPrimitive.Root>) {
-  return <AspectRatioPrimitive.Root data-slot="aspect-ratio" {...props} />
-}
+export type AspectRatioProps = ComponentPropsWithoutRef<typeof AspectRatioPrimitive.Root>
+export type AspectRatioElement = ElementRef<typeof AspectRatioPrimitive.Root>
+
+const AspectRatio = forwardRef<AspectRatioElement, AspectRatioProps>(
+  function AspectRatio({ ...props }, ref): ReactElement {
+    return <AspectRatioPrimitive.Root ref={ref} data-slot="aspect-ratio" {...props} />
+  }
+)
+
+AspectRatio.displayName = "AspectRatio"
 
 export { AspectRatio }
