@@ -2,21 +2,30 @@ import { initializeApp, getApps, type FirebaseOptions } from 'firebase/app';
 import { getAuth, signInAnonymously } from 'firebase/auth';
 import { initializeFirestore, doc, getDocFromServer } from 'firebase/firestore';
 
-const firebaseConfig: FirebaseOptions & { firestoreDatabaseId: string } = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? "dummy-api-key",
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? "dummy-domain",
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "dummy-project-id",
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ?? "dummy-bucket",
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? "dummy-sender-id",
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? "dummy-app-id",
-  firestoreDatabaseId: process.env.NEXT_PUBLIC_FIREBASE_FIRESTORE_DATABASE_ID ?? "dummy-db-id"
+interface ExtendedFirebaseOptions extends FirebaseOptions {
+  firestoreDatabaseId?: string;
+}
+
+const firebaseConfig: ExtendedFirebaseOptions = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? 'dummy-api-key',
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? 'dummy-domain',
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? 'dummy-project-id',
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ?? 'dummy-bucket',
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? 'dummy-sender-id',
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? 'dummy-app-id',
+  firestoreDatabaseId: process.env.NEXT_PUBLIC_FIREBASE_FIRESTORE_DATABASE_ID ?? 'dummy-db-id'
 };
 
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+const existingApps = getApps();
+const app = existingApps.length === 0 ? initializeApp(firebaseConfig) : existingApps[0];
 
-export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-}, firebaseConfig.firestoreDatabaseId);
+export const db = initializeFirestore(
+  app,
+  {
+    experimentalForceLongPolling: true,
+  },
+  firebaseConfig.firestoreDatabaseId ?? '(default)'
+);
 
 export const auth = getAuth(app);
 
@@ -30,11 +39,12 @@ async function testConnection(): Promise<void> {
 }
 
 if (!auth.currentUser) {
-  signInAnonymously(auth).catch((err: { code?: string; message?: string }) => {
-    if (err?.code === 'auth/admin-restricted-operation') {
-      console.warn("Anonymous Auth is disabled in Firebase Console. Cloud features may be limited.");
+  signInAnonymously(auth).catch((err: unknown) => {
+    const errObj = err as { code?: string; message?: string };
+    if (errObj?.code === 'auth/admin-restricted-operation') {
+      console.warn('Anonymous Auth is disabled in Firebase Console. Cloud features may be limited.');
     } else {
-      console.warn(`Anonymous authentication is in sandbox/offline fallback mode: ${err?.message ?? String(err)}`);
+      console.warn(`Anonymous authentication is in sandbox/offline fallback mode: ${errObj?.message ?? String(err)}`);
     }
   });
 }
