@@ -1,10 +1,16 @@
 import * as React from "react"
-
 import { cn } from "@/lib/utils"
 
 export interface CardProps extends React.ComponentProps<"div"> {
   asChild?: boolean
 }
+
+export type CardHeaderProps = React.ComponentProps<"div">
+export type CardTitleProps = React.ComponentProps<"div">
+export type CardDescriptionProps = React.ComponentProps<"div">
+export type CardActionProps = React.ComponentProps<"div">
+export type CardContentProps = React.ComponentProps<"div">
+export type CardFooterProps = React.ComponentProps<"div">
 
 const Card = React.memo(
   React.forwardRef<HTMLDivElement, CardProps>(
@@ -25,7 +31,7 @@ const Card = React.memo(
 )
 
 const CardHeader = React.memo(
-  React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
+  React.forwardRef<HTMLDivElement, CardHeaderProps>(
     function CardHeader({ className, ...props }, ref) {
       return (
         <div
@@ -43,7 +49,7 @@ const CardHeader = React.memo(
 )
 
 const CardTitle = React.memo(
-  React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
+  React.forwardRef<HTMLDivElement, CardTitleProps>(
     function CardTitle({ className, ...props }, ref) {
       return (
         <div
@@ -58,7 +64,7 @@ const CardTitle = React.memo(
 )
 
 const CardDescription = React.memo(
-  React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
+  React.forwardRef<HTMLDivElement, CardDescriptionProps>(
     function CardDescription({ className, ...props }, ref) {
       return (
         <div
@@ -73,7 +79,7 @@ const CardDescription = React.memo(
 )
 
 const CardAction = React.memo(
-  React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
+  React.forwardRef<HTMLDivElement, CardActionProps>(
     function CardAction({ className, ...props }, ref) {
       return (
         <div
@@ -91,7 +97,7 @@ const CardAction = React.memo(
 )
 
 const CardContent = React.memo(
-  React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
+  React.forwardRef<HTMLDivElement, CardContentProps>(
     function CardContent({ className, ...props }, ref) {
       return (
         <div
@@ -106,7 +112,7 @@ const CardContent = React.memo(
 )
 
 const CardFooter = React.memo(
-  React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
+  React.forwardRef<HTMLDivElement, CardFooterProps>(
     function CardFooter({ className, ...props }, ref) {
       return (
         <div
