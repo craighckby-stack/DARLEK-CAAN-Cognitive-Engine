@@ -3,7 +3,7 @@
 # Engine: EMG Core v49 Neural Code and Documentation Optimizer Engine
 # Role: Enforces strict quality gates, architectural compliance, and automated verification.
 # Integration: Aligns PR submissions with the Zero-Leak Sandbox, Dynamic Consensus Weighting (DCW), and Diagnostic Engine.
-# Version: 2.1.0-DIAGNOSTIC-ENFORCED
+# Version: 2.1.1-DIAGNOSTIC-ENFORCED
 -->
 
 ## 🧩 Description & Context
