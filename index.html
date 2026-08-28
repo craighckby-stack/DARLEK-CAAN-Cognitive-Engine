@@ -1,16 +1,24 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="description" content="Dalek Caan Chess — Temporal Crucible Conflict. A high-performance sovereign tactical interface." />
+    <meta name="theme-color" content="#090a0f" />
     <title>Dalek Caan Chess — Temporal Crucible Conflict</title>
-    <!-- Preconnect for performance optimization -->
+    
+    <!-- High-priority performance optimizations: DNS prefetch and preconnect -->
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Critical rendering path preloads -->
+    <link rel="modulepreload" href="/src/main.tsx" />
   </head>
-  <body>
-    <div id="root" role="application" aria-label="Dalek Caan Chess Interface"></div>
-    <script type="module" src="/src/main.tsx"></script>
+  <body class="bg-slate-950 text-slate-100 antialiased selection:bg-red-500 selection:text-white">
+    <div id="root" role="application" aria-label="Dalek Caan Chess Interface" class="min-h-screen flex flex-col"></div>
+    <script type="module" src="/src/main.tsx" defer></script>
   </body>
 </html>
