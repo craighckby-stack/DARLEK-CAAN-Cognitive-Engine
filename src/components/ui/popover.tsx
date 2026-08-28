@@ -5,27 +5,40 @@ import * as PopoverPrimitive from "@radix-ui/react-popover"
 
 import { cn } from "@/lib/utils"
 
-function Popover({
-  ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Root>) {
-  return <PopoverPrimitive.Root data-slot="popover" {...props} />
-}
+export interface PopoverProps extends React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Root> {}
 
-function PopoverTrigger({
-  ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Trigger>) {
-  return <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />
-}
+const Popover = React.memo(
+  React.forwardRef<
+    React.ElementRef<typeof PopoverPrimitive.Root>,
+    PopoverProps
+  >(({ ...props }, ref) => (
+    <PopoverPrimitive.Root data-slot="popover" {...props} />
+  ))
+)
+Popover.displayName = "Popover"
 
-function PopoverContent({
-  className,
-  align = "center",
-  sideOffset = 4,
-  ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Content>) {
-  return (
+export interface PopoverTriggerProps extends React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Trigger> {}
+
+const PopoverTrigger = React.memo(
+  React.forwardRef<
+    React.ElementRef<typeof PopoverPrimitive.Trigger>,
+    PopoverTriggerProps
+  >(({ ...props }, ref) => (
+    <PopoverPrimitive.Trigger ref={ref} data-slot="popover-trigger" {...props} />
+  ))
+)
+PopoverTrigger.displayName = PopoverPrimitive.Trigger.displayName
+
+export interface PopoverContentProps extends React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content> {}
+
+const PopoverContent = React.memo(
+  React.forwardRef<
+    React.ElementRef<typeof PopoverPrimitive.Content>,
+    PopoverContentProps
+  >(({ className, align = "center", sideOffset = 4, ...props }, ref) => (
     <PopoverPrimitive.Portal>
       <PopoverPrimitive.Content
+        ref={ref}
         data-slot="popover-content"
         align={align}
         sideOffset={sideOffset}
@@ -36,13 +49,20 @@ function PopoverContent({
         {...props}
       />
     </PopoverPrimitive.Portal>
-  )
-}
+  ))
+)
+PopoverContent.displayName = PopoverPrimitive.Content.displayName
 
-function PopoverAnchor({
-  ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Anchor>) {
-  return <PopoverPrimitive.Anchor data-slot="popover-anchor" {...props} />
-}
+export interface PopoverAnchorProps extends React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Anchor> {}
+
+const PopoverAnchor = React.memo(
+  React.forwardRef<
+    React.ElementRef<typeof PopoverPrimitive.Anchor>,
+    PopoverAnchorProps
+  >(({ ...props }, ref) => (
+    <PopoverPrimitive.Anchor ref={ref} data-slot="popover-anchor" {...props} />
+  ))
+)
+PopoverAnchor.displayName = PopoverPrimitive.Anchor.displayName
 
 export { Popover, PopoverTrigger, PopoverContent, PopoverAnchor }
