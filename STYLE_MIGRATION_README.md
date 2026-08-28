@@ -1,7 +1,7 @@
 # 💠 STYLE MIGRATION PROTOCOL :: GLASS-EMERGENT
 
 ## ▮ OVERVIEW
-This module executes the mandatory transition of UI primitives from legacy **Zinc** palettes to the high-fidelity **Glass-Emergent** design system, as mandated by the `darlek-cann-v3` architecture. All legacy tokens are formally deprecated to enforce absolute stylistic purity and visual consistency across all interfaces.
+This module executes the mandatory transition of user interface primitives from legacy **Zinc** palettes to the high-fidelity **Glass-Emergent** design system, as mandated by the `darlek-cann-v3` architecture. All legacy tokens are formally deprecated to enforce absolute stylistic purity and visual consistency across all interfaces.
 
 ---
 
@@ -50,7 +50,7 @@ export async function executeMigration(sourceContent: string): Promise<string> {
 ---
 
 ## ▮ SYSTEM INTEGRATION
-This protocol is deployed as a mandatory **pre-build hook** within the automated CI/CD pipeline. It serves as the primary enforcement mechanism for design system compliance across the entire `sovereign-kernel` ecosystem.
+This protocol is deployed as a mandatory **pre-build hook** within the automated CI/CD pipeline, serving as the primary enforcement mechanism for design system compliance across the entire `sovereign-kernel` ecosystem.
 
 > [!IMPORTANT]
 > Non-compliant styling tokens are automatically flagged and refactored during build-time to maintain strict architectural integrity and prevent regressions.
