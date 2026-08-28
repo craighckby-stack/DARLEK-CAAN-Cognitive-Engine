@@ -21,6 +21,11 @@ interface BulkCommitRequestBody {
   commitMessage?: string;
 }
 
+interface GitHubErrorResponse {
+  message?: string;
+  [key: string]: unknown;
+}
+
 export async function GET(): Promise<NextResponse> {
   return NextResponse.json({ status: 'online', service: 'GITHUB_BULK_COMMIT_API' });
 }
@@ -68,7 +73,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const verifyRepoRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
 
     if (verifyRepoRes.status === 404) {
-      const createRes = await fetch(`https://api.github.com/user/repos`, {
+      const createRes = await fetch('https://api.github.com/user/repos', {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -84,7 +89,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       }
       
       // Wait for GitHub propagation so ref heads are available
-      await new Promise((resolveTimer) => setTimeout(resolveTimer, 3000));
+      await new Promise<void>((resolveTimer) => setTimeout(resolveTimer, 3000));
     }
 
     // ────────────────────────────────────────────────────────
@@ -96,12 +101,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (!refRes.ok) {
       const repoInfoRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
       if (repoInfoRes.ok) {
-        const repoInfo = await repoInfoRes.json();
+        const repoInfo = await repoInfoRes.json() as { default_branch?: string };
         const defaultBranch = repoInfo.default_branch || 'main';
 
         const defRefRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/ref/heads/${encodeURIComponent(defaultBranch)}`, { headers });
         if (defRefRes.ok) {
-          const defRefData = await defRefRes.json();
+          const defRefData = await defRefRes.json() as { object?: { sha?: string } };
           const defaultCommitSha = defRefData.object?.sha;
           if (defaultCommitSha) {
             const createRefRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/refs`, {
@@ -128,7 +133,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const refData = await refRes.json();
+    const refData = await refRes.json() as { object?: { sha?: string } };
     const latestCommitSha = refData.object?.sha;
 
     if (!latestCommitSha) {
@@ -152,7 +157,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const commitData = await commitRes.json();
+    const commitData = await commitRes.json() as { tree?: { sha?: string } };
     const baseTreeSha = commitData.tree?.sha;
 
     if (!baseTreeSha) {
@@ -179,7 +184,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           }
         })
       );
-    } catch (diskErr) {
+    } catch (diskErr: unknown) {
       console.warn('[Bulk Commit] Disk write warning:', diskErr);
     }
 
@@ -201,7 +206,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         throw new Error(`Failed to create git blob for file ${file.path}: ${errMsg}`);
       }
 
-      const blobData = await blobRes.json();
+      const blobData = await blobRes.json() as { sha?: string };
       if (!blobData.sha) {
         throw new Error(`Git blob API did not return SHA for file ${file.path}`);
       }
@@ -243,7 +248,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const treeData = await treeRes.json();
+    const treeData = await treeRes.json() as { sha?: string };
     const newTreeSha = treeData.sha;
 
     if (!newTreeSha) {
@@ -278,7 +283,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const createCommitData = await createCommitRes.json();
+    const createCommitData = await createCommitRes.json() as { sha?: string };
     const newCommitSha = createCommitData.sha;
 
     if (!newCommitSha) {
