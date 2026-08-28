@@ -23,7 +23,7 @@ This module implements a high-performance Minimax-based chess AI engine utilizin
 /**
  * Configuration interface for the DARLEK-CANN-CHESS engine.
  */
-interface EngineConfig {
+export interface EngineConfig {
   /** The abstract brain implementation to use for evaluation. */
   brainType: BrainType;
   
@@ -40,7 +40,7 @@ interface EngineConfig {
  * @param config - The runtime configuration parameters for the engine.
  * @throws {Error} If the configuration parameters are invalid or unsupported.
  */
-function initializeEngine(config: EngineConfig): void {
+export function initializeEngine(config: EngineConfig): void {
   // Engine bootstrap implementation
 }
 ```
