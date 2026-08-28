@@ -5,42 +5,49 @@ let audioCtx: AudioContext | null = null;
 
 function getAudioContext(): AudioContext {
   if (!audioCtx) {
-    audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    audioCtx = new AudioContextClass();
   }
   if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
+    void audioCtx.resume();
   }
   return audioCtx;
 }
 
-export function initAudioEngine() {
-  const ctx = getAudioContext();
-  if (ctx.state === 'suspended') {
-    ctx.resume();
-  }
-  
-  // Dummy synth to unlock iOS Web Audio
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  gain.gain.value = 0;
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-  osc.start(ctx.currentTime);
-  osc.stop(ctx.currentTime + 0.001);
+export function initAudioEngine(): void {
+  try {
+    const ctx = getAudioContext();
+    if (ctx.state === 'suspended') {
+      void ctx.resume();
+    }
+    
+    // Dummy synth to unlock iOS Web Audio
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    gain.gain.value = 0;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.001);
 
-  // Dummy speech utterance to unlock iOS Speech Synthesis
-  if (window.speechSynthesis) {
-    const utterance = new SpeechSynthesisUtterance(' ');
-    utterance.volume = 0;
-    window.speechSynthesis.speak(utterance);
+    // Dummy speech utterance to unlock iOS Speech Synthesis
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      const utterance = new SpeechSynthesisUtterance(' ');
+      utterance.volume = 0;
+      window.speechSynthesis.speak(utterance);
+    }
+  } catch (error) {
+    console.warn('Audio engine initialization failed:', error);
   }
 }
 
+export type SynthSoundType = 'move' | 'capture' | 'check' | 'checkmate' | 'victory' | 'blip' | 'alarm';
+
 export function playSynthSound(
-  type: 'move' | 'capture' | 'check' | 'checkmate' | 'victory' | 'blip' | 'alarm',
+  type: SynthSoundType,
   muted: boolean = false,
   volume: number = 0.5
-) {
+): void {
   if (muted) return;
 
   try {
@@ -251,7 +258,7 @@ let jesusOsc1: OscillatorNode | null = null;
 let jesusOsc2: OscillatorNode | null = null;
 let jesusGain: GainNode | null = null;
 
-export function cleanupSpeechAudio() {
+export function cleanupSpeechAudio(): void {
   try {
     if (speechOsc) {
       speechOsc.stop();
@@ -285,18 +292,18 @@ export function cleanupSpeechAudio() {
       jesusGain.disconnect();
       jesusGain = null;
     }
-  } catch (e) {
-    // already disconnected
+  } catch {
+    // Already disconnected or inactive
   }
 }
 
 let globalChronosLoad = 0;
-export function setChronosLoadValue(val: number) {
+export function setChronosLoadValue(val: number): void {
   globalChronosLoad = val;
 }
 
-export function stopSpeaking() {
-  if (window.speechSynthesis) {
+export function stopSpeaking(): void {
+  if (typeof window !== 'undefined' && window.speechSynthesis) {
     window.speechSynthesis.cancel();
   }
   cleanupSpeechAudio();
@@ -307,9 +314,15 @@ export function stopSpeaking() {
  * Combines built-in browser Text-To-Speech with a synchronized Web Audio API
  * 30Hz Ring Modulation drone representing Dalek vocal box mechanics.
  */
-export function speakDalekText(text: string, muted: boolean = false, volume: number = 0.5, onEndCallback?: () => void, chronosLoad: number = 0) {
+export function speakDalekText(
+  text: string, 
+  muted: boolean = false, 
+  volume: number = 0.5, 
+  onEndCallback?: () => void, 
+  chronosLoad: number = 0
+): void {
   const activeChronos = chronosLoad || globalChronosLoad;
-  if (muted || !window.speechSynthesis) {
+  if (muted || typeof window === 'undefined' || !window.speechSynthesis) {
     if (onEndCallback) onEndCallback();
     return;
   }
@@ -430,9 +443,15 @@ export function speakDalekText(text: string, muted: boolean = false, volume: num
  * Combines built-in browser Text-To-Speech with a synchronized Web Audio API
  * Warm golden choir drone (220Hz Sine base + 330Hz fifth) to symbolize celestial brilliance.
  */
-export function speakJesusText(text: string, muted: boolean = false, volume: number = 0.5, onEndCallback?: () => void, chronosLoad: number = 0) {
+export function speakJesusText(
+  text: string, 
+  muted: boolean = false, 
+  volume: number = 0.5, 
+  onEndCallback?: () => void, 
+  chronosLoad: number = 0
+): void {
   const activeChronos = chronosLoad || globalChronosLoad;
-  if (muted || !window.speechSynthesis) {
+  if (muted || typeof window === 'undefined' || !window.speechSynthesis) {
     if (onEndCallback) onEndCallback();
     return;
   }
