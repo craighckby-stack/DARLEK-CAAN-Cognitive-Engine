@@ -14,15 +14,21 @@
 
 ```javascript
 /**
- * Core updateModule.js injection routine ensuring atomic and transactional safety.
+ * @file updateModule.js
+ * @description Core injection routine ensuring atomic and transactional safety.
+ */
+
+const fs = require('node:fs');
+const path = require('node:path');
+
+/**
+ * Injects a payload into a target file using atomic boundaries and backup provisioning.
+ * 
  * @param {string} targetPath - The destination file path for the payload.
  * @param {string} payload - The code or content block to inject.
  * @param {Object} markers - Start and end regex markers for injection boundaries.
  * @returns {boolean} Returns true upon successful execution.
  */
-const fs = require('node:fs');
-const path = require('node:path');
-
 function injectAtomicModule(targetPath, payload, markers) {
     // Ensure transactional safety via backup creation
     const backupDir = path.join(path.dirname(targetPath), '.evolve_backups');
