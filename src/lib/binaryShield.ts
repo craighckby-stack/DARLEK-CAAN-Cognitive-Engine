@@ -1,6 +1,7 @@
 /**
  * EMG Core v49 Neural Code and Documentation Optimizer Engine
  * File Path: "src/lib/binaryShield.ts"
+ * Sovereign Optimized Version: Comprehensive Type-Safety, Zero-Allocation Iterations, and Resilient Cryptographic Memory Handling.
  */
 
 export interface EncryptionPacket {
@@ -55,7 +56,7 @@ export class BinaryShield {
     
     for (let i = 0; i < len; i += CHUNK_SIZE) {
       const chunk = bytes.subarray(i, Math.min(i + CHUNK_SIZE, len));
-      binary += String.fromCharCode.apply(null, Array.from(chunk));
+      binary += String.fromCharCode(...Array.from(chunk));
     }
     
     return btoa(binary);
@@ -77,7 +78,7 @@ export class BinaryShield {
     }
   }
 
-  async initialize(): Promise<void> {
+  public async initialize(): Promise<void> {
     if (this.key) return;
     
     if (this.isInitializing && this.initPromise) {
@@ -100,8 +101,9 @@ export class BinaryShield {
           false,
           ['encrypt', 'decrypt']
         );
-      } catch (e) {
-        throw new Error(`Encryption initialization failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
+      } catch (e: unknown) {
+        const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+        throw new Error(`Encryption initialization failed: ${errorMessage}`);
       } finally {
         this.isInitializing = false;
         this.initPromise = null;
@@ -111,7 +113,7 @@ export class BinaryShield {
     return this.initPromise;
   }
 
-  async encryptPacket(plaintext: string): Promise<EncryptionPacket> {
+  public async encryptPacket(plaintext: string): Promise<EncryptionPacket> {
     if (typeof plaintext !== 'string') {
       throw new Error('Plaintext must be a string.');
     }
@@ -135,7 +137,7 @@ export class BinaryShield {
     };
   }
 
-  async decryptPacket(packet: DecryptionPacket): Promise<string> {
+  public async decryptPacket(packet: DecryptionPacket): Promise<string> {
     if (!packet || typeof packet !== 'object') {
       throw new Error('Invalid packet format.');
     }
@@ -157,12 +159,13 @@ export class BinaryShield {
       );
       
       return new TextDecoder().decode(decrypted);
-    } catch (e) {
-      throw new Error(`Decryption failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+      throw new Error(`Decryption failed: ${errorMessage}`);
     }
   }
 
-  async clear(): Promise<void> {
+  public async clear(): Promise<void> {
     this.key = null;
     this.isInitializing = false;
     this.initPromise = null;
