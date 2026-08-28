@@ -56,7 +56,7 @@ export default function DashboardPanel({
   debateActive,
   debateVotes,
   debateConsensus,
-  rejectionCount,
+  rejectionCount: _rejectionCount,
   brainSessionId,
   historyRefreshTrigger,
   isLoading = false,
