@@ -6,60 +6,83 @@ import * as AvatarPrimitive from "@radix-ui/react-avatar"
 import { cn } from "@/lib/utils"
 
 export interface AvatarProps extends React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root> {
-  className?: string
+  readonly className?: string
 }
 
 export interface AvatarImageProps extends React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image> {
-  className?: string
+  readonly className?: string
 }
 
 export interface AvatarFallbackProps extends React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Fallback> {
-  className?: string
+  readonly className?: string
 }
 
 const Avatar = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Root>,
   AvatarProps
->(({ className, ...props }, ref) => (
-  <AvatarPrimitive.Root
-    ref={ref}
-    data-slot="avatar"
-    className={cn(
-      "relative flex size-8 shrink-0 overflow-hidden rounded-full",
-      className
-    )}
-    {...props}
-  />
-))
-Avatar.displayName = AvatarPrimitive.Root.displayName
+>(({ className, ...props }, ref) => {
+  const computedClassName = React.useMemo(
+    () =>
+      cn(
+        "relative flex size-8 shrink-0 overflow-hidden rounded-full",
+        className
+      ),
+    [className]
+  )
+
+  return (
+    <AvatarPrimitive.Root
+      ref={ref}
+      data-slot="avatar"
+      className={computedClassName}
+      {...props}
+    />
+  )
+})
+Avatar.displayName = AvatarPrimitive.Root.displayName || "Avatar"
 
 const AvatarImage = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Image>,
   AvatarImageProps
->(({ className, ...props }, ref) => (
-  <AvatarPrimitive.Image
-    ref={ref}
-    data-slot="avatar-image"
-    className={cn("aspect-square size-full", className)}
-    {...props}
-  />
-))
-AvatarImage.displayName = AvatarPrimitive.Image.displayName
+>(({ className, ...props }, ref) => {
+  const computedClassName = React.useMemo(
+    () => cn("aspect-square size-full", className),
+    [className]
+  )
+
+  return (
+    <AvatarPrimitive.Image
+      ref={ref}
+      data-slot="avatar-image"
+      className={computedClassName}
+      {...props}
+    />
+  )
+})
+AvatarImage.displayName = AvatarPrimitive.Image.displayName || "AvatarImage"
 
 const AvatarFallback = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Fallback>,
   AvatarFallbackProps
->(({ className, ...props }, ref) => (
-  <AvatarPrimitive.Fallback
-    ref={ref}
-    data-slot="avatar-fallback"
-    className={cn(
-      "bg-muted flex size-full items-center justify-center rounded-full",
-      className
-    )}
-    {...props}
-  />
-))
-AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName
+>(({ className, ...props }, ref) => {
+  const computedClassName = React.useMemo(
+    () =>
+      cn(
+        "bg-muted flex size-full items-center justify-center rounded-full",
+        className
+      ),
+    [className]
+  )
+
+  return (
+    <AvatarPrimitive.Fallback
+      ref={ref}
+      data-slot="avatar-fallback"
+      className={computedClassName}
+      {...props}
+    />
+  )
+})
+AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName || "AvatarFallback"
 
 export { Avatar, AvatarImage, AvatarFallback }
