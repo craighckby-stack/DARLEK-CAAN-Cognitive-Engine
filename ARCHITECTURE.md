@@ -2,11 +2,12 @@
 
 > **System Designation:** `OMEGA-EMERGENT-INTELLIGENCE`  
 > **Kernel Version:** Core v49  
-> **Classification:** Autonomous Self-Refactoring Multi-Agent System
+> **Classification:** Autonomous Self-Refactoring Multi-Agent System  
+> **Optimizer Engine:** EMG Core v49 Neural Code and Documentation Optimizer
 
 ---
 
-## 1. Overview
+## 1. System Overview
 
 This repository serves as the core execution kernel for the OMEGA system. It seamlessly integrates advanced multi-agent orchestration frameworks with a continuous, self-refactoring evolutionary loop inspired by the **Huxley-Singularity-Loop**.
 
@@ -14,10 +15,12 @@ This repository serves as the core execution kernel for the OMEGA system. It sea
 
 ## 2. Directory Structure
 
+The repository is structured to separate orchestration, evolution, state persistence, and environment-specific configurations:
+
 ```text
 /
 ├── src/
-│   ├── agents/          # Orchestration logic, communication protocols, and autonomous agent behaviors
+│   ├── agents/          # Orchestration logic, inter-agent communication protocols, and autonomous agent behaviors
 │   └── evolution/       # Self-modifying code blocks, evaluation metrics, and mutation engines
 ├── persistence/         # State snapshots, execution state-trees, and quantum-core memory dumps
 └── local-overrides/     # Environment-specific behavioral patches and local configurations
@@ -27,22 +30,22 @@ This repository serves as the core execution kernel for the OMEGA system. It sea
 
 ## 3. Security Protocols
 
-To maintain system integrity and prevent unauthorized access, all operators must adhere to the following security directives:
+To maintain absolute system integrity and prevent unauthorized access or privilege escalation, all operators must strictly adhere to the following security directives:
 
-* **Credential Injection:** All sensitive keys and authentication tokens must be injected strictly via secure environment variables.
-* **Ignored Artifacts:** `.env` and local override files are explicitly ignored via `.gitignore` to prevent credential leakage.
-* **Log Isolation:** Evolutionary audit logs and debugging traces remain strictly local-only to maintain repository cleanliness and compliance.
+* **Credential Injection:** All sensitive keys, secrets, and authentication tokens must be injected exclusively via secure environment variables.
+* **Ignored Artifacts:** `.env` and local override files are explicitly excluded via `.gitignore` to prevent accidental credential leakage.
+* **Log Isolation:** Evolutionary audit logs and debugging traces remain strictly local-only to maintain repository cleanliness, security compliance, and minimal footprint.
 
 ---
 
-## 4. System Integration
+## 4. System Integration & External Modules
 
-The OMEGA kernel interfaces with external high-availability modules for distributed computation:
+The OMEGA kernel interfaces with external high-availability modules for distributed computation and self-modification:
 
-* **`Unitary-Core`**: Responsible for high-dimensional tensor processing, pattern recognition, and vector embedding computations.
-* **`Sovereign-v86`**: Provides kernel-level access for autonomous self-refactoring, instruction-set verification, and hot-patching.
+* **`Unitary-Core`**: Responsible for high-dimensional tensor processing, cognitive pattern recognition, and vector embedding computations.
+* **`Sovereign-v86`**: Provides kernel-level access for autonomous self-refactoring, instruction-set verification, and zero-downtime hot-patching.
 
-```
+```text
 +------------------+       +-------------------+       +-------------------+
 |  OMEGA-EMERGENT  | <---> |   Unitary-Core    | <---> |   Sovereign-v86   |
 |   (Core Kernel)  |       | (High-Dim Engine) |       | (Self-Refactor)   |
