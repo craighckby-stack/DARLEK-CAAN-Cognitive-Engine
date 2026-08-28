@@ -12,7 +12,7 @@ import { GoogleGenAI } from '@google/genai';
 const MODEL_CANDIDATES = [
   'gemini-3.6-flash',
   'gemini-flash-latest',
-];
+] as const;
 
 let rateLimitUntil = 0;
 let invalidKeyUntil = 0;
@@ -33,7 +33,7 @@ function parseRetryDelayMs(errMsg: string): number {
 class ConcurrencyLimiter {
   private activeCount = 0;
   private queue: (() => void)[] = [];
-  private maxConcurrency: number;
+  private readonly maxConcurrency: number;
 
   constructor(maxConcurrency = 2) {
     this.maxConcurrency = maxConcurrency;
@@ -49,7 +49,7 @@ class ConcurrencyLimiter {
     });
   }
 
-  release() {
+  release(): void {
     this.activeCount--;
     if (this.queue.length > 0) {
       this.activeCount++;
@@ -81,6 +81,15 @@ export interface GeminiCallConfig {
   responseSchema?: unknown;
 }
 
+export interface ChatPart {
+  text: string;
+}
+
+export interface ChatContent {
+  role: string;
+  parts: ChatPart[];
+}
+
 /**
  * Call Gemini with single prompt and automatic model fallback
  */
@@ -93,10 +102,11 @@ export async function callGemini(
   const cleanKey = (apiKey || '').trim();
   if (!cleanKey) return null;
 
-  if (Date.now() < rateLimitUntil) {
+  const now = Date.now();
+  if (now < rateLimitUntil) {
     return null;
   }
-  if (cleanKey === lastInvalidKey && Date.now() < invalidKeyUntil) {
+  if (cleanKey === lastInvalidKey && now < invalidKeyUntil) {
     return null;
   }
 
@@ -131,7 +141,7 @@ export async function callGemini(
         if (text && typeof text === 'string') {
           return text;
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         const errMsg = err instanceof Error ? err.message : String(err);
         const isAuthError =
           errMsg.includes('401') ||
@@ -144,7 +154,7 @@ export async function callGemini(
         if (isAuthError) {
           invalidKeyUntil = Date.now() + 60000;
           lastInvalidKey = cleanKey;
-          console.warn(`[Gemini API] API key validation failed (401/403) — falling back to local engine.`);
+          console.warn('[Gemini API] API key validation failed (401/403) — falling back to local engine.');
           return null;
         }
 
@@ -155,7 +165,7 @@ export async function callGemini(
 
         if (isGeoblocked) {
           rateLimitUntil = Date.now() + 300000;
-          console.warn(`[Gemini API] Region geoblocked — falling back to local engine.`);
+          console.warn('[Gemini API] Region geoblocked — falling back to local engine.');
           return null;
         }
 
@@ -180,17 +190,18 @@ export async function callGemini(
  */
 export async function callGeminiMultiTurn(
   systemInstruction: string,
-  contents: Array<{ role: string; parts: Array<{ text: string }> }>,
+  contents: ChatContent[],
   apiKey: string,
   options?: GeminiCallConfig
 ): Promise<string | null> {
   const cleanKey = (apiKey || '').trim();
   if (!cleanKey) return null;
 
-  if (Date.now() < rateLimitUntil) {
+  const now = Date.now();
+  if (now < rateLimitUntil) {
     return null;
   }
-  if (cleanKey === lastInvalidKey && Date.now() < invalidKeyUntil) {
+  if (cleanKey === lastInvalidKey && now < invalidKeyUntil) {
     return null;
   }
 
@@ -230,7 +241,7 @@ export async function callGeminiMultiTurn(
         if (text && typeof text === 'string') {
           return text;
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         const errMsg = err instanceof Error ? err.message : String(err);
         const isAuthError =
           errMsg.includes('401') ||
@@ -242,7 +253,7 @@ export async function callGeminiMultiTurn(
         if (isAuthError) {
           invalidKeyUntil = Date.now() + 60000;
           lastInvalidKey = cleanKey;
-          console.warn(`[Gemini API] API key validation failed (401/403) — falling back to local engine.`);
+          console.warn('[Gemini API] API key validation failed (401/403) — falling back to local engine.');
           return null;
         }
 
@@ -253,7 +264,7 @@ export async function callGeminiMultiTurn(
 
         if (isGeoblocked) {
           rateLimitUntil = Date.now() + 300000;
-          console.warn(`[Gemini API] Region geoblocked — falling back to local engine.`);
+          console.warn('[Gemini API] Region geoblocked — falling back to local engine.');
           return null;
         }
 
