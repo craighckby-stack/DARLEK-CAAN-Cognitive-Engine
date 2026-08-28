@@ -32,7 +32,7 @@ function formatTimeString(ts: unknown): string {
   if (ts instanceof Date) return ts.toLocaleTimeString();
   if (typeof ts === 'string') {
     const d = new Date(ts);
-    return isNaN(d.getTime()) ? ts : d.toLocaleTimeString();
+    return Number.isNaN(d.getTime()) ? ts : d.toLocaleTimeString();
   }
   return String(ts);
 }
