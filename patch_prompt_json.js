@@ -17,6 +17,10 @@ const path = require('node:path');
  * @throws {Error} If file reading or writing fails.
  */
 function patchPromptJson(targetFilePath) {
+  if (typeof targetFilePath !== 'string' || targetFilePath.trim() === '') {
+    throw new TypeError('[EMG-v49] Critical Error: targetFilePath must be a non-empty string.');
+  }
+
   const resolvedPath = path.resolve(targetFilePath);
 
   if (!fs.existsSync(resolvedPath)) {
@@ -24,7 +28,12 @@ function patchPromptJson(targetFilePath) {
   }
 
   // Read file with explicit utf-8 encoding and optimized memory handling
-  let code = fs.readFileSync(resolvedPath, { encoding: 'utf8' });
+  let code;
+  try {
+    code = fs.readFileSync(resolvedPath, { encoding: 'utf8' });
+  } catch (readError) {
+    throw new Error(`[EMG-v49] Critical Error: Failed to read file at ${resolvedPath}: ${readError.message}`);
+  }
 
   const targetString1 = 'Your response MUST be in this exact JSON format (no markdown, no code fences):';
   const replacementString1 = `Your response MUST contain two parts:
@@ -69,7 +78,11 @@ Format your response exactly like this:
   }
 
   // Safely write the updated source code back to disk
-  fs.writeFileSync(resolvedPath, code, { encoding: 'utf8' });
+  try {
+    fs.writeFileSync(resolvedPath, code, { encoding: 'utf8' });
+  } catch (writeError) {
+    throw new Error(`[EMG-v49] Critical Error: Failed to write file at ${resolvedPath}: ${writeError.message}`);
+  }
 }
 
 // Module Execution Guard
