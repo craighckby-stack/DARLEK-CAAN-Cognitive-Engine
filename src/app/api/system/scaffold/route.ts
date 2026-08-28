@@ -3,19 +3,19 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 
 interface SystemStatusResponse {
-  status: 'online';
-  service: string;
+  readonly status: 'online';
+  readonly service: string;
 }
 
 interface ScaffoldSuccessResponse {
-  success: true;
-  message: string;
-  timestamp: string;
+  readonly success: true;
+  readonly message: string;
+  readonly timestamp: string;
 }
 
 interface ErrorResponse {
-  error: string;
-  timestamp: string;
+  readonly error: string;
+  readonly timestamp: string;
 }
 
 export async function GET(): Promise<NextResponse<SystemStatusResponse>> {
@@ -27,8 +27,9 @@ export async function GET(): Promise<NextResponse<SystemStatusResponse>> {
 
 export async function POST(req: NextRequest): Promise<NextResponse<ScaffoldSuccessResponse | ErrorResponse>> {
   try {
-    // Optional request body consumption/validation hook for future extensibility
-    await req.json().catch(() => null);
+    if (req.body) {
+      await req.json().catch(() => null);
+    }
 
     return NextResponse.json({
       success: true,
