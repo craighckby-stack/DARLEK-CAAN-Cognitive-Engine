@@ -4,44 +4,65 @@ import path from 'path';
 import { safeReqJson } from '@/lib/safe-json';
 
 export const dynamic = 'force-dynamic';
-
 export const maxDuration = 300;
 
-export async function GET() {
+interface CreateRepoRequestBody {
+  token?: string;
+  repoName?: string;
+  description?: string;
+}
+
+interface GitHubUser {
+  login: string;
+}
+
+interface GitHubRepo {
+  default_branch?: string;
+}
+
+interface FileItem {
+  path: string;
+  content: string;
+}
+
+interface GitHubErrorResponse {
+  message?: string;
+}
+
+export async function GET(): Promise<NextResponse> {
   return NextResponse.json({ status: 'online', service: 'GITHUB_CREATE_REPO_API' });
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
-    const body = await safeReqJson(req, {});
+    const body = (await safeReqJson(req, {})) as CreateRepoRequestBody;
     const { token, repoName, description } = body;
 
     if (!token || !repoName) {
       return NextResponse.json({ error: 'token and repoName are required' }, { status: 400 });
     }
 
-    // Step 1: Check if repo already exists
-    const userRes = await fetch('https://api.github.com/user', {
-      headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' },
-    });
+    const headers = {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/vnd.github.v3+json',
+      'Content-Type': 'application/json',
+    };
+
+    const userRes = await fetch('https://api.github.com/user', { headers });
     if (!userRes.ok) {
       return NextResponse.json({ error: 'GitHub authentication failed' }, { status: 401 });
     }
-    const userData = await userRes.json();
+    const userData = (await userRes.json()) as GitHubUser;
     const owner = userData.login;
 
-    // Check if repo exists
-    const existingRepo = await fetch(`https://api.github.com/repos/${owner}/${encodeURIComponent(repoName)}`, {
-      headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' },
-    });
+    const existingRepo = await fetch(`https://api.github.com/repos/${owner}/${encodeURIComponent(repoName)}`, { headers });
     let repoCreated = existingRepo.ok;
     let defaultBranch = 'main';
 
     if (!repoCreated) {
-      // Create the repo
       const createRes = await fetch('https://api.github.com/user/repos', {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' },
+        headers,
         body: JSON.stringify({
           name: repoName,
           description: description || 'DARLEK CANN v3.0 — Code Evolution Engine',
@@ -51,39 +72,48 @@ export async function POST(req: NextRequest) {
       });
 
       if (!createRes.ok) {
-        const errData = await createRes.json().catch(() => ({}));
+        const errData = (await createRes.json().catch(() => ({}))) as GitHubErrorResponse;
         return NextResponse.json({ error: `Failed to create repo: ${errData.message || createRes.statusText}` }, { status: createRes.status });
       }
       repoCreated = true;
     } else {
-      const repoData = await existingRepo.json();
+      const repoData = (await existingRepo.json()) as GitHubRepo;
       defaultBranch = repoData.default_branch || 'main';
     }
 
-    // Step 2: Collect source files to push
     const projectRoot = process.cwd();
-    const extensionsToInclude = ['.ts', '.tsx', '.js', '.jsx', '.css', '.json', '.html', '.prisma'];
-    const excludeDirs = ['node_modules', '.next', '.git', 'download', 'work', 'upload', '.darleK-backups'];
-    const excludeFiles = ['db/custom.db'];
+    const extensionsToInclude = new Set(['.ts', '.tsx', '.js', '.jsx', '.css', '.json', '.html', '.prisma']);
+    const excludeDirs = new Set(['node_modules', '.next', '.git', 'download', 'work', 'upload', '.darleK-backups']);
+    const excludeFiles = new Set(['db/custom.db']);
+    const configFiles = new Set([
+      'package.json', 'next.config.ts', 'next.config.js', 'next.config.mjs', 
+      'tsconfig.json', 'tailwind.config.ts', 'tailwind.config.js', 
+      'postcss.config.js', 'postcss.config.mjs', '.eslintrc.json', 
+      '.eslintrc.js', 'eslint.config.mjs', 'README.md', '.gitignore', '.env.example'
+    ]);
 
-    const filesToPush: Array<{ path: string; content: string }> = [];
-    const configFiles = ['package.json', 'next.config.ts', 'next.config.js', 'next.config.mjs', 'tsconfig.json', 'tailwind.config.ts', 'tailwind.config.js', 'postcss.config.js', 'postcss.config.mjs', '.eslintrc.json', '.eslintrc.js', 'eslint.config.mjs', 'README.md', '.gitignore', '.env.example'];
+    const filesToPush: FileItem[] = [];
 
-    // Collect files
-    async function collectFiles(dir: string, base: string = '') {
-      const entries = await fs.readdir(dir, { withFileTypes: true });
+    async function collectFiles(dir: string, base: string = ''): Promise<void> {
+      let entries;
+      try {
+        entries = await fs.readdir(dir, { withFileTypes: true });
+      } catch {
+        return;
+      }
+
       for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
         const relativePath = base ? `${base}/${entry.name}` : entry.name;
 
-        if (excludeDirs.includes(entry.name)) continue;
-        if (entry.name.startsWith('.') && !configFiles.some(f => relativePath === f)) continue;
+        if (excludeDirs.has(entry.name)) continue;
+        if (entry.name.startsWith('.') && !configFiles.has(relativePath)) continue;
 
         if (entry.isFile()) {
-          const ext = '.' + entry.name.split('.').pop()?.toLowerCase();
-          const isConfig = configFiles.some(f => relativePath === f || relativePath.startsWith(f + '.'));
-          if (extensionsToInclude.includes(ext) || isConfig) {
-            if (excludeFiles.includes(relativePath)) continue;
+          const ext = `.${entry.name.split('.').pop()?.toLowerCase() || ''}`;
+          const isConfig = configFiles.has(relativePath);
+          if (extensionsToInclude.has(ext) || isConfig) {
+            if (excludeFiles.has(relativePath)) continue;
             try {
               const content = await fs.readFile(fullPath, 'utf-8');
               filesToPush.push({ path: relativePath, content });
@@ -103,14 +133,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No files valid for push' }, { status: 400 });
     }
 
-    const headers = {
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/vnd.github.v3+json',
-      'Content-Type': 'application/json',
-    };
-
-    // If repo was newly created, GitHub propagation of default branch ref can take 1-2 seconds
-    let refSha = null;
+    let refSha: string | null = null;
     let attempts = 0;
     while (attempts < 5 && !refSha) {
       if (attempts > 0) {
@@ -121,7 +144,7 @@ export async function POST(req: NextRequest) {
         const refRes = await fetch(refUrl, { headers });
         if (refRes.ok) {
           const refData = await refRes.json();
-          refSha = refData.object?.sha;
+          refSha = refData.object?.sha || null;
         }
       } catch (e) {
         console.error('Error fetching default branch ref attempts:', e);
@@ -129,18 +152,16 @@ export async function POST(req: NextRequest) {
       attempts++;
     }
 
-    let baseTreeSha = null;
+    let baseTreeSha: string | null = null;
     if (refSha) {
-      // Get baseline tree SHA
       const commitUrl = `https://api.github.com/repos/${owner}/${encodeURIComponent(repoName)}/git/commits/${refSha}`;
       const commitRes = await fetch(commitUrl, { headers });
       if (commitRes.ok) {
         const commitData = await commitRes.json();
-        baseTreeSha = commitData.tree?.sha;
+        baseTreeSha = commitData.tree?.sha || null;
       }
     }
 
-    // Build tree items array using the 'content' field directly in ONE request
     const treeItems = filesToPush.map(file => ({
       path: file.path,
       mode: '100644',
@@ -148,8 +169,7 @@ export async function POST(req: NextRequest) {
       content: file.content,
     }));
 
-    // Create a new git tree
-    const treeBody: Record<string, any> = {
+    const treeBody: Record<string, unknown> = {
       tree: treeItems,
     };
     if (baseTreeSha) {
@@ -170,9 +190,8 @@ export async function POST(req: NextRequest) {
     const treeData = await treeRes.json();
     const newTreeSha = treeData.sha;
 
-    // Create a new commit referencing the tree
     const commitMsg = `[DARLEK CANN] Deploy Initial Codebase: ${filesToPush.length} source files`;
-    const commitBody: Record<string, any> = {
+    const commitBody: Record<string, unknown> = {
       message: commitMsg,
       tree: newTreeSha,
       parents: refSha ? [refSha] : [],
@@ -192,7 +211,6 @@ export async function POST(req: NextRequest) {
     const createdCommitData = await createCommitRes.json();
     const newCommitSha = createdCommitData.sha;
 
-    // Point branch reference to newly created commit
     let updateRefRes;
     if (refSha) {
       updateRefRes = await fetch(`https://api.github.com/repos/${owner}/${encodeURIComponent(repoName)}/git/refs/heads/${defaultBranch}`, {
@@ -204,7 +222,6 @@ export async function POST(req: NextRequest) {
         }),
       });
     } else {
-      // Create branch reference
       updateRefRes = await fetch(`https://api.github.com/repos/${owner}/${encodeURIComponent(repoName)}/git/refs`, {
         method: 'POST',
         headers,
@@ -237,4 +254,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
-
