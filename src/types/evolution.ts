@@ -7,7 +7,7 @@
 /**
  * Represents a high-performance quantum node with strict state typing and asynchronous collapse handling.
  */
-export interface IQuantumNode<TState = Record<string, unknown>> {
+export interface IQuantumNode<TState extends Record<string, unknown> = Record<string, unknown>> {
   readonly stateVector: Readonly<TState>;
   readonly entanglementKey: string;
   collapse(): Promise<void>;
