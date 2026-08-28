@@ -1,6 +1,6 @@
 /**
  * @file omega-core.d.ts
- * @version v49-optimized
+ * @version v49.1-optimized
  * @module OmegaCore
  * @description Sovereign type definitions and runtime boundary constraints for Omega Core architecture.
  */
@@ -32,11 +32,12 @@ export interface TemporalCrucibleConfig {
 }
 
 /**
- * High-performance utility type mapping exact read-only transformations for deep state immutability.
+ * High-performance utility type mapping exact read-only transformations for deep state immutability,
+ * enhanced with primitive preservation and strict index signature handling.
  */
 export type DeepImmutable<T> = T extends (infer R)[]
   ? ReadonlyArray<DeepImmutable<R>>
-  : T extends Function
+  : T extends (...args: readonly any[]) => unknown
   ? T
   : T extends object
   ? { readonly [K in keyof T]: DeepImmutable<T[K]> }
