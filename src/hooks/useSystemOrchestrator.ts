@@ -1,20 +1,54 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { SystemState } from '@/lib/types';
 
-export const useSystemOrchestrator = (state: SystemState) => {
-  const [isReady, setIsReady] = useState(false);
-  const [latency, setLatency] = useState(0);
+export interface UseSystemOrchestratorReturn {
+  readonly isReady: boolean;
+  readonly latency: number;
+}
+
+export const useSystemOrchestrator = (state: SystemState): UseSystemOrchestratorReturn => {
+  const [isReady, setIsReady] = useState<boolean>(false);
+  const [latency, setLatency] = useState<number>(0);
+  
+  const isMountedRef = useRef<boolean>(true);
 
   useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const handleHandshake = useCallback(() => {
     const start = performance.now();
-    // Simulate OMEGA core handshake
-    const timer = setTimeout(() => {
-      setIsReady(true);
-      setLatency(performance.now() - start);
-    }, 150);
-    
-    return () => clearTimeout(timer);
-  }, [state.evolutionCycle]);
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    try {
+      timer = setTimeout(() => {
+        if (!isMountedRef.current) return;
+        const computedLatency = performance.now() - start;
+        setLatency(computedLatency);
+        setIsReady(true);
+      }, 150);
+    } catch (error) {
+      if (isMountedRef.current) {
+        setIsReady(false);
+        setLatency(0);
+      }
+      console.error('EMG Core v49: Handshake execution failure', error);
+    }
+
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const cleanup = handleHandshake();
+    return cleanup;
+  }, [state.evolutionCycle, handleHandshake]);
 
   return { isReady, latency };
 };
