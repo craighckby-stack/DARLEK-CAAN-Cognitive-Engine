@@ -46,7 +46,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       "User-Agent": USER_AGENT,
     };
 
-    // Parallelize pre-flight safety checks or fetch ref directly with optimal memory footprint
     const refRes = await fetch(
       `${GITHUB_API_BASE}/repos/${owner}/${repo}/git/ref/heads/${encodeURIComponent(baseBranch)}`,
       { headers, cache: "no-store" }
@@ -70,7 +69,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Create the new branch with zero-allocation payload serialization
     const createRes = await fetch(
       `${GITHUB_API_BASE}/repos/${owner}/${repo}/git/refs`,
       {
