@@ -5,26 +5,32 @@ import * as HoverCardPrimitive from "@radix-ui/react-hover-card"
 
 import { cn } from "@/lib/utils"
 
-function HoverCard({
-  ...props
-}: React.ComponentProps<typeof HoverCardPrimitive.Root>) {
-  return <HoverCardPrimitive.Root data-slot="hover-card" {...props} />
-}
+export type HoverCardProps = React.ComponentProps<typeof HoverCardPrimitive.Root>
+export type HoverCardTriggerProps = React.ComponentProps<typeof HoverCardPrimitive.Trigger>
+export type HoverCardContentProps = React.ComponentProps<typeof HoverCardPrimitive.Content>
 
-function HoverCardTrigger({
-  ...props
-}: React.ComponentProps<typeof HoverCardPrimitive.Trigger>) {
+const HoverCard = React.memo(function HoverCard(
+  props: HoverCardProps
+): React.JSX.Element {
+  return <HoverCardPrimitive.Root data-slot="hover-card" {...props} />
+})
+HoverCard.displayName = "HoverCard"
+
+const HoverCardTrigger = React.memo(function HoverCardTrigger(
+  props: HoverCardTriggerProps
+): React.JSX.Element {
   return (
     <HoverCardPrimitive.Trigger data-slot="hover-card-trigger" {...props} />
   )
-}
+})
+HoverCardTrigger.displayName = "HoverCardTrigger"
 
-function HoverCardContent({
+const HoverCardContent = React.memo(function HoverCardContent({
   className,
   align = "center",
   sideOffset = 4,
   ...props
-}: React.ComponentProps<typeof HoverCardPrimitive.Content>) {
+}: HoverCardContentProps): React.JSX.Element {
   return (
     <HoverCardPrimitive.Portal data-slot="hover-card-portal">
       <HoverCardPrimitive.Content
@@ -39,6 +45,7 @@ function HoverCardContent({
       />
     </HoverCardPrimitive.Portal>
   )
-}
+})
+HoverCardContent.displayName = "HoverCardContent"
 
 export { HoverCard, HoverCardTrigger, HoverCardContent }
