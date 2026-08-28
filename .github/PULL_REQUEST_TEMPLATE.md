@@ -1,6 +1,6 @@
 <!--
 # ARCHITECTURAL HEADER: ENTERPRISE PULL REQUEST TEMPLATE (EVOLVED)
-# Engine: EMG Core v49 Neural Code and Documentation Optimizer
+# Engine: EMG Core v49 Neural Code and Documentation Optimizer Engine
 # Role: Enforces strict quality gates, architectural compliance, and automated verification.
 # Integration: Aligns PR submissions with the Zero-Leak Sandbox, Dynamic Consensus Weighting (DCW), and Diagnostic Engine.
 # Version: 2.1.0-DIAGNOSTIC-ENFORCED
@@ -10,7 +10,7 @@
 
 Provide a comprehensive overview of the proposed code mutation. Detail how this change integrates into the core system architecture and enumerate all affected modules.
 
-**Related Issue(s):** Fixes #<!-- insert issue number -->
+**Related Issue(s):** Fixes #<!-- Insert issue number -->
 
 ---
 
