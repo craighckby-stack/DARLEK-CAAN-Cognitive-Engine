@@ -8,55 +8,95 @@
  */
 
 // ─────────────────────────────────────────────
-// UTILITY: Extract code structure
+// TYPES & INTERFACES
 // ─────────────────────────────────────────────
 
-export interface CodeStructure {
-  language: string;
-  lines: number;
-  functions: string[];
-  classes: string[];
-  imports: string[];
-  exports: string[];
-  comments: number;
-  hasTypes: boolean;
-  hasErrorHandling: boolean;
-  hasTests: boolean;
-  longFunctions: string[];
-  complexity: number; // 1-10
-  issues: CodeIssue[];
-}
+export type SeverityLevel = 'low' | 'medium' | 'high';
+export type DebateVoteType = 'approve' | 'reject' | 'abstain';
 
 export interface CodeIssue {
-  type: string;
-  severity: 'low' | 'medium' | 'high';
-  line?: number;
-  message: string;
-  suggestion: string;
+  readonly type: string;
+  readonly severity: SeverityLevel;
+  readonly line?: number;
+  readonly message: string;
+  readonly suggestion: string;
 }
 
+export interface CodeStructure {
+  readonly language: string;
+  readonly lines: number;
+  readonly functions: readonly string[];
+  readonly classes: readonly string[];
+  readonly imports: readonly string[];
+  readonly exports: readonly string[];
+  readonly comments: number;
+  readonly hasTypes: boolean;
+  readonly hasErrorHandling: boolean;
+  readonly hasTests: boolean;
+  readonly longFunctions: readonly string[];
+  readonly complexity: number; // 1-10
+  readonly issues: readonly CodeIssue[];
+}
+
+export interface CompanionFile {
+  readonly path: string;
+  readonly content: string;
+}
+
+export interface EvolutionResult {
+  readonly evolvedCode: string;
+  readonly changesApplied: readonly string[];
+  readonly companionFiles: readonly CompanionFile[];
+}
+
+export interface DebateVoteResult {
+  readonly vote: DebateVoteType;
+  readonly confidence: number;
+  readonly reasoning: string;
+  readonly structuralProposal?: unknown;
+}
+
+export interface ChatMessage {
+  readonly role: string;
+  readonly content: string;
+}
+
+export interface MultiTurnPart {
+  readonly text: string;
+}
+
+export interface MultiTurnContent {
+  readonly role: string;
+  readonly parts: readonly MultiTurnPart[];
+}
+
+// ─────────────────────────────────────────────
+// UTILITY: Language Detection & Structure Analysis
+// ─────────────────────────────────────────────
+
+const LANGUAGE_MAP: Readonly<Record<string, string>> = Object.freeze({
+  ts: 'TypeScript',
+  tsx: 'TypeScript React',
+  js: 'JavaScript',
+  jsx: 'JavaScript React',
+  py: 'Python',
+  rb: 'Ruby',
+  go: 'Go',
+  rs: 'Rust',
+  java: 'Java',
+  cs: 'C#',
+  cpp: 'C++',
+  c: 'C',
+  php: 'PHP',
+  swift: 'Swift',
+  kt: 'Kotlin',
+  css: 'CSS',
+  json: 'JSON',
+});
+
 export function detectLanguage(filePath: string, _code?: string): string {
-  const ext = filePath.split('.').pop()?.toLowerCase() || '';
-  const langMap: Record<string, string> = {
-    ts: 'TypeScript',
-    tsx: 'TypeScript React',
-    js: 'JavaScript',
-    jsx: 'JavaScript React',
-    py: 'Python',
-    rb: 'Ruby',
-    go: 'Go',
-    rs: 'Rust',
-    java: 'Java',
-    cs: 'C#',
-    cpp: 'C++',
-    c: 'C',
-    php: 'PHP',
-    swift: 'Swift',
-    kt: 'Kotlin',
-    css: 'CSS',
-    json: 'JSON',
-  };
-  return langMap[ext] || 'TypeScript';
+  const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
+  return LANGUAGE_MAP[ext] ?? 'TypeScript';
 }
 
 export function analyzeStructure(code: string, language: string): CodeStructure {
@@ -71,9 +111,8 @@ export function analyzeStructure(code: string, language: string): CodeStructure 
   let hasTypes = false;
   let hasErrorHandling = false;
   let hasTests = false;
-  let complexity = 1;
 
-  // Count comments
+  // Count comments efficiently
   for (const line of lines) {
     const trimmed = line.trim();
     if (
@@ -88,50 +127,56 @@ export function analyzeStructure(code: string, language: string): CodeStructure 
     }
   }
 
-  // Detect structure patterns based on language
   const isTS = language.includes('TypeScript');
   const isJS = language.includes('JavaScript');
   const isPython = language === 'Python';
 
-  // Functions
-  const funcPatterns = [
-    /(?:export\s+)?(?:async\s+)?function\s+([a-zA-Z0-9_]+)/g,
-    /(?:const|let|var)\s+([a-zA-Z0-9_]+)\s*=\s*(?:async\s*)?\([^)]*\)\s*=>/g,
-    /(?:const|let|var)\s+([a-zA-Z0-9_]+)\s*=\s*(?:async\s+)?function/g,
-  ];
-  if (isPython) {
-    funcPatterns.length = 0;
-    funcPatterns.push(/def\s+([a-zA-Z0-9_]+)\s*\(/g);
-  }
+  // Extract Functions
+  const funcPatterns: RegExp[] = isPython
+    ? [/def\s+([a-zA-Z0-9_]+)\s*\(/g]
+    : [
+        /(?:export\s+)?(?:async\s+)?function\s+([a-zA-Z0-9_]+)/g,
+        /(?:const|let|var)\s+([a-zA-Z0-9_]+)\s*=\s*(?:async\s*)?\([^)]*\)\s*=>/g,
+        /(?:const|let|var)\s+([a-zA-Z0-9_]+)\s*=\s*(?:async\s+)?function/g,
+      ];
 
   for (const pat of funcPatterns) {
-    let match;
+    let match: RegExpExecArray | null;
     while ((match = pat.exec(code)) !== null) {
-      functions.push(match[1]);
+      const fnName = match[1];
+      if (fnName && !functions.includes(fnName)) {
+        functions.push(fnName);
+      }
     }
   }
 
-  // Classes
-  const classPat = isPython ? /class\s+([a-zA-Z0-9_]+)/g : /(?:export\s+)?(?:abstract\s+)?class\s+([a-zA-Z0-9_]+)/g;
-  let match;
-  while ((match = classPat.exec(code)) !== null) {
-    classes.push(match[1]);
+  // Extract Classes
+  const classPat = isPython
+    ? /class\s+([a-zA-Z0-9_]+)/g
+    : /(?:export\s+)?(?:abstract\s+)?class\s+([a-zA-Z0-9_]+)/g;
+  let classMatch: RegExpExecArray | null;
+  while ((classMatch = classPat.exec(code)) !== null) {
+    const className = classMatch[1];
+    if (className && !classes.includes(className)) {
+      classes.push(className);
+    }
   }
 
-  // Imports
-  const importLines = code
-    .split('\n')
-    .filter((l) => l.trim().startsWith('import ') || l.trim().startsWith('from ') || l.trim().startsWith('require('));
-  imports.push(...importLines.map((l) => l.trim().slice(0, 80)));
+  // Extract Imports & Exports
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('import ') || trimmed.startsWith('from ') || trimmed.startsWith('require(')) {
+      imports.push(trimmed.slice(0, 80));
+    }
+    if (trimmed.startsWith('export ') || trimmed.startsWith('module.exports')) {
+      exports.push(trimmed.slice(0, 80));
+    }
+  }
 
-  // Exports
-  const exportLines = code.split('\n').filter((l) => l.trim().startsWith('export ') || l.trim().startsWith('module.exports'));
-  exports.push(...exportLines.map((l) => l.trim().slice(0, 80)));
-
-  // Type detection
+  // Type Detection
   hasTypes = isTS ? /:[^=;{]+/.test(code) || code.includes('interface ') || code.includes('type ') : false;
 
-  // Error handling
+  // Error Handling Detection
   hasErrorHandling =
     code.includes('try') ||
     code.includes('catch') ||
@@ -140,7 +185,7 @@ export function analyzeStructure(code: string, language: string): CodeStructure 
     code.includes('Result<') ||
     code.includes('error');
 
-  // Test detection
+  // Test Detection
   hasTests =
     code.includes('.test(') ||
     code.includes('.it(') ||
@@ -149,7 +194,7 @@ export function analyzeStructure(code: string, language: string): CodeStructure 
     code.includes('def test_') ||
     code.includes('@test');
 
-  // Long functions (>50 lines between braces/def and closing)
+  // Long Functions Detection (>50 lines)
   for (const funcName of functions) {
     const funcRegex = new RegExp(
       `(?:function\\s+${funcName}|${funcName}\\s*=\\s*(?:async\\s*)?(?:\\([^)]*\\)\\s*=>|function))`
@@ -161,15 +206,16 @@ export function analyzeStructure(code: string, language: string): CodeStructure 
       let funcEnd = -1;
       let lineCount = 0;
       for (let i = 0; i < afterFunc.length; i++) {
-        if (afterFunc[i] === '{' || afterFunc[i] === ':') depth++;
-        if (afterFunc[i] === '}') {
+        const char = afterFunc[i];
+        if (char === '{' || char === ':') depth++;
+        if (char === '}') {
           depth--;
           if (depth <= 0) {
             funcEnd = i;
             break;
           }
         }
-        if (afterFunc[i] === '\n') lineCount++;
+        if (char === '\n') lineCount++;
         if (lineCount > 50 && funcEnd === -1) {
           longFunctions.push(funcName);
           break;
@@ -178,8 +224,8 @@ export function analyzeStructure(code: string, language: string): CodeStructure 
     }
   }
 
-  // Complexity estimation
-  complexity = Math.min(
+  // Complexity Estimation (1-10)
+  const complexity = Math.min(
     10,
     Math.max(
       1,
@@ -193,7 +239,7 @@ export function analyzeStructure(code: string, language: string): CodeStructure 
     )
   );
 
-  // Generate issues
+  // Generate Issues
   if (!hasErrorHandling && (functions.length > 0 || code.length > 200)) {
     issues.push({
       type: 'error-handling',
@@ -305,38 +351,6 @@ export function analyzeStructure(code: string, language: string): CodeStructure 
 // IMPROVEMENT GENERATION & CODE EVOLUTION
 // ─────────────────────────────────────────────
 
-function generateImprovements(structure: CodeStructure): string[] {
-  const improvements: string[] = [];
-
-  if (!structure.hasErrorHandling && structure.functions.length > 0) {
-    improvements.push('Inject defensive try/catch error boundaries with contextual diagnostics');
-  }
-  if (!structure.hasTypes && structure.language.includes('TypeScript')) {
-    improvements.push('Define explicit TypeScript interface contracts and type annotations');
-  }
-  for (const func of structure.longFunctions) {
-    improvements.push(`Decompose long function "${func}" into focused modular helpers`);
-  }
-  if (structure.comments < structure.lines * 0.03 && structure.lines > 15) {
-    improvements.push('Add comprehensive architectural documentation and interface specifications');
-  }
-  if (structure.language.includes('TypeScript') && !structure.hasTypes) {
-    improvements.push('Replace loose untyped structures with strict discriminated union types');
-  }
-  if (structure.lines > 300) {
-    improvements.push('Extract sub-modules to preserve single-responsibility architecture');
-  }
-  if (structure.imports.length > 12) {
-    improvements.push('Optimize import declarations and tree-shaking boundaries');
-  }
-
-  if (improvements.length === 0) {
-    improvements.push('Optimize computational complexity and reinforce type invariants');
-  }
-
-  return improvements;
-}
-
 function calculateRiskScore(structure: CodeStructure): number {
   let risk = 2; // baseline
   if (structure.longFunctions.length > 0) risk += 1;
@@ -349,8 +363,8 @@ function calculateRiskScore(structure: CodeStructure): number {
 
 function findAffectedFiles(filePath: string, structure: CodeStructure): string[] {
   const affected: string[] = [];
-  const ext = filePath.split('.').pop() || '';
-  if (ext === 'ts' || ext === 'tsx' || ext === 'js' || ext === 'jsx') {
+  const ext = filePath.split('.').pop() ?? '';
+  if (['ts', 'tsx', 'js', 'jsx'].includes(ext)) {
     if (structure.exports.length > 0) {
       affected.push('(modules importing exported symbols)');
     }
@@ -365,15 +379,15 @@ export function evolveCodeStructure(
   code: string,
   filePath: string,
   structure: CodeStructure
-): { evolvedCode: string; changesApplied: string[]; companionFiles: Array<{ path: string; content: string }> } {
+): EvolutionResult {
   let evolved = code;
   const changesApplied: string[] = [];
-  const companionFiles: Array<{ path: string; content: string }> = [];
+  const companionFiles: CompanionFile[] = [];
   const isTS = structure.language.includes('TypeScript');
   const isJS = structure.language.includes('JavaScript');
   const isPython = structure.language === 'Python';
 
-  // 1. Remove debugging logs
+  // 1. Remove debugging logs safely
   if (evolved.includes('console.log(')) {
     const beforeLen = evolved.length;
     evolved = evolved.replace(/^\s*console\.log\(.*?\);?\s*\n?/gm, '');
@@ -392,7 +406,8 @@ export function evolveCodeStructure(
   // 2. Add Architectural Header if missing
   const isHeaderableExt = /\.(ts|tsx|js|jsx|py|css|scss)$/i.test(filePath);
   if (isHeaderableExt) {
-    const hasHeader = evolved.trim().startsWith('/**') || evolved.trim().startsWith('"""') || evolved.trim().startsWith('#');
+    const trimmedEvolved = evolved.trim();
+    const hasHeader = trimmedEvolved.startsWith('/**') || trimmedEvolved.startsWith('"""') || trimmedEvolved.startsWith('#');
     if (!hasHeader) {
       if (isPython) {
         const header = `"""\nArchitectural Module Specification\nFile: ${filePath}\nRole: Core system module in autonomous cognitive evolution cycles.\nComplexity: ${structure.complexity}/10 | Functions: ${structure.functions.length}\n"""\n\n`;
@@ -408,14 +423,18 @@ export function evolveCodeStructure(
 
   // 3. Enhance TypeScript Interfaces & Error Handling
   if (isTS && !evolved.includes('interface ') && !evolved.includes('type ') && structure.functions.length > 0) {
-    const baseName = filePath.split('/').pop()?.replace(/\.[^/.]+$/, '') || 'Module';
-    const pascalName = baseName.charAt(0).toUpperCase() + baseName.slice(1).replace(/[-_](\w)/g, (_, c) => c.toUpperCase());
+    const baseName = filePath.split('/').pop()?.replace(/\.[^/.]+$/, '') ?? 'Module';
+    const pascalName = baseName.charAt(0).toUpperCase() + baseName.slice(1).replace(/[-_](\w)/g, (_, c: string) => c.toUpperCase());
     const interfaceDef = `\nexport interface ${pascalName}Config {\n  readonly id?: string;\n  readonly enabled?: boolean;\n  readonly metadata?: Record<string, unknown>;\n}\n\n`;
 
     const lastImportIdx = evolved.lastIndexOf('import ');
     if (lastImportIdx !== -1) {
       const endOfLine = evolved.indexOf('\n', lastImportIdx);
-      evolved = evolved.slice(0, endOfLine + 1) + interfaceDef + evolved.slice(endOfLine + 1);
+      if (endOfLine !== -1) {
+        evolved = evolved.slice(0, endOfLine + 1) + interfaceDef + evolved.slice(endOfLine + 1);
+      } else {
+        evolved = interfaceDef + evolved;
+      }
     } else {
       evolved = interfaceDef + evolved;
     }
@@ -426,7 +445,7 @@ export function evolveCodeStructure(
   if ((isTS || isJS) && !structure.hasErrorHandling && evolved.includes('async ')) {
     evolved = evolved.replace(
       /async\s+function\s+([a-zA-Z0-9_]+)\s*\((.*?)\)\s*(?::\s*[^={]+)?\s*\{(?!\s*try\s*\{)/g,
-      (_match, fnName, params) => {
+      (_match, fnName: string, params: string) => {
         changesApplied.push(`Added defensive error boundary to async function '${fnName}'`);
         return `async function ${fnName}(${params}) {\n  try {`;
       }
@@ -441,7 +460,7 @@ export function evolveCodeStructure(
 
   // 5. Generate companion type definitions file for complex modules
   if ((isTS || isJS) && structure.complexity >= 4 && structure.exports.length > 0) {
-    const baseName = filePath.split('/').pop()?.replace(/\.[^/.]+$/, '') || 'types';
+    const baseName = filePath.split('/').pop()?.replace(/\.[^/.]+$/, '') ?? 'types';
     const companionPath = filePath.replace(/\.[^/.]+$/, '.types.ts');
     if (companionPath !== filePath) {
       const companionContent = `/**\n * Companion Type Declarations for ${filePath}\n */\n\nexport interface ${baseName.toUpperCase()}_Contract {\n  readonly version: string;\n  readonly status: 'active' | 'deprecated' | 'experimental';\n  readonly createdAt: string;\n}\n`;
@@ -450,7 +469,9 @@ export function evolveCodeStructure(
     }
   }
 
-  if (!evolved.trim()) evolved = code;
+  if (!evolved.trim()) {
+    evolved = code;
+  }
 
   return { evolvedCode: evolved, changesApplied, companionFiles };
 }
@@ -464,12 +485,10 @@ export function evolveCodeStructure(
  * Output matches the format expected by the propose route.
  */
 export function dalekBrainAnalyze(systemPrompt: string, userPrompt: string): string | null {
-  // Extract file path from system prompt or user prompt
   const pathMatch =
     (systemPrompt + '\n' + userPrompt).match(/(?:File path|file):\s*([^\n]+)/i) ||
     userPrompt.match(/([a-zA-Z0-9_./-]+\.(?:ts|tsx|js|jsx|py|go|rs|java|rb|cs|cpp|c|php|swift|kt))/);
 
-  // Extract code block from user prompt
   const codeBlockMatch = userPrompt.match(/```[\w]*\n([\s\S]*?)```/);
   const code = codeBlockMatch ? codeBlockMatch[1] : userPrompt.slice(-5000);
 
@@ -489,7 +508,6 @@ export function dalekBrainAnalyze(systemPrompt: string, userPrompt: string): str
   const riskScore = calculateRiskScore(structure);
   const affectedFiles = findAffectedFiles(filePath, structure);
 
-  // Perform multi-stage structural evolution
   const { evolvedCode, changesApplied, companionFiles } = evolveCodeStructure(code, filePath, structure);
 
   const analysisLines = [
@@ -525,8 +543,8 @@ export function dalekBrainDebateVote(
   originalCode: string,
   proposedCode: string,
   riskScore: number
-): { vote: 'approve' | 'reject' | 'abstain'; confidence: number; reasoning: string; structuralProposal?: any } {
-  const normId = (agentId || '').toLowerCase();
+): DebateVoteResult {
+  const normId = (agentId ?? '').toLowerCase();
   const lineDelta = proposedCode.split('\n').length - originalCode.split('\n').length;
   const hasSecret = /(?:sk-[a-zA-Z0-9]{20,48}|AIza[0-9A-Za-z\-_]{35}|gh[pusr]_[a-zA-Z0-9]{36})/g.test(proposedCode);
 
@@ -587,7 +605,6 @@ export function dalekBrainDebateVote(
     };
   }
 
-  // Default fallback for any other persona
   return {
     vote: 'approve',
     confidence: 85,
@@ -610,11 +627,10 @@ export function dalekBrainSynthesize(originalCode: string, proposedCode: string,
 export function dalekBrainChat(
   _systemPrompt: string,
   userMessage: string,
-  history: Array<{ role: string; content: string }>
+  history: readonly ChatMessage[]
 ): string | null {
   const lower = userMessage.toLowerCase();
 
-  // Contextual responses based on what OPERATOR is saying
   if (lower.includes('hello') || lower.includes('hi') || lower === 'hey') {
     return 'Operational. What do you need?';
   }
@@ -631,7 +647,6 @@ export function dalekBrainChat(
     return 'EXTERMINATE!';
   }
 
-  // Contextual from history
   const recentSystemMsgs = history.filter((m) => m.role === 'system').slice(-3);
   for (const msg of recentSystemMsgs) {
     if (msg.content.includes('PENDING') || msg.content.includes('mutation')) {
@@ -639,7 +654,6 @@ export function dalekBrainChat(
     }
   }
 
-  // Default — short, direct
   return 'Acknowledged. Use SCAN REPOSITORY to start, or select a file and PROPOSE MUTATION.';
 }
 
@@ -648,19 +662,17 @@ export function dalekBrainChat(
  */
 export function dalekBrainMultiTurn(
   _systemPrompt: string,
-  contents: Array<{ role: string; parts: Array<{ text: string }> }>
+  contents: readonly MultiTurnContent[]
 ): string | null {
   const lastUser = contents.filter((c) => c.role === 'user').pop();
-  if (!lastUser) return null;
+  if (!lastUser || !lastUser.parts || lastUser.parts.length === 0) return null;
 
-  const text = lastUser.parts[0].text || '';
+  const text = lastUser.parts[0].text ?? '';
 
-  // Check if this is a debate/vote context
   if (text.includes('vote') || text.includes('approve') || text.includes('reject')) {
     return 'RECOMMENDATION: APPROVE with caution. The proposed changes appear structurally sound but should be tested.';
   }
 
-  // Code review context
   if (text.includes('```') || text.length > 200) {
     const lines = text.split('\n').length;
     return `Local analysis: ${lines} lines of code reviewed. Structure appears intact. Recommend proceeding with standard mutation parameters.`;
