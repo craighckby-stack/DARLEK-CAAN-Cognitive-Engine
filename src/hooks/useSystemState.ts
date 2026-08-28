@@ -1,23 +1,64 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+
+export type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'error' | string;
+
+export interface SystemState {
+  setupComplete: boolean;
+  connectionStatus: ConnectionStatus;
+  [key: string]: unknown;
+}
+
+const STORAGE_KEY = 'darlek_cann_state';
+
 export const useSystemState = () => {
-  const [systemState, setSystemState] = useState({ setupComplete: false, connectionStatus: 'idle' });
+  const [systemState, setSystemState] = useState<SystemState>({
+    setupComplete: false,
+    connectionStatus: 'idle',
+  });
+
   useEffect(() => {
-    const saved = localStorage.getItem('darlek_cann_state');
+    let isMounted = true;
+    const saved = localStorage.getItem(STORAGE_KEY);
+    
     if (saved) {
       try {
-        const parsed = JSON.parse(saved);
-        if (parsed && typeof parsed === 'object') {
-          const timer = setTimeout(() => setSystemState(parsed), 0);
-          return () => clearTimeout(timer);
+        const parsed = JSON.parse(saved) as unknown;
+        if (parsed !== null && typeof parsed === 'object') {
+          const timer = setTimeout(() => {
+            if (isMounted) {
+              setSystemState((prev) => ({ ...prev, ...(parsed as SystemState) }));
+            }
+          }, 0);
+          return () => {
+            isMounted = false;
+            clearTimeout(timer);
+          };
         }
       } catch (e) {
         console.error('Failed to parse darlek_cann_state:', e);
       }
     }
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
-  const persist = (newState: any) => {
+
+  const persist = useCallback((newState: SystemState | ((prevState: SystemState) => SystemState)) => {
+    setSystemState((prevState) => {
+      const resolvedState = typeof newState === 'function' ? newState(prevState) : newState;
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(resolvedState));
+      } catch (e) {
+        console.error('Failed to persist darlek_cann_state:', e);
+      }
+      return resolvedState;
+    });
+  }, []);
+
+  const updateState = useCallback((newState: SystemState | ((prevState: SystemState) => SystemState)) => {
     setSystemState(newState);
-    localStorage.setItem('darlek_cann_state', JSON.stringify(newState));
-  };
-  return { systemState, updateState: setSystemState, persist };
+  }, []);
+
+  return { systemState, updateState, persist };
 };
