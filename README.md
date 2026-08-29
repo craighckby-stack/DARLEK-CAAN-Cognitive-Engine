@@ -1,4 +1,6 @@
-emg fixed it woot. and now I fcd it
+not working one day project. split the system into two diff systems works better.  emg and the html that creates 
+
+
 
 https://ai.studio/apps/28b5e1aa-99d6-4c55-90cc-34608023c592
 
